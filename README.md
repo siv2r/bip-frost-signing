@@ -17,7 +17,13 @@ This document is licensed under the 3-clause BSD license.
 
 ## Overview
 
-- [ ] subsections tbd
+- [ ] subsections
+	- [ ] optionality of features
+	- [ ] general signing flow
+	- [ ] share generation
+	- [ ] nonce generation
+	- [ ] identifying disruptive signers
+	- [ ] tweaking the aggregate public key
 
 ## Algorithms
 
