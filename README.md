@@ -10,7 +10,8 @@ This document is licensed under the 3-clause BSD license.
 
 ## Introduction
 
-- [ ] mention a major portion of this BIP was duplicated from BIP327 due to scheme similarities
+Certain parts of this document are reproduced from the [MuSig2 BIP](https://github.com/bitcoin/bips/blob/master/bip-0327.mediawiki) because of the similarities between the FROST and MuSig2 signature schemes.
+
 - [ ] subsections
 	- [ ] motivation
 	- [ ] design subsections
@@ -44,6 +45,8 @@ This document is licensed under the 3-clause BSD license.
 ## Backwards Compatibility
 
 This document proposes a standard for the FROST threshold signature scheme that is compatible with [BIP340](https://github.com/bitcoin/bips/blob/master/bip-0340.mediawiki). FROST is _not_ compatible with ECDSA signatures traditionally used in Bitcoin.
+
+## Footnotes
 
 ## Acknowledgments
 
