@@ -1,8 +1,8 @@
-# FROST for BIP340-compatible Threshold Signatures (BIP draft)
+# FROST signing for BIP340-compatible Threshold Signatures (BIP draft)
 
 ### Abstract
 
-This document proposes a standard for the FROST threshold signature scheme ([paper](https://eprint.iacr.org/2020/852.pdf) and [RFC draft](https://datatracker.ietf.org/doc/draft-irtf-cfrg-frost/)). The standard is compatible with [BIP340](https://github.com/bitcoin/bips/blob/master/bip-0340.mediawiki) public keys and signatures. It supports _tweaking_, which allows deriving [BIP32](https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki) child keys from aggregate public keys and creating [BIP341](https://github.com/bitcoin/bips/blob/master/bip-0341.mediawiki) Taproot outputs with key and script paths.
+This document proposes a standard for the FROST threshold signing protocol ([paper](https://eprint.iacr.org/2020/852.pdf) and [RFC draft](https://datatracker.ietf.org/doc/draft-irtf-cfrg-frost/)). The standard is compatible with [BIP340](https://github.com/bitcoin/bips/blob/master/bip-0340.mediawiki) public keys and signatures. It supports _tweaking_, which allows deriving [BIP32](https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki) child keys from aggregate public keys and creating [BIP341](https://github.com/bitcoin/bips/blob/master/bip-0341.mediawiki) Taproot outputs with key and script paths.
 
 ### Copyright
 
@@ -10,7 +10,9 @@ This document is licensed under the 3-clause BSD license.
 
 ## Introduction
 
-Certain parts of this document are reproduced from [BIP 327](https://github.com/bitcoin/bips/blob/master/bip-0327.mediawiki) because of the similarities between the FROST and MuSig2 signature schemes.
+TODO: some intro about frost (see rfc-draft for idea): [1] threshold property [2] verifiable like using single pubkey (like normal schnorrsig)
+
+Certain parts of this document are reproduced from [BIP 327](https://github.com/bitcoin/bips/blob/master/bip-0327.mediawiki) due to the similarity of the FROST and MuSig2 signature schemes.
 
 - [ ] subsections
 	- [ ] motivation
@@ -20,11 +22,31 @@ Certain parts of this document are reproduced from [BIP 327](https://github.com/
 
 - [ ] subsections
 	- [ ] optionality of features
+	- [ ] key generation compatibility
+		TODO give a link to "frost keys" in "algorithms"
 	- [ ] general signing flow
-	- [ ] share generation
+		TODO mention various keygen protocols
 	- [ ] nonce generation
 	- [ ] identifying disruptive signers
 	- [ ] tweaking the aggregate public key
+
+## Key Generation
+
+This document does not provide information on the key generation method necessary for FROST signing. To learn about such methods, you can refer to [RFC-frost (Appendix D)](https://datatracker.ietf.org/doc/draft-irtf-cfrg-frost/) and [BIP-DKG](https://github.com/BlockstreamResearch/bip-frost-dkg).
+
+It is important to note that any FROST keys generated using the aforementioned methods must meet the correctness conditions (refer to <link subsection>) to be compatible with the signing protocol. However, it is essential to understand that the correctness conditions do not guarantee the security of these key generation methods. The conditions only ensure that the keys generated are functionally compatible with the signing protocol.
+
+TODO will duplicating the neccessary notations here improve readability? rather than mentioning its link
+
+### Key Specification
+
+FROST signatures function as if they were created by an individual signer using a signing key, thus enabling them to be verified with the corresponding public key. In order to achieve this functionality, a key generation protocol divides the group signing key among each participant using Shamir secret sharing.
+
+
+
+### Correctness Conditions
+
+
 
 ## Algorithms
 
@@ -72,9 +94,6 @@ The following conventions are used, with constants as defined for [secp256k1](h
 
 TODO remove unused functions above
 
-- [ ] Share Generation
-	- [ ] SSS (Trusted Dealer)
-	- [ ] BIP DKG
 - [ ] Nonce Generation
 - [ ] Nonce Aggregation
 - [ ] Session Context
