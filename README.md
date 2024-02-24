@@ -42,11 +42,41 @@ TODO will duplicating the neccessary notations here improve readability? rather 
 
 FROST signatures function as if they were created by an individual signer using a signing key, thus enabling them to be verified with the corresponding public key. In order to achieve this functionality, a key generation protocol divides the group signing key among each participant using Shamir secret sharing.
 
+FROST keys produced by a key generation protocol can be represented by the following parameters:
 
+**General parameters**
+
+|No|Name|Type|Range (Inclusive)|Description|
+|---|---|---|---|---|
+|1|_max_participants_|integer|2..n|maximum number of signers allowed in the signing process|
+|2|_min_participants_|integer|2..max_participants|minimum number of signers required to initiate the signing process|
+
+**Participant parameters**
+
+|No|Name|Type|Range (Inclusive)|Description|
+|---|---|---|---|---|
+|1|_id_|integer|1..max_participants|used to uniquely identify each participant, must be distinct from the _id_ of every other participant|
+|2|_sec_share_<sub>id</sub>|integer (scalar)|1..n|signing key of a participant|
+|3|_pub_share_<sub>id</sub>|curve point (_plain public key_)|shouldn't be infinity point|public key associated with the above signing key|
+|4|_group_pubkey_|curve point (_plain public key_)|shouldn't be infinity point|group public key used to verify the BIP340 Schnorr signature produced by the FROST-signing protocol|
 
 ### Correctness Conditions
 
+TODO alternatively represent these conditions using functions?
 
+The notations used in this section can be found in _todo link_
+
+**Public shares condition**
+
+For each participants _i_ in the range \[_1..max_participants_], their public share must equal to their secret share scalar multiplied with the generator point, represented as: _pub_share<sub>i</sub> = sec_share<sub>i</sub>⋅G_
+
+**Group public key condition**
+
+Consider a set of participants, denoted by _T_, chosen from a total pool of participants whose size is _max_participants_. For this set _T_, we can define a special parameter called the "group secret key". It is calculated by summing the secret share and Lagrange coefficient for each participant in T:
+
+_group_seckey_ = sum (_lagrange_coeff<sub>j, T</sub>_._sec_share_<sub>j</sub>) mod _n_, for every _j_ in _T_
+
+For all possible values of T, the group public key must equal to their group secret key scalar multiplied by the generator point represented as _group_pubkey<sub>i</sub>_ = _group_seckey<sub>j, T</sub>_⋅_G_.
 
 ## Algorithms
 
@@ -61,6 +91,7 @@ The following conventions are used, with constants as defined for [secp256k1](h
 - Lowercase variables represent integers or byte arrays.
     - The constant _p_ refers to the field size, _0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFFC2F_.
     - The constant _n_ refers to the curve order, _0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141_.
+    - The constant _num_participants_ refers to number of participants involved in the signing process, a positive non-zero integer which must be at least _min_participants_ but must not be larger than _max_participants_.
 - Uppercase variables refer to points on the curve with equation _y2 = x3 + 7_ over the integers modulo _p_.
     - _is_infinite(P)_ returns whether _P_ is the point at infinity.
     - _x(P)_ and _y(P)_ are integers in the range _0..p-1_ and refer to the X and Y coordinates of a point _P_ (assuming it is not infinity).
@@ -89,6 +120,7 @@ The following conventions are used, with constants as defined for [secp256k1](h
     - The function _cpoint(x)_, where _x_ is a 33-byte array (compressed serialization), sets _P = lift_x(int(x[1:33]))_ and fails if that fails. If _x[0] = 2_ it returns _P_ and if _x[0] = 3_ it returns _P_. Otherwise, it fails.
     - The function _cpoint_ext(x)_, where _x_ is a 33-byte array (compressed serialization), returns the point at infinity if _x = bytes(33, 0)_. Otherwise, it returns _cpoint(x)_ and fails if that fails.
     - The function _hashtag(x)_ where _tag_ is a UTF-8 encoded tag name and _x_ is a byte array returns the 32-byte hash _SHA256(SHA256(tag) || SHA256(tag) || x)_.
+    - todo lagrange coefficient
 - Other:
     - Tuples are written by listing the elements within parentheses and separated by commas. For example, _(2, 3, 1)_ is a tuple.
 
