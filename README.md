@@ -172,6 +172,8 @@ Algorithm _ApplyTweak(tweak_ctx, tweak, is_xonly_t)_:
 - Let _tacc' = t + g⋅tacc mod n_
 - Return _tweak_ctx' = (Q', gacc', tacc')_
 
+---------
+
 - [ ] Nonce Generation
 - [ ] Nonce Aggregation
 - [ ] Session Context
