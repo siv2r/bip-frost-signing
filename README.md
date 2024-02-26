@@ -124,6 +124,54 @@ The following conventions are used, with constants as defined for [secp256k1](h
 
 TODO remove unused functions above
 
+### Tweaking Group Public Key
+
+#### Tweak Context
+
+The Tweak Context is a data structure consisting of the following elements:
+
+- The point _Q_ representing the potentially tweaked group public key: an elliptic curve point
+- The accumulated tweak _tacc_: an integer with _0 ≤ tacc < n_
+- The value _gacc_: 1 or -1 mod n
+
+We write "Let _(Q, gacc, tacc) = tweak_ctx_" to assign names to the elements of a Tweak Context.
+
+Algorithm _TweakCtxInit(pk):_
+- Input:
+    - The group public key _pk_: u 33-byte arrays
+- Let _Q = cpoint(pk)_
+- Fail if _is_infinite(Q)_.
+- Let _gacc = 1_
+- Let _tacc = 0_
+- Return _tweak_ctx = (Q, gacc, tacc)_.
+
+Algorithm _GetXonlyPubkey(tweak_ctx)_:
+- Let _(Q, _, _) = tweak_ctx_
+- Return _xbytes(Q)_
+
+Algorithm _GetPlainPubkey(tweak_ctx)_:
+- Let _(Q, _, _) = tweak_ctx_
+- Return _cbytes(Q)_
+
+#### Applying Tweaks
+
+Algorithm _ApplyTweak(tweak_ctx, tweak, is_xonly_t)_:
+- Inputs:
+    - The _tweak_ctx_: a Tweak Context (todo link the defn) data structure
+    - The _tweak_: a 32-byte array
+    - The tweak mode _is_xonly_t_: a boolean
+- Let _(Q, gacc, tacc) = tweak_ctx_
+- If _is_xonly_t_ and _not has_even_y(Q)_:
+    - Let _g = -1 mod n_
+- Else:
+    - Let _g = 1_
+- Let _t = int(tweak)_; fail if _t ≥ n_
+- Let _Q' = g⋅Q + t⋅G_
+    - Fail if _is_infinite(Q')_
+- Let _gacc' = g⋅gacc mod n_
+- Let _tacc' = t + g⋅tacc mod n_
+- Return _tweak_ctx' = (Q', gacc', tacc')_
+
 - [ ] Nonce Generation
 - [ ] Nonce Aggregation
 - [ ] Session Context
