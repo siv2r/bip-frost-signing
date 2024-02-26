@@ -64,6 +64,8 @@ FROST keys produced by a key generation protocol can be represented by the follo
 
 TODO alternatively represent these conditions using functions?
 
+todo use _pubshare_ naming instead of _pub_share_?
+
 The notations used in this section can be found in _todo link_
 
 #### Public shares condition
@@ -136,10 +138,10 @@ The Tweak Context is a data structure consisting of the following elements:
 
 We write "Let _(Q, gacc, tacc) = tweak_ctx_" to assign names to the elements of a Tweak Context.
 
-Algorithm _TweakCtxInit(pk):_
+Algorithm _TweakCtxInit(group_pk):_
 - Input:
-    - The group public key _pk_: u 33-byte arrays
-- Let _Q = cpoint(pk)_
+    - The group public key _group_pk_: u 33-byte arrays
+- Let _Q = cpoint(group_pk)_
 - Fail if _is_infinite(Q)_.
 - Let _gacc = 1_
 - Let _tacc = 0_
@@ -172,10 +174,53 @@ Algorithm _ApplyTweak(tweak_ctx, tweak, is_xonly_t)_:
 - Let _tacc' = t + g⋅tacc mod n_
 - Return _tweak_ctx' = (Q', gacc', tacc')_
 
+### Nonce Generation
+
+todo: include participant identifier too?
+
+Algorithm _NonceGen(sec_share, pub_share, group_pk, m, extra_in)_:
+- Inputs:
+    - The participant’s secret signing key _sec_share_: a 32-byte array (optional argument)
+    - The corresponding public key _pub_share_: a 33-byte array (see _subsection link_ for the reason that this argument is mandatory)
+    - The x-only group public key grou__pk_: a 32-byte array (optional argument)
+    - The message _m_: a byte array (optional argument)
+    - The auxiliary input _extra_in_: a byte array with _0 ≤ len(extra_in) ≤ 2<sup>32</sup>-1_ (optional argument)
+- Let _rand'_ be a 32-byte array freshly drawn uniformly at random
+- If the optional argument _sec_share_ is present:
+    - Let _rand_ be the byte-wise xor of _sec_share_ and _hash<sub>FROST/aux</sub>(rand')_
+- Else:
+    - Let _rand = rand'_
+- If the optional argument _group_pk_ is not present:
+    - Let _group_pk = empty_bytestring_
+- If the optional argument _m_ is not present:
+    - Let _m_prefixed = bytes(1, 0)_
+- Else:
+    - Let _m_prefixed = bytes(1, 1) || bytes(8, len(m)) || m_
+- If the optional argument _extra_in_ is not present:
+    - Let _extra_in = empty_bytestring_
+- Let _k<sub>i</sub> = int(hash<sub>FROST/nonce</sub>(rand || bytes(1, len(pub_share)) || pub_share || bytes(1, len(group_pk)) || group_pk || m_prefixed || bytes(4, len(extra_in)) || extra_in || bytes(1, i - 1))) mod n_ for _i = 1,2_
+- Fail if _k<sub>1</sub> = 0_ or _k<sub>2</sub> = 0_
+- Let _R<sub>⁎,1</sub> = k1⋅G, R<sub>⁎,2</sub> = k2⋅G_
+- Let _pubnonce = cbytes(R<sub>,1</sub>) || cbytes(R<sub>⁎,2</sub>)_
+- Let _secnonce = bytes(32, k<sub>1</sub>) || bytes(32, k<sub>2</sub>) || pk_
+- Return _(secnonce, pubnonce)_
+
+### Nonce Aggregation
+
+todo: we can’t aggregate all $n$-particpants nonce. we need only $\alpha$
+
+Algorithm _NonceAgg(pubnonce<sub>1..u</sub>)_:
+- Inputs:
+    - The number _u_ of _pubnonces_ with _0 < u < 2^32_
+    - The public nonces _pubnonce<sub>1..u</sub>_: _u_ 66-byte arrays
+- For _j = 1 .. 2_:
+    - For _i = 1 .. u_:
+        - Let _R<sub>i,j</sub> = cpoint(pubnonce<sub>i</sub>[(j-1)_33:j_33])_; fail if that fails and blame signer _i_ for invalid _pubnonce_.
+    - Let _R<sub>j</sub> = R<sub>1,j</sub> + R<sub>2,j</sub> + ... + R<sub>u,j</sub>_
+- Return _aggnonce = cbytes_ext(R<sub>1</sub>) || cbytes_ext(R<sub>2</sub>)_
+
 ---------
 
-- [ ] Nonce Generation
-- [ ] Nonce Aggregation
 - [ ] Session Context
 - [ ] Signing
 - [ ] Partial Signature Verification
