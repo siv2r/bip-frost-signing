@@ -66,11 +66,11 @@ TODO alternatively represent these conditions using functions?
 
 The notations used in this section can be found in _todo link_
 
-**Public shares condition**
+#### Public shares condition
 
 For each participants _i_ in the range \[_1..max_participants_], their public share must equal to their secret share scalar multiplied with the generator point, represented as: _pub_share<sub>i</sub> = sec_share<sub>i</sub>⋅G_
 
-**Group public key condition**
+#### Group public key condition
 
 Consider a set of participants, denoted by _T_, chosen from a total pool of participants whose size is _max_participants_. For this set _T_, we can define a special parameter called the "group secret key". It is calculated by summing the secret share and Lagrange coefficient for each participant in T:
 
@@ -80,9 +80,7 @@ For all possible values of T, the group public key must equal to their group sec
 
 ## Algorithms
 
-The following specification of the algorithms has been written with a focus on clarity. As a result, the specified algorithms are not always optimal in terms of computation and space. In particular, some values are recomputed but can be cached in actual implementations (see _mention link here_).
-
-TODO: check the relevance of the last line above, after completing this section.
+The following specification of the algorithms has been written with a focus on clarity. As a result, the specified algorithms are not always optimal in terms of computation and space. In particular, some values are recomputed but can be cached in actual implementations (todo see _mention link here_).
 
 ### Notation
 
@@ -91,8 +89,8 @@ The following conventions are used, with constants as defined for [secp256k1](h
 - Lowercase variables represent integers or byte arrays.
     - The constant _p_ refers to the field size, _0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFFC2F_.
     - The constant _n_ refers to the curve order, _0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141_.
-    - The constant _num_participants_ refers to number of participants involved in the signing process, a positive non-zero integer which must be at least _min_participants_ but must not be larger than _max_participants_.
-- Uppercase variables refer to points on the curve with equation _y2 = x3 + 7_ over the integers modulo _p_.
+    - The constant _num_participants_ refers to number of participants involved in the signing process, must be at least _min_participants_ but must not be larger than _max_participants_.
+- Uppercase variables refer to points on the curve with equation _y<sup>2</sup> = x<sup>3</sup> + 7_ over the integers modulo _p_.
     - _is_infinite(P)_ returns whether _P_ is the point at infinity.
     - _x(P)_ and _y(P)_ are integers in the range _0..p-1_ and refer to the X and Y coordinates of a point _P_ (assuming it is not infinity).
     - The constant _G_ refers to the base point, for which _x(G) = 0x79BE667EF9DCBBAC55A06295CE870B07029BFCDB2DCE28D959F2815B16F81798_ and _y(G) = 0x483ADA7726A3C4655DA4FBFC0E1108A8FD17B448A68554199C47D08FFB10D4B8_.
@@ -100,26 +98,26 @@ The following conventions are used, with constants as defined for [secp256k1](h
     - [Multiplication (⋅) of an integer and a point](https://en.wikipedia.org/wiki/Elliptic_curve_point_multiplication) refers to the repeated application of the group operation.
 - Functions and operations:
     - _||_ refers to byte array concatenation.
-    - The function _x[i:j]_, where _x_ is a byte array and _i, j ≥ 0_, returns a *(j - i)*byte array with a copy of the _i_th byte (inclusive) to the _j_th byte (exclusive) of _x_.
+    - The function _x[i:j]_, where _x_ is a byte array and _i, j ≥ 0_, returns a _(j - i)_-byte array with a copy of the _i_th byte (inclusive) to the _j_th byte (exclusive) of _x_.
     - The function _bytes(n, x)_, where _x_ is an integer, returns the n-byte encoding of _x_, most significant byte first.
     - The constant _empty_bytestring_ refers to the empty byte array. It holds that _len(empty_bytestring) = 0_.
     - The function _xbytes(P)_, where _P_ is a point for which _not is_infinite(P)_, returns _bytes(32, x(P))_.
     - The function _len(x)_ where _x_ is a byte array returns the length of the array.
     - The function _has_even_y(P)_, where _P_ is a point for which _not is_infinite(P)_, returns _y(P) mod 2 == 0_.
-    - The function _with_even_y(P)_, where _P_ is a point, returns _P_ if _is_infinite(P)_ or _has_even_y(P)_. Otherwise, _with_even_y(P)_ returns _P_.
+    - The function _with_even_y(P)_, where _P_ is a point, returns _P_ if _is_infinite(P)_ or _has_even_y(P)_. Otherwise, _with_even_y(P)_ returns _-P_.
     - The function _cbytes(P)_, where _P_ is a point for which _not is_infinite(P)_, returns _a || xbytes(P)_ where _a_ is a byte that is _2_ if _has_even_y(P)_ and _3_ otherwise.
     - The function _cbytes_ext(P)_, where _P_ is a point, returns _bytes(33, 0)_ if _is_infinite(P)_. Otherwise, it returns _cbytes(P)_.
     - The function _int(x)_, where _x_ is a 32-byte array, returns the 256-bit unsigned integer whose most significant byte first encoding is _x_.
-    - The function _lift_x(x)_, where _x_ is an integer in range _0..22561_, returns the point _P_ for which _x(P) = x_ and _has_even_y(P)_, or fails if _x_ is greater than _p-1_ or no such point exists. The function _lift_x(x)_ is equivalent to the following pseudocode: TODO: add footnote
+    - The function _lift_x(x)_, where _x_ is an integer in range _0..2<sup>256</sup>-1_, returns the point _P_ for which _x(P) = x<sup>todo add ref here</sup>_ and _has_even_y(P)_, or fails if _x_ is greater than _p-1_ or no such point exists. The function _lift_x(x)_ is equivalent to the following pseudocode: TODO: add footnote
 		- Fail if _x > p-1_.
-		- Let _c = x3 + 7 mod p_.
-		- Let _y' = c(p+1)/4 mod p_.
-		- Fail if _c ≠ y'2 mod p_.
+		- Let _c = x<sup>3</sup> + 7 mod p_.
+		- Let _y' = c<sup>(p+1)/4</sup> mod p_.
+		- Fail if _c ≠ y'<sup>2</sup> mod p_.
 		 - Let _y = y'_ if _y' mod 2 = 0_, otherwise let _y = p - y'_ .
 		- Return the unique point _P_ such that _x(P) = x_ and _y(P) = y_.
-    - The function _cpoint(x)_, where _x_ is a 33-byte array (compressed serialization), sets _P = lift_x(int(x[1:33]))_ and fails if that fails. If _x[0] = 2_ it returns _P_ and if _x[0] = 3_ it returns _P_. Otherwise, it fails.
+    - The function _cpoint(x)_, where _x_ is a 33-byte array (compressed serialization), sets _P = lift_x(int(x[1:33]))_ and fails if that fails. If _x[0] = 2_ it returns _P_ and if _x[0] = 3_ it returns _-P_. Otherwise, it fails.
     - The function _cpoint_ext(x)_, where _x_ is a 33-byte array (compressed serialization), returns the point at infinity if _x = bytes(33, 0)_. Otherwise, it returns _cpoint(x)_ and fails if that fails.
-    - The function _hashtag(x)_ where _tag_ is a UTF-8 encoded tag name and _x_ is a byte array returns the 32-byte hash _SHA256(SHA256(tag) || SHA256(tag) || x)_.
+    - The function _hash<sub>tag</sub>(x)_ where _tag_ is a UTF-8 encoded tag name and _x_ is a byte array returns the 32-byte hash _SHA256(SHA256(tag) || SHA256(tag) || x)_.
     - todo lagrange coefficient
 - Other:
     - Tuples are written by listing the elements within parentheses and separated by commas. For example, _(2, 3, 1)_ is a tuple.
