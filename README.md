@@ -207,11 +207,9 @@ Algorithm _NonceGen(sec_share, pub_share, group_pk, m, extra_in)_:
 
 ### Nonce Aggregation
 
-todo: we can’t aggregate all $n$-particpants nonce. we need only $\alpha$
-
 Algorithm _NonceAgg(pubnonce<sub>1..u</sub>)_:
 - Inputs:
-    - The number _u_ of _pubnonces_ with _0 < u < 2^32_
+    - The number of signers _u_: an integer with _min_participants ≤ u ≤ max_participants_
     - The public nonces _pubnonce<sub>1..u</sub>_: _u_ 66-byte arrays
 - For _j = 1 .. 2_:
     - For _i = 1 .. u_:
