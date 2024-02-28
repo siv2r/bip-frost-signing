@@ -217,9 +217,54 @@ Algorithm _NonceAgg(pubnonce<sub>1..u</sub>)_:
     - Let _R<sub>j</sub> = R<sub>1,j</sub> + R<sub>2,j</sub> + ... + R<sub>u,j</sub>_
 - Return _aggnonce = cbytes_ext(R<sub>1</sub>) || cbytes_ext(R<sub>2</sub>)_
 
+### Session Context
+
+The Session Context is a data structure consisting of the following elements:
+
+- The number _u_ of signers with _min_participants ≤ u ≤ max_participants_
+- The participant identifiers of signers _id<sub>1..u</sub>: _u_ integers with 1 _≤ id<sub>i</sub> ≤ max_participants_
+- The aggregate public nonce of signers _aggnonce_: a 66-byte array
+- The group public key _group_pk_: _u_ 33-byte arrays
+- The number _v_ of tweaks with _0 ≤ v < 2^32_
+- The tweaks _tweak<sub>1..v</sub>_: _v_ 32-byte arrays
+- The tweak modes _is_xonly_t<sub>1..v</sub>_ : _v_ booleans
+- The message _m_: a byte array
+
+We write "Let _(u, id<sub>1..u</sub>, aggnonce, group_pk, v, tweak<sub>1..v</sub>, is_xonly_t<sub>1..v</sub>, m) = session_ctx_" to assign names to the elements of a Session Context.
+
+Algorithm _GetSessionValues(session_ctx)_:
+- Let _(u, id<sub>1..u</sub>, aggnonce, group_pk, v, tweak<sub>1..v</sub>, is_xonly_t<sub>1..v</sub>, m) = session_ctx_
+- Let _tweak_ctx<sub>0</sub> = TweakCtxInit(group_pk)_; fail if that fails
+- For _i = 1 .. v_:
+    - Let _tweak_ctx<sub>i</sub> = ApplyTweak(tweak_ctx<sub>i-1</sub>, tweak<sub>i</sub>, is_xonly_t<sub>i</sub>)_; fail if that fails
+- Let _(Q, gacc, tacc) = tweak_ctx<sub>v</sub>_
+- Let _b = int(hash<sub>FROST/noncecoef<sub>(aggnonce || xbytes(Q) || m)) mod n_
+- Let _R1 = cpoint_ext(aggnonce[0:33]), R2 = cpoint_ext(aggnonce[33:66])_; fail if that fails and blame nonce aggregator for invalid _aggnonce_.
+- Let _R' = R1 + b⋅R2_
+- If _is_infinite(R'):_
+    - _Let final nonce_ R = G _(see dealing with inf nonce agg link)_
+- _Else:_
+    - _Let final nonce_ R = R'
+- Let _e = int(hash<sub>BIP0340/challenge<sub>((xbytes(R) || xbytes(Q) || m)) mod n_
+- _Return_ (Q, gacc, tacc, b, R, e)
+
+Algorithm _GetSessionLagrangeCoeff(session_ctx, my_id)_:
+- Let _(u, id<sub>1..u</sub>, _, _, _, _, _) = session_ctx_
+- Fail if _my_id_ not in _id<sub>1..u</sub>_
+- Return _LagrangeCoeff(id<sub>1..u</sub>, my_id)_
+
+Internal Algorithm _LagrangeCoeff(id<sub>1..u</sub>, my_id):_
+- Let _lambda = 0_
+- For _i = 1..u_:
+    - Let _num_ = _id<sub>i</sub>_
+    - Let _den_ = _id<sub>i</sub> - my_id_
+    - _lambda_ = (_lambda + num.deno<sup>-1</sup>) mod n_
+- Return _lambda_
+
+
+
 ---------
 
-- [ ] Session Context
 - [ ] Signing
 - [ ] Partial Signature Verification
 - [ ] Partial Signature Aggregation
