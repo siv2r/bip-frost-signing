@@ -62,10 +62,6 @@ FROST keys produced by a key generation protocol can be represented by the follo
 
 ### Correctness Conditions
 
-TODO alternatively represent these conditions using functions?
-
-todo use _pubshare_ naming instead of _pub_share_?
-
 The notations used in this section can be found in _todo link_
 
 #### Public shares condition
@@ -182,7 +178,7 @@ Algorithm _NonceGen(sec_share, pub_share, group_pk, m, extra_in)_:
 - Inputs:
     - The participant’s secret signing key _sec_share_: a 32-byte array (optional argument)
     - The corresponding public key _pub_share_: a 33-byte array (see _subsection link_ for the reason that this argument is mandatory)
-    - The x-only group public key grou__pk_: a 32-byte array (optional argument)
+    - The x-only group public key group_pk_: a 32-byte array (optional argument)
     - The message _m_: a byte array (optional argument)
     - The auxiliary input _extra_in_: a byte array with _0 ≤ len(extra_in) ≤ 2<sup>32</sup>-1_ (optional argument)
 - Let _rand'_ be a 32-byte array freshly drawn uniformly at random
@@ -222,30 +218,31 @@ Algorithm _NonceAgg(pubnonce<sub>1..u</sub>)_:
 The Session Context is a data structure consisting of the following elements:
 
 - The number _u_ of signers with _min_participants ≤ u ≤ max_participants_
-- The participant identifiers of signers _id<sub>1..u</sub>: _u_ integers with 1 _≤ id<sub>i</sub> ≤ max_participants_
+- The participant identifiers list _id<sub>1..u</sub>: _u_ integers with 1 _≤ id<sub>i</sub> ≤ max_participants_
+- The individual public shares _pub_share<sub>1..u</sub>_: _u_ 33-byte arrays
 - The aggregate public nonce of signers _aggnonce_: a 66-byte array
-- The group public key _group_pk_: _u_ 33-byte arrays
 - The number _v_ of tweaks with _0 ≤ v < 2^32_
 - The tweaks _tweak<sub>1..v</sub>_: _v_ 32-byte arrays
 - The tweak modes _is_xonly_t<sub>1..v</sub>_ : _v_ booleans
 - The message _m_: a byte array
 
-We write "Let _(u, id<sub>1..u</sub>, aggnonce, group_pk, v, tweak<sub>1..v</sub>, is_xonly_t<sub>1..v</sub>, m) = session_ctx_" to assign names to the elements of a Session Context.
+We write "Let _(u, id<sub>1..u</sub>, pub_share<sub>1..u</sub>, aggnonce, v, tweak<sub>1..v</sub>, is_xonly_t<sub>1..v</sub>, m) = session_ctx_" to assign names to the elements of a Session Context.
 
 Algorithm _GetSessionValues(session_ctx)_:
-- Let _(u, id<sub>1..u</sub>, aggnonce, group_pk, v, tweak<sub>1..v</sub>, is_xonly_t<sub>1..v</sub>, m) = session_ctx_
+- Let _(u, id<sub>1..u</sub>, pub_share<sub>1..u</sub>, aggnonce, v, tweak<sub>1..v</sub>, is_xonly_t<sub>1..v</sub>, m) = session_ctx_
+- _group_pk_ = _GroupPubkey(id<sub>1..u</sub>, pub_share<sub>1..u</sub>)_
 - Let _tweak_ctx<sub>0</sub> = TweakCtxInit(group_pk)_; fail if that fails
 - For _i = 1 .. v_:
     - Let _tweak_ctx<sub>i</sub> = ApplyTweak(tweak_ctx<sub>i-1</sub>, tweak<sub>i</sub>, is_xonly_t<sub>i</sub>)_; fail if that fails
 - Let _(Q, gacc, tacc) = tweak_ctx<sub>v</sub>_
-- Let _b = int(hash<sub>FROST/noncecoef<sub>(aggnonce || xbytes(Q) || m)) mod n_
-- Let _R1 = cpoint_ext(aggnonce[0:33]), R2 = cpoint_ext(aggnonce[33:66])_; fail if that fails and blame nonce aggregator for invalid _aggnonce_.
-- Let _R' = R1 + b⋅R2_
+- Let b = _int(hash<sub>FROST/noncecoef</sub>(aggnonce || xbytes(Q) || m)) mod n_
+- Let _R<sub>1</sub> = cpoint_ext(aggnonce[0:33]), R<sub>2</sub> = cpoint_ext(aggnonce[33:66])_; fail if that fails and blame nonce aggregator for invalid _aggnonce_.
+- Let _R' = R<sub>1</sub> + b⋅R<sub>2</sub>_
 - If _is_infinite(R'):_
     - _Let final nonce_ R = G _(see dealing with inf nonce agg link)_
 - _Else:_
     - _Let final nonce_ R = R'
-- Let _e = int(hash<sub>BIP0340/challenge<sub>((xbytes(R) || xbytes(Q) || m)) mod n_
+- Let _e = int(hash<sub>BIP0340/challenge</sub>((xbytes(R) || xbytes(Q) || m))) mod n_
 - _Return_ (Q, gacc, tacc, b, R, e)
 
 Algorithm _GetSessionLagrangeCoeff(session_ctx, my_id)_:
@@ -261,13 +258,93 @@ Internal Algorithm _LagrangeCoeff(id<sub>1..u</sub>, my_id):_
     - _lambda_ = (_lambda + num.deno<sup>-1</sup>) mod n_
 - Return _lambda_
 
+Algorithm _GetSessionGroupPubkey(session_ctx)_:
+- Let _(u, id<sub>1..u</sub>, pub_share<sub>1..u</sub>, _, _, _, _) = session_ctx_
+- Return _GroupPubkey(id<sub>1..u</sub>, pub_share<sub>1..u</sub>)_; fail if that fails
 
+Internal Algorithm _GroupPubkey(id<sub>1..u</sub>, pub_share<sub>1..u</sub>)_
+- _inf_point = bytes(33, 0)_
+- _X_ = _cpoint_ext(inf_point)_
+- For _i_ = _1..u_:
+    - _P_ = _cpoint(pub_share<sub>i</sub>)_; fail if that fails
+    - _lambda_ = _LagrangeCoeff(id<sub>1..u</sub>, id<sub>i</sub>)_
+    - _X_ = _X_ + _lambda⋅P_
+- Return _X_
+
+### Signing
+
+Algorithm _Sign(secnonce, sk, my_id, session_ctx)_:
+- Inputs:
+    - The secret nonce _secnonce_ that has never been used as input to _Sign_ before: a 64-byte array
+    - The secret signing key _sec_share_: a 32-byte array
+    - The identifier of the signing participant _my_id_: an integer with 1 _≤ my_id ≤ max_participants_
+    - The _session_ctx_: a Session Context (todo _link to defn_) data structure
+- Let _(Q, gacc, _, b, R, e) = GetSessionValues(session_ctx)_; fail if that fails
+- Let _k<sub>1</sub>' = int(secnonce[0:32]), k<sub>2</sub>' = int(secnonce[32:64])_
+- Fail if _k<sub>i</sub>' = 0_ or _k<sub>i</sub>' ≥ n_ for _i = 1..2_
+- Let _k<sub>1</sub> = k<sub>1</sub>', k<sub>2</sub> = k<sub>2</sub>'_ if _has_even_y(R)_, otherwise let _k<sub>1</sub> = n - k<sub>1</sub>', k<sub>2</sub> = n - k<sub>2</sub>'_
+- Let _d' = int(sec_share)_
+- Fail if _d' = 0_ or _d' ≥ n_
+- Let _P = d'⋅G_
+- Let _pub_share = cbytes(P)_
+- Let _a = GetSessionLagrangeCoeff(session_ctx, my_id)_; fail if that fails
+- Let _g = 1_ if _has_even_y(Q)_, otherwise let _g = -1 mod n_
+- Let _d = g⋅gacc⋅d' mod n_ (See _negating seckey when signing_)
+- Let _s = (k<sub>1</sub> + b⋅k<sub>2</sub> + e⋅a⋅d) mod n_
+- Let _psig = bytes(32, s)_
+- Let _pubnonce = cbytes(k<sub>1</sub>'⋅G) || cbytes(k<sub>2</sub>'⋅G)_
+- If _PartialSigVerifyInternal(psig, my_id, pubnonce, pub_share, session_ctx)_ (see below) returns failure, fail
+- Return partial signature _psig_
+
+### Partial Signature Verification
+
+Algorithm _PartialSigVerify(psig, id<sub>1..u</sub>, pubnonce<sub>1..u</sub>, pub_share<sub>1..u</sub>, tweak<sub>1..v</sub>, is_xonly_t<sub>1..v</sub>, m, i)_:
+- Inputs:
+    - The partial signature _psig_: a 32-byte array
+    - The number _u_ of identifiers, public nonces, and individual public shares with _min_participants ≤ u ≤ max_participants_
+    - The participant identifiers _id<sub>1..u</sub>_: _u_ integers with _1 ≤ id ≤ max_participants_
+    - The public nonces _pubnonce<sub>1..u</sub>_: _u_ 66-byte arrays
+    - The individual public shares _pub_share<sub>1..u</sub>_: _u_ 33-byte arrays
+    - The number _v_ of tweaks with _0 ≤ v < 2^32_
+    - The tweaks _tweak<sub>1..v</sub>_: _v_ 32-byte arrays
+    - The tweak modes _is_xonly_t<sub>1..v</sub>_ : _v_ booleans
+    - The message _m_: a byte array
+    - The index _i_ of the signer in the list of identifiers, public nonces, and individual public shares where _0 < i ≤ u_
+- Let _aggnonce = NonceAgg(pubnonce<sub>1..u</sub>)_; fail if that fails
+- Let _session_ctx = (u, id<sub>1..u</sub>, pub_share<sub>1..u</sub>, aggnonce, v, tweak<sub>1..v</sub>, is_xonly_t<sub>1..v</sub>, m)_
+- Run _PartialSigVerifyInternal(psig, id<sub>i</sub>, pubnonce<sub>i</sub>, pub_share<sub>i</sub>, session_ctx)_
+- Return success iff no failure occurred before reaching this point.
+
+Internal Algorithm _PartialSigVerifyInternal(psig, my_id, pubnonce, pub_share, session_ctx)_:
+- Let _(Q, gacc, _, b, R, e) = GetSessionValues(session_ctx)_; fail if that fails
+- Let _s = int(psig)_; fail if _s ≥ n_
+- Let _R<sub>⁎,1</sub> = cpoint(pubnonce[0:33]), R<sub>⁎,2</sub> = cpoint(pubnonce[33:66])_
+- Let _Re<sub>⁎</sub>' = R<sub>⁎,1</sub> + b⋅R<sub>⁎,2</sub>_
+- Let effective nonce _Re<sub>⁎</sub> = Re<sub>⁎</sub>'_ if _has_even_y(R)_, otherwise let _Re<sub>⁎</sub> = -Re<sub>⁎</sub>'_
+- Let _P = cpoint(pub_share)_; fail if that fails
+- Let _a = GetSessionLagrangeCoeff(session_ctx, my_id)_
+- Let _g = 1_ if _has_even_y(Q)_, otherwise let _g = -1 mod n_
+- Let _g' = g⋅gacc mod n_ (See _link to neg of seckey when signing_)
+- Fail if _s⋅G ≠ Re<sub>⁎</sub> + e⋅a⋅g'⋅P_
+- Return success iff no failure occurred before reaching this point.
+
+### Partial Signature Aggregation
+
+Algorithm _PartialSigAgg(psig<sub>1..u</sub>, session_ctx)_:
+
+- Inputs:
+    - The number _u_ of signatures with _min_participants ≤ u ≤ max_participants_
+    - The partial signatures _psig<sub>1..u</sub>_: _u_ 32-byte arrays
+    - The _session_ctx_: a Session Context (todo _link to defn_) data structure
+- Let _(Q, _, tacc, _, _, R, e) = GetSessionValues(session_ctx)_; fail if that fails
+- For _i = 1 .. u_:
+    - Let _si = int(psig<sub>i</sub>)_; fail if _s<sub>i</sub> ≥ n_ and blame signer _i_ for invalid partial signature.
+- Let _g = 1_ if _has_even_y(Q)_, otherwise let _g = -1 mod n_
+- Let _s = s<sub>1</sub> + ... + s<sub>u</sub> + e⋅g⋅tacc mod n_
+- Return _sig =_ xbytes(R) || bytes(32, s)
 
 ---------
 
-- [ ] Signing
-- [ ] Partial Signature Verification
-- [ ] Partial Signature Aggregation
 - [ ] Test Vectors & Reference Code
 
 ## Remarks on Security and Correctness
