@@ -20,13 +20,7 @@ In FROST, the order of the public shares does not affect the group public key cr
 
 ### Tweak Context
 
-To ensure compatibility with various key generation methods, we have avoided the KeyAgg context mentioned in MuSig2 BIP. Instead, we define the Tweak Context, which must be initialized with the group public key when users wish to tweak it. This design decision may have a minor impact on implementation, particularly in the following scenario:
-
-Should the user be required to create the tweak context even when they do not intend to tweak the group public key?
-
-If the answer is yes, then the `nonce_gen`, `nonce_process`, `partial_sign`, and `partial_verify` APIs can simply take the context object. MuSig2 inherently follows this approach because it only has one key generation mechanism (see [secp256k1_musig.h](https://github.com/BlockstreamResearch/secp256k1-zkp/blob/master/include/secp256k1_musig.h)). This approach is simple but makes the API slightly inconvenient for non-tweak users.
-
-However, if the answer is no, then the APIs mentioned above will require two optional arguments: the tweak context and the group public key. This makes the APIs more flexible but may complicate the implementation.
+To ensure compatibility with various key generation methods, we have avoided the KeyAgg context mentioned in MuSig2 BIP. Instead, we define the Tweak Context, which must be initialized with the group public key when users wish to tweak it.
 
 ### No Mandatory PK in Nonce Generation
 
