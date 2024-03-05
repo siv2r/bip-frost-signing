@@ -70,9 +70,9 @@ For each participants _i_ in the range [_1..max_participants_], their public sha
 
 #### Group public key condition
 
-Consider a set of participants, denoted by _T_, chosen from a total pool of participants whose size is _max_participants_. For this set _T_, we can define a special parameter called the "group secret key". It is calculated by summing the secret share and Lagrange coefficient for each participant in T:
+Consider a set of participants, denoted by _T_, chosen from a total pool of participants whose size is _max_participants_. For this set _T_, we can define a special parameter called the "group secret key". It is calculated by summing the secret share and interpolating value for each participant in T:
 
-_group_seckey_ = sum (_lagrange_coeff<sub>j, T</sub>_._secshare_<sub>j</sub>) mod _n_, for every _j_ in _T_
+_group_seckey_ = sum (_derive_interpolating_value<sub>j, T</sub>_._secshare_<sub>j</sub>) mod _n_, for every _j_ in _T_
 
 For all possible values of T, the group public key must equal to their group secret key scalar multiplied by the generator point represented as _group_pubkey<sub>i</sub>_ = _group_seckey<sub>j, T</sub>_⋅_G_.
 
@@ -116,6 +116,13 @@ The following conventions are used, with constants as defined for [secp256k1](h
     - The function _cpoint(x)_, where _x_ is a 33-byte array (compressed serialization), sets _P = lift_x(int(x[1:33]))_ and fails if that fails. If _x[0] = 2_ it returns _P_ and if _x[0] = 3_ it returns _-P_. Otherwise, it fails.
     - The function _cpoint_ext(x)_, where _x_ is a 33-byte array (compressed serialization), returns the point at infinity if _x = bytes(33, 0)_. Otherwise, it returns _cpoint(x)_ and fails if that fails.
     - The function _hash<sub>tag</sub>(x)_ where _tag_ is a UTF-8 encoded tag name and _x_ is a byte array returns the 32-byte hash _SHA256(SHA256(tag) || SHA256(tag) || x)_.
+    - The function _count(lst, x)_, where _lst_ is a list of integers containing _x_, returns the number of times _x_ appears in _lst_.
+    - The function _has_unique_elements(lst)_, where _lst_ is a list of integers, returns True if _count(lst, x)_ returns 1 for all _x_ in _lst_. Otherwise returns False.
+    The function _has_unique_elements(lst)_ is equivalent to the following pseudocode:
+        - For _x_ in _lst_:
+          - if _count(lst, x)_ > 1:
+            - Return False
+        - Return True
 - Other:
     - Tuples are written by listing the elements within parentheses and separated by commas. For example, _(2, 3, 1)_ is a tuple.
 
@@ -218,8 +225,8 @@ Algorithm _NonceAgg(pubnonce<sub>1..u</sub>)_:
 
 The Session Context is a data structure consisting of the following elements:
 
-- The number _u_ of signers with _min_participants ≤ u ≤ max_participants_
-- The participant identifiers list _id<sub>1..u</sub>: _u_ integers with 1 _≤ id<sub>i</sub> ≤ max_participants_
+- The number _u_ of participants available in the signing session with _min_participants ≤ u ≤ max_participants_
+- The participant identifiers of the signers _id<sub>1..u</sub>: _u_ integers with 1 _≤ id<sub>i</sub> ≤ max_participants_
 - The individual public shares _pubshare<sub>1..u</sub>_: _u_ 33-byte arrays
 - The aggregate public nonce of signers _aggnonce_: a 66-byte array
 - The number _v_ of tweaks with _0 ≤ v < 2^32_
@@ -236,7 +243,8 @@ Algorithm _GetSessionValues(session_ctx)_:
 - For _i = 1 .. v_:
     - Let _tweak_ctx<sub>i</sub> = ApplyTweak(tweak_ctx<sub>i-1</sub>, tweak<sub>i</sub>, is_xonly_t<sub>i</sub>)_; fail if that fails
 - Let _(Q, gacc, tacc) = tweak_ctx<sub>v</sub>_
-- Let b = _int(hash<sub>FROST/noncecoef</sub>(aggnonce || xbytes(Q) || m)) mod n_
+- Let _serialized_ids_ = _ids_to_bytes(id<sub>1..u</sub>)_
+- Let b = _int(hash<sub>FROST/noncecoef</sub>(serialized_ids || aggnonce || xbytes(Q) || m)) mod n_
 - Let _R<sub>1</sub> = cpoint_ext(aggnonce[0:33]), R<sub>2</sub> = cpoint_ext(aggnonce[33:66])_; fail if that fails and blame nonce aggregator for invalid _aggnonce_.
 - Let _R' = R<sub>1</sub> + b⋅R<sub>2</sub>_
 - If _is_infinite(R'):_
@@ -246,17 +254,26 @@ Algorithm _GetSessionValues(session_ctx)_:
 - Let _e = int(hash<sub>BIP0340/challenge</sub>((xbytes(R) || xbytes(Q) || m))) mod n_
 - _Return_ (Q, gacc, tacc, b, R, e)
 
-Algorithm _GetSessionLagrangeCoeff(session_ctx, my_id)_:
-- Let _(u, id<sub>1..u</sub>, _, _, _, _, _) = session_ctx_
-- Fail if _my_id_ not in _id<sub>1..u</sub>_
-- Return _LagrangeCoeff(id<sub>1..u</sub>, my_id)_
-
-Internal Algorithm _LagrangeCoeff(id<sub>1..u</sub>, my_id):_
-- Let _lambda = 0_
+Internal Algorithm _ids_to_bytes(id<sub>1..u</sub>)_:
+- Let _res_ = _empty_bytestring_
 - For _i = 1..u_:
-    - Let _num_ = _id<sub>i</sub>_
-    - Let _den_ = _id<sub>i</sub> - my_id_
-    - _lambda_ = (_lambda + num.deno<sup>-1</sup>) mod n_
+    -  _res_ = _res || bytes(32, id<sub></sub>)_
+- Return _res_
+
+Algorithm _GetSessionInterpolatingValue(session_ctx, my_id)_:
+- Let _(u, id<sub>1..u</sub>, _, _, _, _, _) = session_ctx_
+- Return _DeriveInterpolatingValue(id<sub>1..u</sub>, my_id)_; fail if that fails
+
+Internal Algorithm _DeriveInterpolatingValue(id<sub>1..u</sub>, my_id):_
+- Fail if _my_id_ not in _id<sub>1..u</sub>_
+- Fail if not _has_unique_elements(id<sub>1..u</sub>)_
+- Let _num = 1_
+- Let _denom = 1_
+- For _i = 1..u_:
+    - If _id<sub>i</sub>_ ≠ _my_id_:
+	    - Let _num_ = _num⋅id<sub>i</sub>_
+	    - Let _denom_ = _denom⋅(id<sub>i</sub> - my_id)_
+- _lambda_ = _num⋅denom<sup>-1</sup> mod n_
 - Return _lambda_
 
 Algorithm _GetSessionGroupPubkey(session_ctx)_:
@@ -268,7 +285,7 @@ Internal Algorithm _GroupPubkey(id<sub>1..u</sub>, pubshare<sub>1..u</sub>)_
 - _X_ = _cpoint_ext(inf_point)_
 - For _i_ = _1..u_:
     - _P_ = _cpoint(pubshare<sub>i</sub>)_; fail if that fails
-    - _lambda_ = _LagrangeCoeff(id<sub>1..u</sub>, id<sub>i</sub>)_
+    - _lambda_ = _DeriveInterpolatingValue(id<sub>1..u</sub>, id<sub>i</sub>)_
     - _X_ = _X_ + _lambda⋅P_
 - Return _X_
 
@@ -288,7 +305,7 @@ Algorithm _Sign(secnonce, secshare, my_id, session_ctx)_:
 - Fail if _d' = 0_ or _d' ≥ n_
 - Let _P = d'⋅G_
 - Let _pubshare = cbytes(P)_
-- Let _a = GetSessionLagrangeCoeff(session_ctx, my_id)_; fail if that fails
+- Let _a = GetSessionInterpolatingValue(session_ctx, my_id)_; fail if that fails
 - Let _g = 1_ if _has_even_y(Q)_, otherwise let _g = -1 mod n_
 - Let _d = g⋅gacc⋅d' mod n_ (See _negating seckey when signing_)
 - Let _s = (k<sub>1</sub> + b⋅k<sub>2</sub> + e⋅a⋅d) mod n_
@@ -323,7 +340,7 @@ Internal Algorithm _PartialSigVerifyInternal(psig, my_id, pubnonce, pubshare, se
 - Let _Re<sub>⁎</sub>' = R<sub>⁎,1</sub> + b⋅R<sub>⁎,2</sub>_
 - Let effective nonce _Re<sub>⁎</sub> = Re<sub>⁎</sub>'_ if _has_even_y(R)_, otherwise let _Re<sub>⁎</sub> = -Re<sub>⁎</sub>'_
 - Let _P = cpoint(pubshare)_; fail if that fails
-- Let _a = GetSessionLagrangeCoeff(session_ctx, my_id)_
+- Let _a = GetSessionInterpolatingValue(session_ctx, my_id)_
 - Let _g = 1_ if _has_even_y(Q)_, otherwise let _g = -1 mod n_
 - Let _g' = g⋅gacc mod n_ (See _link to neg of seckey when signing_)
 - Fail if _s⋅G ≠ Re<sub>⁎</sub> + e⋅a⋅g'⋅P_

@@ -54,6 +54,8 @@ I chose Option 1 because it fits nicely with the _PartialSigVerify_ algorithm wh
   - power power n-2
     - easy to follow
     - but makes it unclear that we are computing inverse
+- for computing nonce coefficient (_b_) each participant identifier is encoded as 32-bytes array
+  - The `id` value is a scalar. So, it should be 32-byte right?
 
 ## Todo List
 - [ ] reference implementation & test vectors
