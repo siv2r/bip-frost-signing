@@ -2,6 +2,10 @@
 
 This document provides additional reasoning behind the major design decisions in the BIP and lists alternative designs for consideration.
 
+## Signing Flow
+
+![General Signing Flow](images/frost-signing-flow.png)
+
 ## Current Design
 
 ### Key Generation
@@ -53,4 +57,4 @@ I chose Option 1 because it fits nicely with the _PartialSigVerify_ algorithm wh
 
 ## Todo List
 - [ ] reference implementation & test vectors
-- [ ] flowchart for general signing flow
+- [x] flowchart for general signing flow
