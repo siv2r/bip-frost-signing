@@ -54,7 +54,10 @@ I chose Option 1 because it fits nicely with the _PartialSigVerify_ algorithm wh
     - but makes it unclear that we are computing inverse
 - for computing nonce coefficient (_b_) each participant identifier is encoded as 32-bytes array
   - The `id` value is a scalar. So, it should be 32-byte right?
+- hash tag for b, "noncecoef" vs "noncecoeff"
 
 ## Todo List
 - [ ] reference implementation & test vectors
 - [x] flowchart for general signing flow
+- [ ] improve FROST key representation
+- [ ] add footnotes

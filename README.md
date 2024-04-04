@@ -36,7 +36,7 @@ This document does not provide information on the key generation method necessar
 
 It is important to note that any FROST keys generated using the aforementioned methods must meet the correctness conditions (refer to <link subsection>) to be compatible with the signing protocol. However, it is essential to understand that the correctness conditions do not guarantee the security of these key generation methods. The conditions only ensure that the keys generated are functionally compatible with the signing protocol.
 
-TODO will duplicating the neccessary notations here improve readability? rather than mentioning its link
+TODO will duplicating the necessary notations here improve readability? rather than mentioning its link
 
 ### Key Specification
 
