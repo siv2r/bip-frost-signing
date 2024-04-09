@@ -3,8 +3,13 @@
 # todo: use the `Scalar` type like BIP-DKG
 
 from typing import Tuple, List
-from bip340_utils import Point, n
 import unittest
+import random
+from bip340_utils import (
+    Point, n as curve_order, bytes_from_int,
+    point_mul, G, has_even_y
+)
+from reference import point_negate, cbytes, PlainPk, individual_pk
 
 # point on the secret polynomial
 SecShare = Tuple[int, int]
@@ -18,7 +23,7 @@ def polynomial_evaluate(coeffs: int, x: int) -> int:
     res = 0
     for coeff in coeffs:
         res = res * x + coeff
-    return res % n
+    return res % curve_order
 
 #TODO: move this fn to reference.py since it is part of the spec
 def derive_interpolating_value(L: List[int], x_i: int):
@@ -30,7 +35,7 @@ def derive_interpolating_value(L: List[int], x_i: int):
             continue
         num *= x_j
         denom *= (x_j - x_i)
-    return num * pow(denom, n - 2, n) % n
+    return num * pow(denom, curve_order - 2, curve_order) % curve_order
 
 def secret_share_combine(shares: List[SecShare]) -> int:
     x_coords = []
@@ -41,14 +46,38 @@ def secret_share_combine(shares: List[SecShare]) -> int:
     for (x, y) in shares:
         delta = y * derive_interpolating_value(x_coords, x)
         secret += delta
-    return secret % n
+    return secret % curve_order
 
-def secret_share_shard(s: int, coefficients: List[int], MAX_PARTICIPANTS: int):
-    pass
+# coeffs shouldn't include the const term (i.e. secret)
+def secret_share_shard(secret: int, coeffs: List[int], max_participants: int) -> List[SecShare]:
+    coeffs = coeffs + [secret]
 
-# output: group_pubkey (PlainPK), N-secret_shares, N-pubshares (Point)
-def trusted_dealer_keygen(secret_key: int, MAX_PARTICIPANTS: int, MIN_PARTICIPANTS: int):
-    pass
+    secshares: List[SecShare] = []
+    for x_i in range(1, max_participants + 1):
+        y_i = polynomial_evaluate(coeffs, x_i)
+        secshare_i = (x_i, y_i)
+        secshares.append(secshare_i)
+    return secshares
+
+def trusted_dealer_keygen(secret_key: int, max_participants: int, min_participants: int) -> Tuple[PlainPk, List[SecShare], List[PlainPk]]:
+    assert 1 <= secret_key <= curve_order - 1
+    # BIP340 compatible group public key
+    P = point_mul(G, secret_key)
+    if not has_even_y(P):
+        secret_key = curve_order - secret_key
+        P = point_negate(P)
+
+    coeffs = []
+    for i in range(min_participants - 1):
+        coeffs.append(random.randint(1, curve_order - 1))
+    secshares = secret_share_shard(secret_key, coeffs, max_participants)
+    pubshares = [point_mul(G, secshare[1]) for secshare in secshares]
+    # serialize outputs
+    group_pubkey = cbytes(P)
+    participant_secshares = [bytes_from_int(share[1]) for share in secshares]
+    participant_pubshares = [cbytes(share) for share in pubshares]
+    return (group_pubkey, participant_secshares, participant_pubshares)
+
 
 # Test vector from RFC draft.
 # section F.5 of https://datatracker.ietf.org/doc/draft-irtf-cfrg-frost/15/
@@ -81,6 +110,22 @@ class Tests(unittest.TestCase):
         self.assertEqual(secret_share_combine([shares[1], shares[2]]), expected_secret)
         self.assertEqual(secret_share_combine([shares[0], shares[2]]), expected_secret)
         self.assertEqual(secret_share_combine(shares), expected_secret)
+
+    def test_trusted_dealer_keygen(self):
+        secret_key = random.randint(1, curve_order - 1)
+        max_participants = 5
+        min_participants = 3
+        group_pk, secshares, pubshares = trusted_dealer_keygen(secret_key, max_participants, min_participants)
+
+        self.assertEqual(group_pk, cbytes(point_mul(G, secret_key)))
+        self.assertEqual(secret_share_combine(secshares), secret_key)
+        self.assertEqual(len(secshares), max_participants)
+        self.assertEqual(len(pubshares), max_participants)
+        for i in range(len(pubshares)):
+            with self.subTest(i=i):
+                self.assertEqual(pubshares[i], individual_pk(secshares[i][1]))
+
+
 
 if __name__=='__main__':
     unittest.main()
