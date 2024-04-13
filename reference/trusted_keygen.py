@@ -19,7 +19,7 @@ PubShare = Point
 # evaluates poly using Horner's method, assuming coeff[0] corresponds
 # to the coefficient of highest degree term
 # todo: where is this used?
-def polynomial_evaluate(coeffs: int, x: int) -> int:
+def polynomial_evaluate(coeffs: List[int], x: int) -> int:
     res = 0
     for coeff in coeffs:
         res = res * x + coeff
@@ -59,24 +59,22 @@ def secret_share_shard(secret: int, coeffs: List[int], max_participants: int) ->
         secshares.append(secshare_i)
     return secshares
 
-def trusted_dealer_keygen(secret_key: int, max_participants: int, min_participants: int) -> Tuple[PlainPk, List[SecShare], List[PlainPk]]:
-    assert 1 <= secret_key <= curve_order - 1
-    # BIP340 compatible group public key
+def trusted_dealer_keygen(secret_key: int, max_participants: int, min_participants: int) -> Tuple[Point, List[SecShare], List[Point]]:
+    assert (1 <= secret_key <= curve_order - 1)
+    # we don't force BIP340 compatibility of group pubkey in keygen
     P = point_mul(G, secret_key)
-    if not has_even_y(P):
-        secret_key = curve_order - secret_key
-        P = point_negate(P)
+    assert P is not None
 
     coeffs = []
     for i in range(min_participants - 1):
         coeffs.append(random.randint(1, curve_order - 1))
     secshares = secret_share_shard(secret_key, coeffs, max_participants)
-    pubshares = [point_mul(G, secshare[1]) for secshare in secshares]
-    # serialize outputs
-    group_pubkey = cbytes(P)
-    participant_secshares = [bytes_from_int(share[1]) for share in secshares]
-    participant_pubshares = [cbytes(share) for share in pubshares]
-    return (group_pubkey, participant_secshares, participant_pubshares)
+    pubshares = []
+    for secshare in secshares:
+        X = point_mul(G, secshare[1])
+        assert X is not None
+        pubshares.append(X)
+    return (P, secshares, pubshares)
 
 
 # Test vector from RFC draft.
@@ -117,15 +115,14 @@ class Tests(unittest.TestCase):
         min_participants = 3
         group_pk, secshares, pubshares = trusted_dealer_keygen(secret_key, max_participants, min_participants)
 
-        self.assertEqual(group_pk, cbytes(point_mul(G, secret_key)))
+        # group_pk need not be xonly (i.e., have even y always)
+        self.assertEqual(group_pk, point_mul(G, secret_key))
         self.assertEqual(secret_share_combine(secshares), secret_key)
         self.assertEqual(len(secshares), max_participants)
         self.assertEqual(len(pubshares), max_participants)
         for i in range(len(pubshares)):
             with self.subTest(i=i):
-                self.assertEqual(pubshares[i], individual_pk(secshares[i][1]))
-
-
+                self.assertEqual(pubshares[i], point_mul(G, secshares[i][1]))
 
 if __name__=='__main__':
     unittest.main()
