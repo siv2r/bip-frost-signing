@@ -9,12 +9,12 @@ from bip340_utils import (
     Point, n as curve_order, bytes_from_int,
     point_mul, G, has_even_y
 )
-from reference import point_negate, cbytes, PlainPk, individual_pk
+from reference import point_negate, cbytes, PlainPk, SecShare, PubShare
 
-# point on the secret polynomial
-SecShare = Tuple[int, int]
-# point on the secp256k1 curve
-PubShare = Point
+# point on the secret polynomial, represents a signer's secret share
+PolyPoint = Tuple[int, int]
+# point on the secp256k1 curve, represents a signer's public share
+ECPoint = Point
 
 # evaluates poly using Horner's method, assuming coeff[0] corresponds
 # to the coefficient of highest degree term
@@ -37,7 +37,7 @@ def derive_interpolating_value(L: List[int], x_i: int):
         denom *= (x_j - x_i)
     return num * pow(denom, curve_order - 2, curve_order) % curve_order
 
-def secret_share_combine(shares: List[SecShare]) -> int:
+def secret_share_combine(shares: List[PolyPoint]) -> int:
     x_coords = []
     for (x, y) in shares:
         x_coords.append(x)
@@ -49,18 +49,19 @@ def secret_share_combine(shares: List[SecShare]) -> int:
     return secret % curve_order
 
 # coeffs shouldn't include the const term (i.e. secret)
-def secret_share_shard(secret: int, coeffs: List[int], max_participants: int) -> List[SecShare]:
+def secret_share_shard(secret: int, coeffs: List[int], max_participants: int) -> List[PolyPoint]:
     coeffs = coeffs + [secret]
 
-    secshares: List[SecShare] = []
+    secshares: List[PolyPoint] = []
     for x_i in range(1, max_participants + 1):
         y_i = polynomial_evaluate(coeffs, x_i)
         secshare_i = (x_i, y_i)
         secshares.append(secshare_i)
     return secshares
 
-def trusted_dealer_keygen(secret_key: int, max_participants: int, min_participants: int) -> Tuple[Point, List[SecShare], List[Point]]:
+def trusted_dealer_keygen(secret_key: int, max_participants: int, min_participants: int) -> Tuple[ECPoint, List[PolyPoint], List[ECPoint]]:
     assert (1 <= secret_key <= curve_order - 1)
+    assert (2 <= min_participants <= max_participants)
     # we don't force BIP340 compatibility of group pubkey in keygen
     P = point_mul(G, secret_key)
     assert P is not None
@@ -76,6 +77,17 @@ def trusted_dealer_keygen(secret_key: int, max_participants: int, min_participan
         pubshares.append(X)
     return (P, secshares, pubshares)
 
+def generate_frost_keys(max_participants: int, min_participants: int) -> Tuple[PlainPk, List[SecShare], List[PubShare]]:
+    if not (2 <= min_participants <= max_participants):
+        raise ValueError('values must satisfy: 2 <= min_participants <= max_participants')
+
+    secret = random.randint(1, curve_order - 1)
+    P, secshares, pubshares = trusted_dealer_keygen(secret, max_participants, min_participants)
+
+    group_pk = PlainPk(cbytes(P))
+    ser_secshares = [SecShare(bytes_from_int(secshare_i[1])) for secshare_i in secshares]
+    ser_pubshares = [PubShare(cbytes(pubshare_i)) for pubshare_i in pubshares]
+    return (group_pk, ser_secshares, ser_pubshares)
 
 # Test vector from RFC draft.
 # section F.5 of https://datatracker.ietf.org/doc/draft-irtf-cfrg-frost/15/
@@ -87,7 +99,7 @@ class Tests(unittest.TestCase):
             0xfbf85eadae3058ea14f19148bb72b45e4399c0b16028acaf0395c9b03c823579,
             0x0d004150d27c3bf2a42f312683d35fac7394b1e9e318249c1bfe7f0795a83114,
         ]
-        self.shares: List[SecShare] = [
+        self.shares: List[PolyPoint] = [
             (1, 0x08f89ffe80ac94dcb920c26f3f46140bfc7f95b493f8310f5fc1ea2b01f4254c),
             (2, 0x04f0feac2edcedc6ce1253b7fab8c86b856a797f44d83d82a385554e6e401984),
             (3, 0x00e95d59dd0d46b0e303e500b62b7ccb0e555d49f5b849f5e748c071da8c0dbc),
@@ -101,7 +113,7 @@ class Tests(unittest.TestCase):
         self.assertEqual(polynomial_evaluate(coeffs, 0), expected_secret)
 
     def test_secret_share_combine(self):
-        shares: List[SecShare] = self.shares.copy()
+        shares: List[PolyPoint] = self.shares.copy()
         expected_secret = self.secret
 
         self.assertEqual(secret_share_combine([shares[0], shares[1]]), expected_secret)
