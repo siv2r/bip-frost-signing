@@ -22,6 +22,12 @@ MuSig2's [KeyAgg](https://github.com/bitcoin/bips/blob/master/bip-0327.mediawiki
 
 In FROST, the order of the public shares does not affect the group public key created by aggregating the signer's public share, so no sorting mechanism is needed.
 
+### Group Pubkey Type
+
+If a key generation method produces a group public key incompatible with BIP340 (i.e., a plain pubkey), it doesn't automatically render the method incompatible with our signing protocol. Hence, in the [participant parameters section](README.md#participant-parameters), we define the group public key type as `PlainPk` (33 bytes) instead of `XonlyPk` (32 bytes). For example, BIP-FROST-DKG outputs a `PlainPk` not `XonlyPk`.
+
+It is crucial to note that the signatures generated through our [signing protocol](README.md#signing) are only verifiable with a BIP340 compatible pubkey. Therefore, if you are using a key generation method that outputs a `PlainPk` type group pubkey, you need to convert it to `XonlyPk` using the [`secp256k1_xonly_pubkey_from_pubkey`](https://github.com/bitcoin-core/secp256k1/blob/master/include/secp256k1_extrakeys.h#L93) API.
+
 ### Tweak Context
 
 To ensure compatibility with various key generation methods, we have avoided the KeyAgg context mentioned in MuSig2 BIP. Instead, we define the Tweak Context, which must be initialized with the group public key when users wish to tweak it.
