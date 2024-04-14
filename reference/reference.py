@@ -122,6 +122,79 @@ def apply_tweak(tweak_ctx: TweakContext, tweak: bytes, is_xonly: bool) -> TweakC
     tacc_ = (t + g * tacc) % n
     return TweakContext(Q_, gacc_, tacc_)
 
+def bytes_xor(a: bytes, b: bytes) -> bytes:
+    return bytes(x ^ y for x, y in zip(a, b))
+
+def nonce_hash(rand: bytes, pubshare: PlainPk, group_pk: XonlyPk, i: int, msg_prefixed: bytes, extra_in: bytes) -> int:
+    buf = b''
+    buf += rand
+    buf += len(pubshare).to_bytes(1, 'big')
+    buf += pubshare
+    buf += len(group_pk).to_bytes(1, 'big')
+    buf += group_pk
+    buf += msg_prefixed
+    buf += len(extra_in).to_bytes(4, 'big')
+    buf += extra_in
+    buf += i.to_bytes(1, 'big')
+    return int_from_bytes(tagged_hash('FROST/nonce', buf))
+
+def nonce_gen_internal(rand_: bytes, sk: Optional[bytes], pubshare: Optional[PlainPk], group_pk: Optional[XonlyPk], msg: Optional[bytes], extra_in: Optional[bytes]) -> Tuple[bytearray, bytes]:
+    if sk is not None:
+        rand = bytes_xor(sk, tagged_hash('FROST/aux', rand_))
+    else:
+        rand = rand_
+    if pubshare is None:
+        pubshare = PlainPk(b'')
+    if group_pk is None:
+        group_pk = XonlyPk(b'')
+    if msg is None:
+        msg_prefixed = b'\x00'
+    else:
+        msg_prefixed = b'\x01'
+        msg_prefixed += len(msg).to_bytes(8, 'big')
+        msg_prefixed += msg
+    if extra_in is None:
+        extra_in = b''
+    k_1 = nonce_hash(rand, pubshare, group_pk, 0, msg_prefixed, extra_in) % n
+    k_2 = nonce_hash(rand, pubshare, group_pk, 1, msg_prefixed, extra_in) % n
+    # k_1 == 0 or k_2 == 0 cannot occur except with negligible probability.
+    assert k_1 != 0
+    assert k_2 != 0
+    R_s1 = point_mul(G, k_1)
+    R_s2 = point_mul(G, k_2)
+    assert R_s1 is not None
+    assert R_s2 is not None
+    pubnonce = cbytes(R_s1) + cbytes(R_s2)
+    # think: do we need this to be 'bytearray'? Unlike MuSig2, we don't include pk in secnonce.
+    secnonce = bytearray(bytes_from_int(k_1) + bytes_from_int(k_2))
+    return secnonce, pubnonce
+
+#think: can msg & extra_in be of any length here?
+#think: why doesn't musig2 ref code check for `pk` length here?
+def nonce_gen(sk: Optional[bytes], pubshare: Optional[PlainPk], group_pk: Optional[XonlyPk], msg: Optional[bytes], extra_in: Optional[bytes]) -> Tuple[bytearray, bytes]:
+    if sk is not None and len(sk) != 32:
+        raise ValueError('The optional byte array sk must have length 32.')
+    if pubshare is not None and len(pubshare) != 33:
+        raise ValueError('The optional byte array pubshare must have length 33.')
+    if group_pk is not None and len(group_pk) != 32:
+        raise ValueError('The optional byte array group_pk must have length 32.')
+    rand_ = secrets.token_bytes(32)
+    return nonce_gen_internal(rand_, sk, pubshare, group_pk, msg, extra_in)
+
+def nonce_agg(pubnonces: List[bytes]) -> bytes:
+    u = len(pubnonces)
+    aggnonce = b''
+    for j in (1, 2):
+        R_j = infinity
+        for i in range(u):
+            try:
+                R_ij = cpoint(pubnonces[i][(j-1)*33:j*33])
+            except ValueError:
+                raise InvalidContributionError(i, "pubnonce")
+            R_j = point_add(R_j, R_ij)
+        aggnonce += cbytes_ext(R_j)
+    return aggnonce
+
 #
 # The following code is only used for testing.
 #
