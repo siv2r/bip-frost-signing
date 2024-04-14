@@ -65,6 +65,7 @@ I chose Option 1 because it fits nicely with the _PartialSigVerify_ algorithm wh
 ## Todo List
 - [ ] reference implementation & test vectors
   - [ ] should the participant identifier be inside secshare or pubshare?
+  - [ ] define `NewType` for secshare and pubshare? or simply use `bytes` & `PlainPk`?
 - [x] flowchart for general signing flow
 - [ ] improve FROST key representation
 - [ ] add footnotes

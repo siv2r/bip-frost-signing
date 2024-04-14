@@ -90,8 +90,5 @@ def individual_pk(seckey: bytes) -> PlainPk:
 # End of the code copied from MuSig2 (BIP 327) reference implementation.
 #
 
-SecShare = NewType('SecShare', bytes)
-PubShare = PlainPk
-
 if __name__ == '__main__':
     pass

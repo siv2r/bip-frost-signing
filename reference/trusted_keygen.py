@@ -14,7 +14,7 @@ from bip340_utils import (
     Point, n as curve_order, bytes_from_int,
     point_mul, G, has_even_y
 )
-from reference import point_negate, cbytes, PlainPk, SecShare, PubShare
+from reference import point_negate, cbytes, PlainPk
 
 # point on the secret polynomial, represents a signer's secret share
 PolyPoint = Tuple[int, int]
@@ -81,7 +81,7 @@ def trusted_dealer_keygen(secret_key: int, max_participants: int, min_participan
         pubshares.append(X)
     return (P, secshares, pubshares)
 
-def generate_frost_keys(max_participants: int, min_participants: int) -> Tuple[PlainPk, List[SecShare], List[PubShare]]:
+def generate_frost_keys(max_participants: int, min_participants: int) -> Tuple[PlainPk, List[bytes], List[PlainPk]]:
     if not (2 <= min_participants <= max_participants):
         raise ValueError('values must satisfy: 2 <= min_participants <= max_participants')
 
@@ -89,8 +89,8 @@ def generate_frost_keys(max_participants: int, min_participants: int) -> Tuple[P
     P, secshares, pubshares = trusted_dealer_keygen(secret, max_participants, min_participants)
 
     group_pk = PlainPk(cbytes(P))
-    ser_secshares = [SecShare(bytes_from_int(secshare_i[1])) for secshare_i in secshares]
-    ser_pubshares = [PubShare(cbytes(pubshare_i)) for pubshare_i in pubshares]
+    ser_secshares = [bytes_from_int(secshare_i[1]) for secshare_i in secshares]
+    ser_pubshares = [PlainPk(cbytes(pubshare_i)) for pubshare_i in pubshares]
     return (group_pk, ser_secshares, ser_pubshares)
 
 # Test vector from RFC draft.
