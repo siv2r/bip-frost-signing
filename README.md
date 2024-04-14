@@ -184,7 +184,7 @@ Algorithm _NonceGen(secshare, pubshare, group_pk, m, extra_in)_:
 - Inputs:
     - The participant’s secret signing key _secshare_: a 32-byte array (optional argument)
     - The corresponding public key _pubshare_: a 33-byte array (optional argument)
-    - The x-only group public key group_pk_: a 32-byte array (optional argument)
+    - The x-only group public key _group_pk_: a 32-byte array (optional argument)
     - The message _m_: a byte array (optional argument)
     - The auxiliary input _extra_in_: a byte array with _0 ≤ len(extra_in) ≤ 2<sup>32</sup>-1_ (optional argument)
 - Let _rand'_ be a 32-byte array freshly drawn uniformly at random
@@ -204,9 +204,9 @@ Algorithm _NonceGen(secshare, pubshare, group_pk, m, extra_in)_:
     - Let _extra_in = empty_bytestring_
 - Let _k<sub>i</sub> = int(hash<sub>FROST/nonce</sub>(rand || bytes(1, len(pubshare)) || pubshare || bytes(1, len(group_pk)) || group_pk || m_prefixed || bytes(4, len(extra_in)) || extra_in || bytes(1, i - 1))) mod n_ for _i = 1,2_
 - Fail if _k<sub>1</sub> = 0_ or _k<sub>2</sub> = 0_
-- Let _R<sub>⁎,1</sub> = k1⋅G, R<sub>⁎,2</sub> = k2⋅G_
+- Let _R<sub>⁎,1</sub> = k<sub>1</sub>⋅G, R<sub>⁎,2</sub> = k<sub>2</sub>⋅G_
 - Let _pubnonce = cbytes(R<sub>,1</sub>) || cbytes(R<sub>⁎,2</sub>)_
-- Let _secnonce = bytes(32, k<sub>1</sub>) || bytes(32, k<sub>2</sub>) || pk_
+- Let _secnonce = bytes(32, k<sub>1</sub>) || bytes(32, k<sub>2</sub>)_
 - Return _(secnonce, pubnonce)_
 
 ### Nonce Aggregation
