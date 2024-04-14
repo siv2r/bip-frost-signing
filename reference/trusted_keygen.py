@@ -1,6 +1,11 @@
-# todo: mention this is utility and unrelated to the spec
-# todo: link the frost draft
-# todo: use the `Scalar` type like BIP-DKG
+# Implementation of the Trusted Dealer Key Generation approach for FROST mentioned
+# in https://datatracker.ietf.org/doc/draft-irtf-cfrg-frost/15/ (Appendix D).
+#
+# It's worth noting that this isn't the only compatible method (with BIP FROST Signing),
+# there are alternative key generation methods available, such as BIP-FROST-DKG:
+# https://github.com/BlockstreamResearch/bip-frost-dkg
+
+# todo: use the `Scalar` type like BIP-DKG?
 
 from typing import Tuple, List
 import unittest
@@ -18,7 +23,6 @@ ECPoint = Point
 
 # evaluates poly using Horner's method, assuming coeff[0] corresponds
 # to the coefficient of highest degree term
-# todo: where is this used?
 def polynomial_evaluate(coeffs: List[int], x: int) -> int:
     res = 0
     for coeff in coeffs:
