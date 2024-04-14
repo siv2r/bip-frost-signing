@@ -1,16 +1,15 @@
 # BIP FROST Signing reference implementation
 #
+# It's worth noting that many functions, types, and exceptions were directly
+# copied or adapted from the MuSig2 (BIP 327) reference code, found at:
+# https://github.com/bitcoin/bips/blob/master/bip-0327/reference.py
+#
 # WARNING: This implementation is for demonstration purposes only and _not_ to
 # be used in production environments. The code is vulnerable to timing attacks,
 # for example.
 
 from typing import Any, List, Optional, Tuple, NewType, NamedTuple
 from bip340_utils import *
-
-#
-# The following types, exception, and functions were copied from the MuSig2 (BIP 327)
-# reference code: https://github.com/bitcoin/bips/blob/master/bip-0327/reference.py
-#
 
 PlainPk = NewType('PlainPk', bytes)
 XonlyPk = NewType('XonlyPk', bytes)
@@ -78,6 +77,7 @@ def cpoint_ext(x: bytes) -> Optional[Point]:
         return cpoint(x)
 
 # Return the plain public key corresponding to a given secret key
+# todo: remove if unused
 def individual_pk(seckey: bytes) -> PlainPk:
     d0 = int_from_bytes(seckey)
     if not (1 <= d0 <= n - 1):
@@ -86,9 +86,48 @@ def individual_pk(seckey: bytes) -> PlainPk:
     assert P is not None
     return PlainPk(cbytes(P))
 
+TweakContext = NamedTuple('TweakContext', [('Q', Point),
+                                           ('gacc', int),
+                                           ('tacc', int)])
+
+def get_xonly_pk(tweak_ctx: TweakContext) -> XonlyPk:
+    Q, _, _ = tweak_ctx
+    return XonlyPk(xbytes(Q))
+
+def get_plain_pk(tweak_ctx: TweakContext) -> PlainPk:
+    Q, _, _ = tweak_ctx
+    return PlainPk(cbytes(Q))
+
+def tweak_ctx_init(group_pk: PlainPk) -> TweakContext:
+    Q = cpoint(group_pk)
+    gacc = 1
+    tacc = 0
+    return TweakContext(Q, gacc, tacc)
+
+def apply_tweak(tweak_ctx: TweakContext, tweak: bytes, is_xonly: bool) -> TweakContext:
+    if len(tweak) != 32:
+        raise ValueError('The tweak must be a 32-byte array.')
+    Q, gacc, tacc = tweak_ctx
+    if is_xonly and not has_even_y(Q):
+        g = n - 1
+    else:
+        g = 1
+    t = int_from_bytes(tweak)
+    if t >= n:
+        raise ValueError('The tweak must be less than n.')
+    Q_ = point_add(point_mul(Q, g), point_mul(G, t))
+    if Q_ is None:
+        raise ValueError('The result of tweaking cannot be infinity.')
+    gacc_ = g * gacc % n
+    tacc_ = (t + g * tacc) % n
+    return TweakContext(Q_, gacc_, tacc_)
+
 #
-# End of the code copied from MuSig2 (BIP 327) reference implementation.
+# The following code is only used for testing.
 #
 
-if __name__ == '__main__':
+def test_sign_and_verify_random(iters: int) -> None:
     pass
+
+if __name__ == '__main__':
+    test_sign_and_verify_random(10)
