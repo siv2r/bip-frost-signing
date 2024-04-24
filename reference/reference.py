@@ -1,7 +1,7 @@
 # BIP FROST Signing reference implementation
 #
 # It's worth noting that many functions, types, and exceptions were directly
-# copied or adapted from the MuSig2 (BIP 327) reference code, found at:
+# copied or modified from the MuSig2 (BIP 327) reference code, found at:
 # https://github.com/bitcoin/bips/blob/master/bip-0327/reference.py
 #
 # WARNING: This implementation is for demonstration purposes only and _not_ to
@@ -165,7 +165,7 @@ def nonce_gen_internal(rand_: bytes, sk: Optional[bytes], pubshare: Optional[Pla
     assert R_s1 is not None
     assert R_s2 is not None
     pubnonce = cbytes(R_s1) + cbytes(R_s2)
-    # think: do we need this to be 'bytearray'? Unlike MuSig2, we don't include pk in secnonce.
+    # use mutable `bytearray` since secnonce need to be replaced with zeros during signing.
     secnonce = bytearray(bytes_from_int(k_1) + bytes_from_int(k_2))
     return secnonce, pubnonce
 
@@ -199,8 +199,68 @@ def nonce_agg(pubnonces: List[bytes]) -> bytes:
 # The following code is only used for testing.
 #
 
+import json
+import os
+import sys
+
+def fromhex_all(l):
+    return [bytes.fromhex(l_i) for l_i in l]
+
+# Check that calling `try_fn` raises a `exception`. If `exception` is raised,
+# examine it with `except_fn`.
+def assert_raises(exception, try_fn, except_fn):
+    raised = False
+    try:
+        try_fn()
+    except exception as e:
+        raised = True
+        assert(except_fn(e))
+    except BaseException:
+        raise AssertionError("Wrong exception raised in a test.")
+    if not raised:
+        raise AssertionError("Exception was _not_ raised in a test where it was required.")
+
+def get_error_details(test_case):
+    error = test_case["error"]
+    if error["type"] == "invalid_contribution":
+        exception = InvalidContributionError
+        if "contrib" in error:
+            except_fn = lambda e: e.signer == error["signer"] and e.contrib == error["contrib"]
+        else:
+            except_fn = lambda e: e.signer == error["signer"]
+    elif error["type"] == "value":
+        exception = ValueError
+        except_fn = lambda e: str(e) == error["message"]
+    else:
+        raise RuntimeError(f"Invalid error type: {error['type']}")
+    return exception, except_fn
+
+def test_frost_key_vectors():
+    pass
+
+def test_nonce_gen_vectors():
+    pass
+
+def test_nonce_agg_vectors():
+    pass
+
+def test_sign_verify_vectors():
+    pass
+
+def test_tweak_vectors():
+    pass
+
+def test_sig_agg_vectors():
+    pass
+
 def test_sign_and_verify_random(iters: int) -> None:
     pass
 
 if __name__ == '__main__':
-    test_sign_and_verify_random(10)
+    test_frost_key_vectors()
+    test_nonce_gen_vectors()
+    test_nonce_agg_vectors()
+    test_sign_verify_vectors()
+    test_tweak_vectors()
+    test_sig_agg_vectors()
+    test_sign_and_verify_random(6)

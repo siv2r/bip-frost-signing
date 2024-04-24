@@ -67,6 +67,7 @@ I chose Option 1 because it fits nicely with the _PartialSigVerify_ algorithm wh
 - [ ] reference implementation & test vectors
   - [ ] should the participant identifier be inside secshare or pubshare?
   - [ ] define `NewType` for secshare and pubshare? or simply use `bytes` & `PlainPk`?
+  - [ ] In MuSig2's code, `InvalidContribution` can have e.signer = 0. Can we allow it?
 - [x] flowchart for general signing flow
 - [ ] improve FROST key representation
 - [ ] deterministic sign?
