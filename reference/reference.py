@@ -9,6 +9,8 @@
 # for example.
 
 from typing import Any, List, Optional, Tuple, NewType, NamedTuple
+from itertools import combinations
+import secrets
 from bip340_utils import *
 
 PlainPk = NewType('PlainPk', bytes)
@@ -85,6 +87,43 @@ def individual_pk(seckey: bytes) -> PlainPk:
     P = point_mul(G, d0)
     assert P is not None
     return PlainPk(cbytes(P))
+
+def derive_interpolating_value(L: List[int], x_i: int):
+    assert x_i in L
+    assert all(L.count(x_j) <= 1 for x_j in L)
+    num, deno = 1, 1
+    for x_j in L:
+        if x_j == x_i:
+            continue
+        num *= x_j
+        deno *= (x_j - x_i)
+    return num * pow(deno, n - 2, n) % n
+
+def check_pubshares_correctness(secshares: List[bytes], pubshares: List[PlainPk]) -> bool:
+    assert len(secshares) == len(pubshares)
+    for secshare, pubshare in zip(secshares, pubshares):
+        if not individual_pk(secshare) == pubshare:
+            return False
+    return True
+
+def check_group_pubkey_correctness(max_participants: int, min_participants: int, group_pk: PlainPk, secshares: List[bytes], pubshares: List[PlainPk]) -> bool:
+    assert max_participants >= min_participants
+    assert len(secshares) == len(pubshares)
+    participant_ids = [i for i in range(1, max_participants + 1)]
+    # loop through all possible signer sets
+    for num_signers in range(min_participants, max_participants + 1):
+        for signer_set in combinations(participant_ids, num_signers):
+            # compute the group secret key
+            group_sk = 0
+            for i in signer_set:
+                secshare_i = int_from_bytes(secshares[i-1])
+                lambda_i = derive_interpolating_value(signer_set, i)
+                group_sk += lambda_i * secshare_i
+            group_sk = bytes_from_int(group_sk % n)
+            # reconstructed group_sk must correspond to group_pk
+            if not individual_pk(group_sk) == group_pk:
+                return False
+    return True
 
 TweakContext = NamedTuple('TweakContext', [('Q', Point),
                                            ('gacc', int),
@@ -236,7 +275,20 @@ def get_error_details(test_case):
     return exception, except_fn
 
 def test_frost_key_vectors():
-    pass
+    with open(os.path.join(sys.path[0], 'vectors', 'frost_key_vectors.json')) as f:
+        test_data = json.load(f)
+
+    valid_test_cases = test_data["valid_test_cases"]
+    for test_case in valid_test_cases:
+        print("testing")
+        max_participants = test_case["max_participants"]
+        min_participants = test_case["min_participants"]
+        group_pk = bytes.fromhex(test_case["group_public_key"])
+        pubshares = fromhex_all(test_case["participant_pubshares"])
+        secshares = fromhex_all(test_case["participant_secshares"])
+
+        assert check_pubshares_correctness(secshares, pubshares)
+        assert check_group_pubkey_correctness(max_participants, min_participants, group_pk, secshares, pubshares)
 
 def test_nonce_gen_vectors():
     pass

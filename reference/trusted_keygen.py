@@ -14,7 +14,7 @@ from bip340_utils import (
     Point, n as curve_order, bytes_from_int,
     point_mul, G, has_even_y
 )
-from reference import point_negate, cbytes, PlainPk
+from reference import point_negate, cbytes, PlainPk, derive_interpolating_value
 
 # point on the secret polynomial, represents a signer's secret share
 PolyPoint = Tuple[int, int]
@@ -29,17 +29,6 @@ def polynomial_evaluate(coeffs: List[int], x: int) -> int:
         res = res * x + coeff
     return res % curve_order
 
-#TODO: move this fn to reference.py since it is part of the spec
-def derive_interpolating_value(L: List[int], x_i: int):
-    assert x_i in L
-    assert all(L.count(x_j) <= 1 for x_j in L)
-    num, denom = 1, 1
-    for x_j in L:
-        if x_j == x_i:
-            continue
-        num *= x_j
-        denom *= (x_j - x_i)
-    return num * pow(denom, curve_order - 2, curve_order) % curve_order
 
 def secret_share_combine(shares: List[PolyPoint]) -> int:
     x_coords = []
@@ -96,7 +85,7 @@ def generate_frost_keys(max_participants: int, min_participants: int) -> Tuple[P
 # Test vector from RFC draft.
 # section F.5 of https://datatracker.ietf.org/doc/draft-irtf-cfrg-frost/15/
 class Tests(unittest.TestCase):
-    def setUp(self):
+    def setUp(self) -> None:
         self.max_participants = 3
         self.min_participants = 2
         self.poly = [
@@ -110,13 +99,13 @@ class Tests(unittest.TestCase):
         ]
         self.secret = 0x0d004150d27c3bf2a42f312683d35fac7394b1e9e318249c1bfe7f0795a83114
 
-    def test_polynomial_evaluate(self):
+    def test_polynomial_evaluate(self) -> None:
         coeffs = self.poly.copy()
         expected_secret = self.secret
 
         self.assertEqual(polynomial_evaluate(coeffs, 0), expected_secret)
 
-    def test_secret_share_combine(self):
+    def test_secret_share_combine(self) -> None:
         shares: List[PolyPoint] = self.shares.copy()
         expected_secret = self.secret
 
@@ -125,7 +114,7 @@ class Tests(unittest.TestCase):
         self.assertEqual(secret_share_combine([shares[0], shares[2]]), expected_secret)
         self.assertEqual(secret_share_combine(shares), expected_secret)
 
-    def test_trusted_dealer_keygen(self):
+    def test_trusted_dealer_keygen(self) -> None:
         secret_key = random.randint(1, curve_order - 1)
         max_participants = 5
         min_participants = 3

@@ -70,6 +70,8 @@ For each participants _i_ in the range [_1..max_participants_], their public sha
 
 #### Group public key condition
 
+TODO: For this condt, the ROAST paper forces the |T| = t. Why? Every signer set with t <= |T| <= n, must satisfy this condition, right?
+
 Consider a set of participants, denoted by _T_, chosen from a total pool of participants whose size is _max_participants_. For this set _T_, we can define a special parameter called the "group secret key". It is calculated by summing the secret share and interpolating value for each participant in T:
 
 _group_seckey_ = sum (_derive_interpolating_value<sub>j, T</sub>_._secshare_<sub>j</sub>) mod _n_, for every _j_ in _T_

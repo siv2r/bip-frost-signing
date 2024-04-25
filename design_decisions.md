@@ -65,14 +65,18 @@ I chose Option 1 because it fits nicely with the _PartialSigVerify_ algorithm wh
 
 ## Todo List
 - [ ] reference implementation & test vectors
-  - [ ] should the participant identifier be inside secshare or pubshare?
+  - [ ] should the participant identifier be inside [1] secshare, [2] pubshare, [3] both, or [4] as a separate list?
+    - we require the identifiers for computing the interpolating value of every signing in the signing set
+    - Note: In an ordered list of secshares or pubshares, we can assume the identifiers as 1, 2, 3.. (like MuSig2 does)
+      - because it could be the shares of participants 2, 7, 5 and not necessarily 1, 2, 3.
+    - Trusted dealer FROST example uses an `ids[THRESHOLD]` array while signing
   - [ ] define `NewType` for secshare and pubshare? or simply use `bytes` & `PlainPk`?
   - [ ] In MuSig2's code, `InvalidContribution` can have e.signer = 0. Can we allow it?
 - [x] flowchart for general signing flow
 - [ ] improve FROST key representation
 - [ ] deterministic sign?
 - [ ] which params should we hash (i.e. commit to), while generating nonces k1 & k2
-  - [ ] we currently do k_i = H(rand || pubshare || group_pk || msg || extra_in || i)
-  - [ ] why not include n & t? MuSig2 doesn't include n though.
-  - [ ] how to decide these params
+  - we currently do k_i = H(rand || pubshare || group_pk || msg || extra_in || i)
+  - why not include n & t? MuSig2 doesn't include n though.
+  - how to decide these params
 - [ ] add footnotes

@@ -1,0 +1,24 @@
+{
+    "valid_test_cases": [
+        {
+            "max_participants": 3,
+            "min_participants": 2,
+            "group_public_key": "02F37C34B66CED1FB51C34A90BDAE006901F10625CC06C4F64663B0EAE87D87B4F",
+            "participant_identifiers": [1, 2, 3],
+            "participant_pubshares": [
+                "026BAEE4BF7D4B9C4567DFFF6F3C2C76DF5C082E9320CD8187D6AB5965BC5A119A",
+                "03DACC9463E5186F3C81AE1B314F7B09001A22B28BB56AD0ABD3F376818F9604AB",
+                "031404710E938032DB0D4F6A4CD20AE37384BE98BA9FE05B42D139361202B391E6"
+
+            ],
+            "participant_secshares": [
+                "08F89FFE80AC94DCB920C26F3F46140BFC7F95B493F8310F5FC1EA2B01F4254C",
+                "04F0FEAC2EDCEDC6CE1253B7FAB8C86B856A797F44D83D82A385554E6E401984",
+                "00E95D59DD0D46B0E303E500B62B7CCB0E555D49F5B849F5E748C071DA8C0DBC"
+            ]
+        }
+    ],
+    "error_test_cases": [
+
+    ]
+}
