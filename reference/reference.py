@@ -280,7 +280,6 @@ def test_frost_key_vectors():
 
     valid_test_cases = test_data["valid_test_cases"]
     for test_case in valid_test_cases:
-        print("testing")
         max_participants = test_case["max_participants"]
         min_participants = test_case["min_participants"]
         group_pk = bytes.fromhex(test_case["group_public_key"])
