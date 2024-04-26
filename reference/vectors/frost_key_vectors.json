@@ -39,7 +39,40 @@
             ]
         }
     ],
-    "error_test_cases": [
-
+    "pubshare_correctness_fail_test_cases": [
+        {
+            "max_participants": 2,
+            "min_participants": 2,
+            "group_public_key": "0256C92CA18AD18E5E14075E4CDA4C9471E1F69EFF06DA31B9DB8C431697457C96",
+            "participant_identifiers": [1, 2],
+            "participant_pubshares": [
+                "02EF27116868EEC72F1AEF13F0383A83479DB7DFBDE55B568ADC0ABC28B0C82AEB",
+                "0381EE46DB9582B6AA84AB1F39CAAD930899B44ACCB75EDFFBB29CDB8E2136F2A7"
+            ],
+            "participant_secshares": [
+                "1903097297A1E0FD75FCBCDB66DC21C65ACEC527100566459F1BBF2FA7388D53",
+                "B9B2CD71F1C09B8D6F675D05CDF1396B28FF626CD8C69B9DF4D3B6BDCB57EFF2"
+            ],
+            "comment": "Invalid pubshare (parity flipped) for participant 2"
+        }
+    ],
+    "group_pubkey_correctness_fail_test_cases": [
+        {
+            "max_participants": 3,
+            "min_participants": 3,
+            "group_public_key": "0354F1E67AAFFB49654AF3EE5B0C68D8CF24468D014453F1F13B5221512A0BCE78",
+            "participant_identifiers": [1, 2],
+            "participant_pubshares": [
+                "037A01FF2705D679CDC34E04366CC3BA95BD9E883AC7E33B640D744BE6BCC2D140",
+                "039E2C0AE44EA1203606D04B711667C07D1695ADC36FBF07DD37B7ECA85490262C",
+                "027C782638AD6A8A95DEDF6CBA940E89E827EC5C4FCF693EAB7D70927C3CA59FDB"
+            ],
+            "participant_secshares": [
+                "A3236A9D6EF252A5C59F17B544ECE39487FFD80F158EB93F8AA4AF707BFA5511",
+                "7FA1BE8BCC29555EFAAC4B19D47E26467E056B9DE2F6E0B7B844940FD43D1047",
+                "8BACD727EA7C2156F476BFC8EF5B332FE0663464AC3F117C0B69D6460A4AD25D"
+            ],
+            "comment": "Invalid group public key (parity flipped)"
+        }
     ]
 }

@@ -286,8 +286,25 @@ def test_frost_key_vectors():
         pubshares = fromhex_all(test_case["participant_pubshares"])
         secshares = fromhex_all(test_case["participant_secshares"])
 
-        assert check_pubshares_correctness(secshares, pubshares)
-        assert check_group_pubkey_correctness(max_participants, min_participants, group_pk, secshares, pubshares)
+        assert check_pubshares_correctness(secshares, pubshares) == True
+        assert check_group_pubkey_correctness(max_participants, min_participants, group_pk, secshares, pubshares) == True
+
+    pubshare_fail_test_cases = test_data["pubshare_correctness_fail_test_cases"]
+    for test_case in pubshare_fail_test_cases:
+        pubshares = fromhex_all(test_case["participant_pubshares"])
+        secshares = fromhex_all(test_case["participant_secshares"])
+
+        assert check_pubshares_correctness(secshares, pubshares) == False
+
+    grouppub_fail_test_cases = test_data["group_pubkey_correctness_fail_test_cases"]
+    for test_case in grouppub_fail_test_cases:
+        max_participants = test_case["max_participants"]
+        min_participants = test_case["min_participants"]
+        group_pk = bytes.fromhex(test_case["group_public_key"])
+        pubshares = fromhex_all(test_case["participant_pubshares"])
+        secshares = fromhex_all(test_case["participant_secshares"])
+
+        assert check_group_pubkey_correctness(max_participants, min_participants, group_pk, secshares, pubshares) == False
 
 def test_nonce_gen_vectors():
     pass
