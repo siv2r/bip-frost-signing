@@ -11,7 +11,7 @@
 from typing import Any, List, Optional, Tuple, NewType, NamedTuple
 from itertools import combinations
 import secrets
-from bip340_utils import *
+from utils.bip340 import *
 
 PlainPk = NewType('PlainPk', bytes)
 XonlyPk = NewType('XonlyPk', bytes)

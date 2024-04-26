@@ -10,11 +10,14 @@
 from typing import Tuple, List
 import unittest
 import random
-from bip340_utils import (
+from bip340 import (
     Point, n as curve_order, bytes_from_int,
     point_mul, G, has_even_y
 )
-from reference import point_negate, cbytes, PlainPk, derive_interpolating_value
+# import functions from reference
+import sys
+sys.path.append('../')
+from reference import cbytes, PlainPk, derive_interpolating_value
 
 # point on the secret polynomial, represents a signer's secret share
 PolyPoint = Tuple[int, int]

@@ -1,3 +1,4 @@
 .vscode/
 reference/__pycache__/
+reference/utils/__pycache__/
 reference/notes.md
