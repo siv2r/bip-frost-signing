@@ -296,8 +296,8 @@ def test_frost_key_vectors():
 
         assert check_pubshares_correctness(secshares, pubshares) == False
 
-    grouppub_fail_test_cases = test_data["group_pubkey_correctness_fail_test_cases"]
-    for test_case in grouppub_fail_test_cases:
+    group_pubkey_fail_test_cases = test_data["group_pubkey_correctness_fail_test_cases"]
+    for test_case in group_pubkey_fail_test_cases:
         max_participants = test_case["max_participants"]
         min_participants = test_case["min_participants"]
         group_pk = bytes.fromhex(test_case["group_public_key"])
