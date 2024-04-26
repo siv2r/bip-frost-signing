@@ -274,8 +274,8 @@ def get_error_details(test_case):
         raise RuntimeError(f"Invalid error type: {error['type']}")
     return exception, except_fn
 
-def test_frost_key_vectors():
-    with open(os.path.join(sys.path[0], 'vectors', 'frost_key_vectors.json')) as f:
+def test_keygen_vectors():
+    with open(os.path.join(sys.path[0], 'vectors', 'keygen_vectors.json')) as f:
         test_data = json.load(f)
 
     valid_test_cases = test_data["valid_test_cases"]
@@ -325,7 +325,7 @@ def test_sign_and_verify_random(iters: int) -> None:
     pass
 
 if __name__ == '__main__':
-    test_frost_key_vectors()
+    test_keygen_vectors()
     test_nonce_gen_vectors()
     test_nonce_agg_vectors()
     test_sign_verify_vectors()
