@@ -177,9 +177,9 @@ def nonce_hash(rand: bytes, pubshare: PlainPk, group_pk: XonlyPk, i: int, msg_pr
     buf += i.to_bytes(1, 'big')
     return int_from_bytes(tagged_hash('FROST/nonce', buf))
 
-def nonce_gen_internal(rand_: bytes, sk: Optional[bytes], pubshare: Optional[PlainPk], group_pk: Optional[XonlyPk], msg: Optional[bytes], extra_in: Optional[bytes]) -> Tuple[bytearray, bytes]:
-    if sk is not None:
-        rand = bytes_xor(sk, tagged_hash('FROST/aux', rand_))
+def nonce_gen_internal(rand_: bytes, secshare: Optional[bytes], pubshare: Optional[PlainPk], group_pk: Optional[XonlyPk], msg: Optional[bytes], extra_in: Optional[bytes]) -> Tuple[bytearray, bytes]:
+    if secshare is not None:
+        rand = bytes_xor(secshare, tagged_hash('FROST/aux', rand_))
     else:
         rand = rand_
     if pubshare is None:
@@ -210,15 +210,15 @@ def nonce_gen_internal(rand_: bytes, sk: Optional[bytes], pubshare: Optional[Pla
 
 #think: can msg & extra_in be of any length here?
 #think: why doesn't musig2 ref code check for `pk` length here?
-def nonce_gen(sk: Optional[bytes], pubshare: Optional[PlainPk], group_pk: Optional[XonlyPk], msg: Optional[bytes], extra_in: Optional[bytes]) -> Tuple[bytearray, bytes]:
-    if sk is not None and len(sk) != 32:
-        raise ValueError('The optional byte array sk must have length 32.')
+def nonce_gen(secshare: Optional[bytes], pubshare: Optional[PlainPk], group_pk: Optional[XonlyPk], msg: Optional[bytes], extra_in: Optional[bytes]) -> Tuple[bytearray, bytes]:
+    if secshare is not None and len(secshare) != 32:
+        raise ValueError('The optional byte array secshare must have length 32.')
     if pubshare is not None and len(pubshare) != 33:
         raise ValueError('The optional byte array pubshare must have length 33.')
     if group_pk is not None and len(group_pk) != 32:
         raise ValueError('The optional byte array group_pk must have length 32.')
     rand_ = secrets.token_bytes(32)
-    return nonce_gen_internal(rand_, sk, pubshare, group_pk, msg, extra_in)
+    return nonce_gen_internal(rand_, secshare, pubshare, group_pk, msg, extra_in)
 
 def nonce_agg(pubnonces: List[bytes]) -> bytes:
     u = len(pubnonces)
@@ -307,7 +307,33 @@ def test_keygen_vectors():
         assert check_group_pubkey_correctness(max_participants, min_participants, group_pk, secshares, pubshares) == False
 
 def test_nonce_gen_vectors():
-    pass
+    with open(os.path.join(sys.path[0], 'vectors', 'nonce_gen_vectors.json')) as f:
+        test_data = json.load(f)
+
+    for test_case in test_data["test_cases"]:
+        def get_value(key) -> bytes:
+            return bytes.fromhex(test_case[key])
+
+        def get_value_maybe(key) -> Optional[bytes]:
+            if test_case[key] is not None:
+                return get_value(key)
+            else:
+                return None
+
+        rand_ = get_value("rand_")
+        secshare = get_value_maybe("secshare")
+        pubshare = get_value_maybe("pubshare")
+        if pubshare is not None:
+            pubshare = PlainPk(pubshare)
+        group_pk = get_value_maybe("group_pk")
+        if group_pk is not None:
+            group_pk = XonlyPk(group_pk)
+        msg = get_value_maybe("msg")
+        extra_in = get_value_maybe("extra_in")
+        expected_secnonce = get_value("expected_secnonce")
+        expected_pubnonce = get_value("expected_pubnonce")
+
+        assert nonce_gen_internal(rand_, secshare, pubshare, group_pk, msg, extra_in) == (expected_secnonce, expected_pubnonce)
 
 def test_nonce_agg_vectors():
     pass

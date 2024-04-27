@@ -15,8 +15,10 @@ from bip340 import (
     point_mul, G, has_even_y
 )
 # import functions from reference
-import sys
-sys.path.append('../')
+import sys, os
+script_dir = os.path.dirname(os.path.abspath(__file__))
+parent_dir = os.path.abspath(os.path.join(script_dir, '..'))
+sys.path.append(parent_dir)
 from reference import cbytes, PlainPk, derive_interpolating_value
 
 # point on the secret polynomial, represents a signer's secret share

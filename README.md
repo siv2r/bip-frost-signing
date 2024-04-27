@@ -180,7 +180,8 @@ Algorithm _ApplyTweak(tweak_ctx, tweak, is_xonly_t)_:
 
 ### Nonce Generation
 
-todo: include participant identifier too?
+think: include participant identifier in the input args?
+think: what the max msg len? we use 8 bytes while hashing it
 
 Algorithm _NonceGen(secshare, pubshare, group_pk, m, extra_in)_:
 - Inputs:
