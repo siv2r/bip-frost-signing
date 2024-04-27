@@ -32,8 +32,9 @@ XonlyPk = NewType('XonlyPk', bytes)
 # values. Actual implementations should not crash when receiving invalid
 # contributions. Instead, they should hold the offending party accountable.
 class InvalidContributionError(Exception):
-    def __init__(self, signer, contrib):
-        self.signer = signer
+    def __init__(self, signer_id, contrib):
+        # participant identifier of the singer who sent the invalid value
+        self.identifier = signer_id
         # contrib is one of "pubkey", "pubnonce", "aggnonce", or "psig".
         self.contrib = contrib
 
@@ -229,7 +230,8 @@ def nonce_agg(pubnonces: List[bytes]) -> bytes:
             try:
                 R_ij = cpoint(pubnonces[i][(j-1)*33:j*33])
             except ValueError:
-                raise InvalidContributionError(i, "pubnonce")
+                # participant identifiers start from 1
+                raise InvalidContributionError(i + 1, "pubnonce")
             R_j = point_add(R_j, R_ij)
         aggnonce += cbytes_ext(R_j)
     return aggnonce
@@ -264,9 +266,9 @@ def get_error_details(test_case):
     if error["type"] == "invalid_contribution":
         exception = InvalidContributionError
         if "contrib" in error:
-            except_fn = lambda e: e.signer == error["signer"] and e.contrib == error["contrib"]
+            except_fn = lambda e: e.identifier == error["signer_id"] and e.contrib == error["contrib"]
         else:
-            except_fn = lambda e: e.signer == error["signer"]
+            except_fn = lambda e: e.identifier == error["signer_id"]
     elif error["type"] == "value":
         exception = ValueError
         except_fn = lambda e: str(e) == error["message"]
@@ -336,7 +338,22 @@ def test_nonce_gen_vectors():
         assert nonce_gen_internal(rand_, secshare, pubshare, group_pk, msg, extra_in) == (expected_secnonce, expected_pubnonce)
 
 def test_nonce_agg_vectors():
-    pass
+    with open(os.path.join(sys.path[0], 'vectors', 'nonce_agg_vectors.json')) as f:
+        test_data = json.load(f)
+
+    pubnonces_list = fromhex_all(test_data["pubnonces"])
+    valid_test_cases = test_data["valid_test_cases"]
+    error_test_cases = test_data["error_test_cases"]
+
+    for test_case in valid_test_cases:
+        pubnonces = [pubnonces_list[i] for i in test_case["pubnonce_indices"]]
+        expected_aggnonce = bytes.fromhex(test_case["expected_aggnonce"])
+        assert nonce_agg(pubnonces) == expected_aggnonce
+
+    for i, test_case in enumerate(error_test_cases):
+        exception, except_fn = get_error_details(test_case)
+        pubnonces = [pubnonces_list[i] for i in test_case["pubnonce_indices"]]
+        assert_raises(exception, lambda: nonce_agg(pubnonces), except_fn)
 
 def test_sign_verify_vectors():
     pass
