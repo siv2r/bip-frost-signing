@@ -58,10 +58,27 @@ I chose Option 1 because it fits nicely with the _PartialSigVerify_ algorithm wh
   - power power n-2
     - easy to follow
     - but makes it unclear that we are computing inverse
-- for computing nonce coefficient (_b_) each participant identifier is encoded as 32-bytes array
-  - The `id` value is a scalar. So, it should be 32-byte right?
+//todo: ask this on trusted dealer pr review...
+- what should be limit for MAX_PARTICIPANTS?
+  - option 1: use 4 bytes to represent since it's an integer
+    - total participants can be at most 4294967295 (2^32 - 1). Seems practical.
+  - option 2: use 32 bytes?
+  - no limit specified in frost draft
+  - for computing nonce coefficient (_b_) we currently use 32-bytes
+    - because the current frost trusted dealer PR does this (see `frost_compute_noncehash`)
+      - it currently sets it to scalar first then writing this 32-byte to hasher
+      - alternatively we can do:
+      ```c
+      unsigned char buf[4];
+      // Copy the bytes of size_t value into unsigned char array
+      memcpy(buf, &value, sizeof(value));
+
+      ```
+    - we convert the `id` to scalar for calc interpolating value
+      - But we don't need to force use 32-byte because of this
+      - we can still convert 4-byte integers to 32-byte scalars
 - hash tag for b, "noncecoef" vs "noncecoeff"
-  - follow musig2. It uses "noncecoef".
+  - follow musig2. It uses "noncecoef"
 
 ## Todo List
 - [ ] reference implementation & test vectors
@@ -79,4 +96,5 @@ I chose Option 1 because it fits nicely with the _PartialSigVerify_ algorithm wh
   - we currently do k_i = H(rand || pubshare || group_pk || msg || extra_in || i)
   - why not include n & t? MuSig2 doesn't include n though.
   - how to decide these params
+- [ ] In BIP327, return type missing in `key_agg_and_tweak`
 - [ ] add footnotes

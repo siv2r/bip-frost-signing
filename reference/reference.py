@@ -9,7 +9,7 @@
 # for example.
 
 from typing import Any, List, Optional, Tuple, NewType, NamedTuple
-from itertools import combinations
+import itertools
 import secrets
 from utils.bip340 import *
 
@@ -89,7 +89,10 @@ def individual_pk(seckey: bytes) -> PlainPk:
     assert P is not None
     return PlainPk(cbytes(P))
 
-def derive_interpolating_value(L: List[int], x_i: int):
+#todo: change inputs to bytes & add a check 1 <= ids[i] <= max_participants, when converting it to int
+# `derive_group_pubkey` and `sign` both would benefit from this change
+# maybe keep taking its as `derive_interpolating_value_internal`?
+def derive_interpolating_value(L: List[int], x_i: int) -> int:
     assert x_i in L
     assert all(L.count(x_j) <= 1 for x_j in L)
     num, deno = 1, 1
@@ -113,14 +116,14 @@ def check_group_pubkey_correctness(max_participants: int, min_participants: int,
     participant_ids = [i for i in range(1, max_participants + 1)]
     # loop through all possible signer sets
     for num_signers in range(min_participants, max_participants + 1):
-        for signer_set in combinations(participant_ids, num_signers):
+        for signer_set in itertools.combinations(participant_ids, num_signers):
             # compute the group secret key
-            group_sk = 0
+            group_sk_ = 0
             for i in signer_set:
                 secshare_i = int_from_bytes(secshares[i-1])
-                lambda_i = derive_interpolating_value(signer_set, i)
-                group_sk += lambda_i * secshare_i
-            group_sk = bytes_from_int(group_sk % n)
+                lambda_i = derive_interpolating_value(list(signer_set), i)
+                group_sk_ += lambda_i * secshare_i
+            group_sk = bytes_from_int(group_sk_ % n)
             # reconstructed group_sk must correspond to group_pk
             if not individual_pk(group_sk) == group_pk:
                 return False
@@ -235,6 +238,102 @@ def nonce_agg(pubnonces: List[bytes]) -> bytes:
             R_j = point_add(R_j, R_ij)
         aggnonce += cbytes_ext(R_j)
     return aggnonce
+
+#think: should identifiers be list of ints of bytes?
+SessionContext = NamedTuple('SessionContext', [('aggnonce', bytes),
+                                               ('identifiers', List[bytes]),
+                                               ('pubshares', List[PlainPk]),
+                                               ('tweaks', List[bytes]),
+                                               ('is_xonly', List[bool]),
+                                               ('msg', bytes)])
+
+def derive_group_pubkey(pubshares: List[PlainPk], ids_byte: List[bytes]) -> PlainPk:
+    assert len(pubshares) == len(ids_byte)
+    Q = infinity
+    ids = []
+    for i in ids_byte:
+        #todo: check for 1 <= id <= max_participants?
+        #Then, we need include min(max)_participants params in session context
+        ids.append(int_from_bytes(i))
+
+    for pid, pubshare in zip(ids, pubshares):
+        try:
+            X_i = cpoint(pubshare)
+        except ValueError:
+            raise InvalidContributionError(pid, "pubkey")
+        lam_i = derive_interpolating_value(ids, pid)
+        Q = point_add(Q, point_mul(X_i, lam_i))
+    # Q is not the point at infinity except with negligible probability.
+    assert(Q is not None)
+    return PlainPk(cbytes(Q))
+
+def group_pubkey_and_tweak(pubshares: List[PlainPk], ids: List[bytes], tweaks: List[bytes], is_xonly: List[bool]) -> TweakContext:
+    if len(pubshares) != len(ids):
+        raise ValueError('The `pubshares` and `ids` arrays must have the same length.')
+    if len(tweaks) != len(is_xonly):
+        raise ValueError('The `tweaks` and `is_xonly` arrays must have the same length.')
+    group_pk = derive_group_pubkey(pubshares, ids)
+    tweak_ctx = tweak_ctx_init(group_pk)
+    v = len(tweaks)
+    for i in range(v):
+        tweak_ctx = apply_tweak(tweak_ctx, tweaks[i], is_xonly[i])
+    return tweak_ctx
+
+def get_session_values(session_ctx: SessionContext) -> Tuple[Point, int, int, int, Point, int]:
+    (aggnonce, ids, pubshares, tweaks, is_xonly, msg) = session_ctx
+    Q, gacc, tacc = group_pubkey_and_tweak(pubshares, ids, tweaks, is_xonly)
+    concat_ids = b''.join(ids)
+    b = int_from_bytes(tagged_hash('FROST/noncecoef', concat_ids + aggnonce + xbytes(Q) + msg)) % n
+    try:
+        R_1 = cpoint_ext(aggnonce[0:33])
+        R_2 = cpoint_ext(aggnonce[33:66])
+    except ValueError:
+        # Nonce aggregator sent invalid nonces
+        raise InvalidContributionError(None, "aggnonce")
+    R_ = point_add(R_1, point_mul(R_2, b))
+    #think: why replace it with G?
+    R = R_ if not is_infinite(R_) else G
+    assert R is not None
+    e = int_from_bytes(tagged_hash('BIP0340/challenge', xbytes(R) + xbytes(Q) + msg)) % n
+    return (Q, gacc, tacc, b, R, e)
+
+def get_session_interpolating_value(session_ctx: SessionContext, my_id: bytes) -> int:
+    (_, ids_bytes, _, _, _, _) = session_ctx
+    ids = [int_from_bytes(i) for i in ids_bytes]
+    return derive_interpolating_value(ids, int_from_bytes(my_id))
+
+def sign(secnonce: bytearray, secshare: bytes, identifier: bytes, session_ctx: SessionContext) -> bytes:
+    (Q, gacc, _, b, R, e) = get_session_values(session_ctx)
+    k_1_ = int_from_bytes(secnonce[0:32])
+    k_2_ = int_from_bytes(secnonce[32:64])
+    # Overwrite the secnonce argument with zeros such that subsequent calls of
+    # sign with the same secnonce raise a ValueError.
+    secnonce = bytearray(b'\x00'*64)
+    if not 0 < k_1_ < n:
+        raise ValueError('first secnonce value is out of range.')
+    if not 0 < k_2_ < n:
+        raise ValueError('second secnonce value is out of range.')
+    k_1 = k_1_ if has_even_y(R) else n - k_1_
+    k_2 = k_2_ if has_even_y(R) else n - k_2_
+    d_ = int_from_bytes(secshare)
+    if not 0 < d_ < n:
+        raise ValueError('secret key value is out of range.')
+    P = point_mul(G, d_)
+    assert P is not None
+    pubshare = cbytes(P)
+    a = get_session_interpolating_value(session_ctx, identifier)
+    g = 1 if has_even_y(Q) else n - 1
+    d = g * gacc * d_ % n
+    s = (k_1 + b * k_2 + e * a * d) % n
+    psig = bytes_from_int(s)
+    R_s1 = point_mul(G, k_1_)
+    R_s2 = point_mul(G, k_2_)
+    assert R_s1 is not None
+    assert R_s2 is not None
+    pubnonce = cbytes(R_s1) + cbytes(R_s2)
+    # Optional correctness check. The result of signing should pass signature verification.
+    # assert partial_sig_verify_internal(psig, pubnonce, pubshare, session_ctx)
+    return psig
 
 #
 # The following code is only used for testing.

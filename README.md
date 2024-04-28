@@ -224,6 +224,8 @@ Algorithm _NonceAgg(pubnonce<sub>1..u</sub>)_:
     - Let _R<sub>j</sub> = R<sub>1,j</sub> + R<sub>2,j</sub> + ... + R<sub>u,j</sub>_
 - Return _aggnonce = cbytes_ext(R<sub>1</sub>) || cbytes_ext(R<sub>2</sub>)_
 
+TODO: change identifiers of signers to _u_ 4(or 32)-byte arrays? (currently we use _u_ ints)
+TODO: then, have a function that converts ids byte-array to integer array, must check for 1 <= ids[i] <= max_participant
 ### Session Context
 
 The Session Context is a data structure consisting of the following elements:
@@ -293,7 +295,7 @@ Internal Algorithm _GroupPubkey(id<sub>1..u</sub>, pubshare<sub>1..u</sub>)_
 - Return _X_
 
 ### Signing
-
+TODO: get `id` as bytes. Then check for <= max_pariticipants?
 Algorithm _Sign(secnonce, secshare, my_id, session_ctx)_:
 - Inputs:
     - The secret nonce _secnonce_ that has never been used as input to _Sign_ before: a 64-byte array
