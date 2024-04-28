@@ -60,23 +60,9 @@ I chose Option 1 because it fits nicely with the _PartialSigVerify_ algorithm wh
     - but makes it unclear that we are computing inverse
 //todo: ask this on trusted dealer pr review...
 - what should be limit for MAX_PARTICIPANTS?
-  - option 1: use 4 bytes to represent since it's an integer
-    - total participants can be at most 4294967295 (2^32 - 1). Seems practical.
-  - option 2: use 32 bytes?
-  - no limit specified in frost draft
-  - for computing nonce coefficient (_b_) we currently use 32-bytes
-    - because the current frost trusted dealer PR does this (see `frost_compute_noncehash`)
-      - it currently sets it to scalar first then writing this 32-byte to hasher
-      - alternatively we can do:
-      ```c
-      unsigned char buf[4];
-      // Copy the bytes of size_t value into unsigned char array
-      memcpy(buf, &value, sizeof(value));
-
-      ```
-    - we convert the `id` to scalar for calc interpolating value
-      - But we don't need to force use 32-byte because of this
-      - we can still convert 4-byte integers to 32-byte scalars
+  - we should use 32-byte array for it
+  - The frost draft says this:
+    > MAX_PARTICIPANTS MUST be a positive integer less than the group order
 - hash tag for b, "noncecoef" vs "noncecoeff"
   - follow musig2. It uses "noncecoef"
 

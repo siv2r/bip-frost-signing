@@ -224,6 +224,7 @@ def nonce_gen(secshare: Optional[bytes], pubshare: Optional[PlainPk], group_pk: 
     rand_ = secrets.token_bytes(32)
     return nonce_gen_internal(rand_, secshare, pubshare, group_pk, msg, extra_in)
 
+#todo: include `ids` array in inp args (like `derive_group_pubkey`) & modify the test vectors accordingly
 def nonce_agg(pubnonces: List[bytes]) -> bytes:
     u = len(pubnonces)
     aggnonce = b''
@@ -302,7 +303,7 @@ def get_session_interpolating_value(session_ctx: SessionContext, my_id: bytes) -
     ids = [int_from_bytes(i) for i in ids_bytes]
     return derive_interpolating_value(ids, int_from_bytes(my_id))
 
-def sign(secnonce: bytearray, secshare: bytes, identifier: bytes, session_ctx: SessionContext) -> bytes:
+def sign(secnonce: bytearray, secshare: bytes, my_id: bytes, session_ctx: SessionContext) -> bytes:
     (Q, gacc, _, b, R, e) = get_session_values(session_ctx)
     k_1_ = int_from_bytes(secnonce[0:32])
     k_2_ = int_from_bytes(secnonce[32:64])
@@ -321,7 +322,7 @@ def sign(secnonce: bytearray, secshare: bytes, identifier: bytes, session_ctx: S
     P = point_mul(G, d_)
     assert P is not None
     pubshare = cbytes(P)
-    a = get_session_interpolating_value(session_ctx, identifier)
+    a = get_session_interpolating_value(session_ctx, my_id)
     g = 1 if has_even_y(Q) else n - 1
     d = g * gacc * d_ % n
     s = (k_1 + b * k_2 + e * a * d) % n
@@ -332,8 +333,49 @@ def sign(secnonce: bytearray, secshare: bytes, identifier: bytes, session_ctx: S
     assert R_s2 is not None
     pubnonce = cbytes(R_s1) + cbytes(R_s2)
     # Optional correctness check. The result of signing should pass signature verification.
-    # assert partial_sig_verify_internal(psig, pubnonce, pubshare, session_ctx)
+    assert partial_sig_verify_internal(psig, my_id, pubnonce, pubshare, session_ctx)
     return psig
+
+def partial_sig_verify(psig: bytes, ids: List[bytes], pubnonces: List[bytes], pubshares: List[PlainPk], tweaks: List[bytes], is_xonly: List[bool], msg: bytes, i: int) -> bool:
+    if not len(ids) == len(pubnonces) == len(pubshares):
+        raise ValueError('The `ids`, `pubnonces` and `pubshares` arrays must have the same length.')
+    if len(tweaks) != len(is_xonly):
+        raise ValueError('The `tweaks` and `is_xonly` arrays must have the same length.')
+    aggnonce = nonce_agg(pubnonces)
+    session_ctx = SessionContext(aggnonce, ids, pubshares, tweaks, is_xonly, msg)
+    return partial_sig_verify_internal(psig, ids[i], pubnonces[i], pubshares[i], session_ctx)
+
+def partial_sig_verify_internal(psig: bytes, my_id: bytes, pubnonce: bytes, pubshare: bytes, session_ctx: SessionContext) -> bool:
+    (Q, gacc, _, b, R, e) = get_session_values(session_ctx)
+    s = int_from_bytes(psig)
+    if s >= n:
+        return False
+    R_s1 = cpoint(pubnonce[0:33])
+    R_s2 = cpoint(pubnonce[33:66])
+    Re_s_ = point_add(R_s1, point_mul(R_s2, b))
+    Re_s = Re_s_ if has_even_y(R) else point_negate(Re_s_)
+    P = cpoint(pubshare)
+    if P is None:
+        return False
+    a = get_session_interpolating_value(session_ctx, my_id)
+    g = 1 if has_even_y(Q) else n - 1
+    g_ = g * gacc % n
+    return point_mul(G, s) == point_add(Re_s, point_mul(P, e * a * g_ % n))
+
+#todo: include `ids` array in inp args (like `derive_group_pubkey`)
+def partial_sig_agg(psigs: List[bytes], session_ctx: SessionContext) -> bytes:
+    (Q, _, tacc, _, R, e) = get_session_values(session_ctx)
+    s = 0
+    u = len(psigs)
+    for i in range(u):
+        s_i = int_from_bytes(psigs[i])
+        if s_i >= n:
+            #think: should we use `my_id` from the session context? nonce_agg does i+ 1
+            raise InvalidContributionError(i + 1, "psig")
+        s = (s + s_i) % n
+    g = 1 if has_even_y(Q) else n - 1
+    s = (s + e * g * tacc) % n
+    return xbytes(R) + bytes_from_int(s)
 
 #
 # The following code is only used for testing.

@@ -231,7 +231,7 @@ TODO: then, have a function that converts ids byte-array to integer array, must 
 The Session Context is a data structure consisting of the following elements:
 
 - The number _u_ of participants available in the signing session with _min_participants ≤ u ≤ max_participants_
-- The participant identifiers of the signers _id<sub>1..u</sub>: _u_ integers with 1 _≤ id<sub>i</sub> ≤ max_participants_
+- The participant identifiers of the signers _id<sub>1..u</sub>: _u_ integers with 1 _≤ id<sub>i</sub> ≤ max_participants_ < n
 - The individual public shares _pubshare<sub>1..u</sub>_: _u_ 33-byte arrays
 - The aggregate public nonce of signers _aggnonce_: a 66-byte array
 - The number _v_ of tweaks with _0 ≤ v < 2^32_
