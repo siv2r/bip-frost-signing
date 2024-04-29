@@ -15,11 +15,12 @@ from bip340 import (
     point_mul, G, has_even_y
 )
 # import functions from reference
+#todo: this shows mypy error, but the file runs
 import sys, os
 script_dir = os.path.dirname(os.path.abspath(__file__))
 parent_dir = os.path.abspath(os.path.join(script_dir, '..'))
 sys.path.append(parent_dir)
-from reference import cbytes, PlainPk, derive_interpolating_value
+from reference import cbytes, PlainPk, derive_interpolating_value_internal
 
 # point on the secret polynomial, represents a signer's secret share
 PolyPoint = Tuple[int, int]
@@ -42,7 +43,7 @@ def secret_share_combine(shares: List[PolyPoint]) -> int:
 
     secret = 0
     for (x, y) in shares:
-        delta = y * derive_interpolating_value(x_coords, x)
+        delta = y * derive_interpolating_value_internal(x_coords, x)
         secret += delta
     return secret % curve_order
 

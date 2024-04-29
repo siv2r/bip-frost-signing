@@ -79,6 +79,16 @@ def cpoint_ext(x: bytes) -> Optional[Point]:
     else:
         return cpoint(x)
 
+def int_ids(lst: List[bytes]) -> List[int]:
+    res = []
+    for x in lst:
+        id_ = int_from_bytes(x)
+        #todo: add check for < max_participants?
+        if not 1 <= id_ < n:
+            raise ValueError('x is not a valid participant identifier.')
+        res.append(id_)
+    return res
+
 # Return the plain public key corresponding to a given secret key
 # todo: remove if unused
 def individual_pk(seckey: bytes) -> PlainPk:
@@ -92,9 +102,7 @@ def individual_pk(seckey: bytes) -> PlainPk:
 #todo: change inputs to bytes & add a check 1 <= ids[i] <= max_participants, when converting it to int
 # `derive_group_pubkey` and `sign` both would benefit from this change
 # maybe keep taking its as `derive_interpolating_value_internal`?
-def derive_interpolating_value(L: List[int], x_i: int) -> int:
-    assert x_i in L
-    assert all(L.count(x_j) <= 1 for x_j in L)
+def derive_interpolating_value_internal(L: List[int], x_i: int) -> int:
     num, deno = 1, 1
     for x_j in L:
         if x_j == x_i:
@@ -102,6 +110,13 @@ def derive_interpolating_value(L: List[int], x_i: int) -> int:
         num *= x_j
         deno *= (x_j - x_i)
     return num * pow(deno, n - 2, n) % n
+
+def derive_interpolating_value(ids: List[bytes], my_id: bytes) -> int:
+    assert my_id in ids
+    assert all(ids.count(my_id) <= 1 for my_id in ids)
+    assert 1 <= int(my_id) < n
+    integer_ids = int_ids(ids)
+    return derive_interpolating_value_internal(integer_ids, int(my_id))
 
 def check_pubshares_correctness(secshares: List[bytes], pubshares: List[PlainPk]) -> bool:
     assert len(secshares) == len(pubshares)
@@ -121,7 +136,7 @@ def check_group_pubkey_correctness(max_participants: int, min_participants: int,
             group_sk_ = 0
             for i in signer_set:
                 secshare_i = int_from_bytes(secshares[i-1])
-                lambda_i = derive_interpolating_value(list(signer_set), i)
+                lambda_i = derive_interpolating_value_internal(list(signer_set), i)
                 group_sk_ += lambda_i * secshare_i
             group_sk = bytes_from_int(group_sk_ % n)
             # reconstructed group_sk must correspond to group_pk
@@ -248,20 +263,14 @@ SessionContext = NamedTuple('SessionContext', [('aggnonce', bytes),
                                                ('is_xonly', List[bool]),
                                                ('msg', bytes)])
 
-def derive_group_pubkey(pubshares: List[PlainPk], ids_byte: List[bytes]) -> PlainPk:
-    assert len(pubshares) == len(ids_byte)
+def derive_group_pubkey(pubshares: List[PlainPk], ids: List[bytes]) -> PlainPk:
+    assert len(pubshares) == len(ids)
     Q = infinity
-    ids = []
-    for i in ids_byte:
-        #todo: check for 1 <= id <= max_participants?
-        #Then, we need include min(max)_participants params in session context
-        ids.append(int_from_bytes(i))
-
     for pid, pubshare in zip(ids, pubshares):
         try:
             X_i = cpoint(pubshare)
         except ValueError:
-            raise InvalidContributionError(pid, "pubkey")
+            raise InvalidContributionError(int_from_bytes(pid), "pubkey")
         lam_i = derive_interpolating_value(ids, pid)
         Q = point_add(Q, point_mul(X_i, lam_i))
     # Q is not the point at infinity except with negligible probability.
@@ -299,11 +308,13 @@ def get_session_values(session_ctx: SessionContext) -> Tuple[Point, int, int, in
     return (Q, gacc, tacc, b, R, e)
 
 def get_session_interpolating_value(session_ctx: SessionContext, my_id: bytes) -> int:
-    (_, ids_bytes, _, _, _, _) = session_ctx
-    ids = [int_from_bytes(i) for i in ids_bytes]
-    return derive_interpolating_value(ids, int_from_bytes(my_id))
+    (_, ids, _, _, _, _) = session_ctx
+    return derive_interpolating_value(ids, my_id)
 
 def sign(secnonce: bytearray, secshare: bytes, my_id: bytes, session_ctx: SessionContext) -> bytes:
+    #todo: add a check for < max_participant here?
+    if not 0 < int_from_bytes(my_id) < n:
+        raise ValueError('participant identifier is out of range')
     (Q, gacc, _, b, R, e) = get_session_values(session_ctx)
     k_1_ = int_from_bytes(secnonce[0:32])
     k_2_ = int_from_bytes(secnonce[32:64])
