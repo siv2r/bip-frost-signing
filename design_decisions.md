@@ -58,11 +58,12 @@ I chose Option 1 because it fits nicely with the _PartialSigVerify_ algorithm wh
   - power power n-2
     - easy to follow
     - but makes it unclear that we are computing inverse
-//todo: ask this on trusted dealer pr review...
 - what should be limit for MAX_PARTICIPANTS?
   - we should use 32-byte array for it
   - The frost draft says this:
     > MAX_PARTICIPANTS MUST be a positive integer less than the group order
+- should ARG_CHECK the `ids[i]` when converting it from `bytes` to `ints`?
+  - If yes, how to blame the singer if their `id` itself is incorrect?
 - hash tag for b, "noncecoef" vs "noncecoeff"
   - follow musig2. It uses "noncecoef"
 

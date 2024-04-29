@@ -224,18 +224,18 @@ def nonce_gen(secshare: Optional[bytes], pubshare: Optional[PlainPk], group_pk: 
     rand_ = secrets.token_bytes(32)
     return nonce_gen_internal(rand_, secshare, pubshare, group_pk, msg, extra_in)
 
-#todo: include `ids` array in inp args (like `derive_group_pubkey`) & modify the test vectors accordingly
-def nonce_agg(pubnonces: List[bytes]) -> bytes:
-    u = len(pubnonces)
+def nonce_agg(pubnonces: List[bytes], ids: List[bytes]) -> bytes:
+    if len(pubnonces) != len(ids):
+        raise ValueError('The `pubnonces` and `ids` arrays must have the same length.')
     aggnonce = b''
     for j in (1, 2):
         R_j = infinity
-        for i in range(u):
+        for my_id_, pubnonce in zip(ids, pubnonces):
             try:
-                R_ij = cpoint(pubnonces[i][(j-1)*33:j*33])
+                R_ij = cpoint(pubnonce[(j-1)*33:j*33])
             except ValueError:
-                # participant identifiers start from 1
-                raise InvalidContributionError(i + 1, "pubnonce")
+                my_id = int_from_bytes(my_id_)
+                raise InvalidContributionError(my_id, "pubnonce")
             R_j = point_add(R_j, R_ij)
         aggnonce += cbytes_ext(R_j)
     return aggnonce
@@ -341,7 +341,7 @@ def partial_sig_verify(psig: bytes, ids: List[bytes], pubnonces: List[bytes], pu
         raise ValueError('The `ids`, `pubnonces` and `pubshares` arrays must have the same length.')
     if len(tweaks) != len(is_xonly):
         raise ValueError('The `tweaks` and `is_xonly` arrays must have the same length.')
-    aggnonce = nonce_agg(pubnonces)
+    aggnonce = nonce_agg(pubnonces, ids)
     session_ctx = SessionContext(aggnonce, ids, pubshares, tweaks, is_xonly, msg)
     return partial_sig_verify_internal(psig, ids[i], pubnonces[i], pubshares[i], session_ctx)
 
@@ -362,16 +362,16 @@ def partial_sig_verify_internal(psig: bytes, my_id: bytes, pubnonce: bytes, pubs
     g_ = g * gacc % n
     return point_mul(G, s) == point_add(Re_s, point_mul(P, e * a * g_ % n))
 
-#todo: include `ids` array in inp args (like `derive_group_pubkey`)
-def partial_sig_agg(psigs: List[bytes], session_ctx: SessionContext) -> bytes:
+def partial_sig_agg(psigs: List[bytes], ids: List[bytes], session_ctx: SessionContext) -> bytes:
+    if len(psigs) != len(ids):
+        raise ValueError('The `psigs` and `ids` arrays must have the same length.')
     (Q, _, tacc, _, R, e) = get_session_values(session_ctx)
     s = 0
-    u = len(psigs)
-    for i in range(u):
-        s_i = int_from_bytes(psigs[i])
+    for my_id_, psig in zip(ids, psigs):
+        s_i = int_from_bytes(psig)
         if s_i >= n:
-            #think: should we use `my_id` from the session context? nonce_agg does i+ 1
-            raise InvalidContributionError(i + 1, "psig")
+            my_id = int_from_bytes(my_id_)
+            raise InvalidContributionError(my_id, "psig")
         s = (s + s_i) % n
     g = 1 if has_even_y(Q) else n - 1
     s = (s + e * g * tacc) % n
@@ -488,13 +488,15 @@ def test_nonce_agg_vectors():
 
     for test_case in valid_test_cases:
         pubnonces = [pubnonces_list[i] for i in test_case["pubnonce_indices"]]
+        ids = [bytes_from_int(i) for i in test_case["participant_identifiers"]]
         expected_aggnonce = bytes.fromhex(test_case["expected_aggnonce"])
-        assert nonce_agg(pubnonces) == expected_aggnonce
+        assert nonce_agg(pubnonces, ids) == expected_aggnonce
 
     for i, test_case in enumerate(error_test_cases):
         exception, except_fn = get_error_details(test_case)
         pubnonces = [pubnonces_list[i] for i in test_case["pubnonce_indices"]]
-        assert_raises(exception, lambda: nonce_agg(pubnonces), except_fn)
+        ids = [bytes_from_int(i) for i in test_case["participant_identifiers"]]
+        assert_raises(exception, lambda: nonce_agg(pubnonces, ids), except_fn)
 
 def test_sign_verify_vectors():
     pass

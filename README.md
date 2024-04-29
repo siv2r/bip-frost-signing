@@ -180,7 +180,7 @@ Algorithm _ApplyTweak(tweak_ctx, tweak, is_xonly_t)_:
 
 ### Nonce Generation
 
-think: include participant identifier in the input args?
+TODO include participant identifier in the input args? Commiting to a signer set will prevent using the preprocessed nonce with another signer set. But commiting only the signer's pariticipant identifier should be fine.
 think: what the max msg len? we use 8 bytes while hashing it
 
 Algorithm _NonceGen(secshare, pubshare, group_pk, m, extra_in)_:
@@ -214,13 +214,14 @@ Algorithm _NonceGen(secshare, pubshare, group_pk, m, extra_in)_:
 
 ### Nonce Aggregation
 
-Algorithm _NonceAgg(pubnonce<sub>1..u</sub>)_:
+Algorithm _NonceAgg(pubnonce<sub>1..u</sub>, id<sub>1..u</sub>)_:
 - Inputs:
     - The number of signers _u_: an integer with _min_participants ≤ u ≤ max_participants_
     - The public nonces _pubnonce<sub>1..u</sub>_: _u_ 66-byte arrays
+    - The participant identifiers _id<sub>1..u</sub>_: _u_ 32-byte arrays with _1 ≤ int(id[i]) ≤ max_participants_
 - For _j = 1 .. 2_:
     - For _i = 1 .. u_:
-        - Let _R<sub>i,j</sub> = cpoint(pubnonce<sub>i</sub>[(j-1)_33:j_33])_; fail if that fails and blame signer _i_ for invalid _pubnonce_.
+        - Let _R<sub>i,j</sub> = cpoint(pubnonce<sub>i</sub>[(j-1)_33:j_33])_; fail if that fails and blame signer _id[i]_ for invalid _pubnonce_.
     - Let _R<sub>j</sub> = R<sub>1,j</sub> + R<sub>2,j</sub> + ... + R<sub>u,j</sub>_
 - Return _aggnonce = cbytes_ext(R<sub>1</sub>) || cbytes_ext(R<sub>2</sub>)_
 
@@ -353,15 +354,16 @@ Internal Algorithm _PartialSigVerifyInternal(psig, my_id, pubnonce, pubshare, se
 
 ### Partial Signature Aggregation
 
-Algorithm _PartialSigAgg(psig<sub>1..u</sub>, session_ctx)_:
+Algorithm _PartialSigAgg(psig<sub>1..u</sub>, id<sub>1..u</sub>, session_ctx)_:
 
 - Inputs:
     - The number _u_ of signatures with _min_participants ≤ u ≤ max_participants_
     - The partial signatures _psig<sub>1..u</sub>_: _u_ 32-byte arrays
+    - The participant identifiers _id<sub>1..u</sub>_: _u_ 32-byte arrays with _1 ≤ int(id[i]) ≤ max_participants_
     - The _session_ctx_: a Session Context (todo _link to defn_) data structure
 - Let _(Q, _, tacc, _, _, R, e) = GetSessionValues(session_ctx)_; fail if that fails
 - For _i = 1 .. u_:
-    - Let _si = int(psig<sub>i</sub>)_; fail if _s<sub>i</sub> ≥ n_ and blame signer _i_ for invalid partial signature.
+    - Let _s<sub>i</sub> = int(psig<sub>i</sub>)_; fail if _s<sub>i</sub> ≥ n_ and blame signer _id[i]_ for invalid partial signature.
 - Let _g = 1_ if _has_even_y(Q)_, otherwise let _g = -1 mod n_
 - Let _s = s<sub>1</sub> + ... + s<sub>u</sub> + e⋅g⋅tacc mod n_
 - Return _sig =_ xbytes(R) || bytes(32, s)
