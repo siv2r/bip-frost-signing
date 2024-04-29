@@ -119,12 +119,22 @@ The following conventions are used, with constants as defined for [secp256k1](h
     - The function _cpoint_ext(x)_, where _x_ is a 33-byte array (compressed serialization), returns the point at infinity if _x = bytes(33, 0)_. Otherwise, it returns _cpoint(x)_ and fails if that fails.
     - The function _hash<sub>tag</sub>(x)_ where _tag_ is a UTF-8 encoded tag name and _x_ is a byte array returns the 32-byte hash _SHA256(SHA256(tag) || SHA256(tag) || x)_.
     - The function _count(lst, x)_, where _lst_ is a list of integers containing _x_, returns the number of times _x_ appears in _lst_.
-    - The function _has_unique_elements(lst)_, where _lst_ is a list of integers, returns True if _count(lst, x)_ returns 1 for all _x_ in _lst_. Otherwise returns False.
-    The function _has_unique_elements(lst)_ is equivalent to the following pseudocode:
+    - The function _has_unique_elements(lst)_, where _lst_ is a list of integers, returns True if _count(lst, x)_ returns 1 for all _x_ in _lst_. Otherwise returns False. The function _has_unique_elements(lst)_ is equivalent to the following pseudocode:
         - For _x_ in _lst_:
           - if _count(lst, x)_ > 1:
             - Return False
         - Return True
+    - The function _int_ids(lst)_, where _lst_ is a list of 32-byte array, returns a list of integers. The function _int_ids(lst)_ is equivalent to the following pseudocode:
+	    - _res_ = []
+	    - For _x_ in _lst_:
+		    - Fail if _int(x)_ ≥ n or _int(x)_ < 1
+		    - _res.append(int(x))_
+		- Return _res_
+    - The function _concat_bytearrays(lst)_, where _lst_ is a list of byte array elements, returns a single byte array. The function _concat_bytearrays(lst)_ is equivalent to the following pseudocode:
+	    - _res_ = _empty_bytestring_
+	    - For _x_ in _lst_:
+		    - _res = res || x_
+		- Return _res_
 - Other:
     - Tuples are written by listing the elements within parentheses and separated by commas. For example, _(2, 3, 1)_ is a tuple.
 
@@ -218,21 +228,21 @@ Algorithm _NonceAgg(pubnonce<sub>1..u</sub>, id<sub>1..u</sub>)_:
 - Inputs:
     - The number of signers _u_: an integer with _min_participants ≤ u ≤ max_participants_
     - The public nonces _pubnonce<sub>1..u</sub>_: _u_ 66-byte arrays
-    - The participant identifiers _id<sub>1..u</sub>_: _u_ 32-byte arrays with _1 ≤ int(id[i]) ≤ max_participants_
+    - The participant identifiers _id<sub>1..u</sub>_: _u_ 32-byte arrays with _1 ≤ int(id<sub>i</sub>) ≤ max_participants_
 - For _j = 1 .. 2_:
     - For _i = 1 .. u_:
-        - Let _R<sub>i,j</sub> = cpoint(pubnonce<sub>i</sub>[(j-1)_33:j_33])_; fail if that fails and blame signer _id[i]_ for invalid _pubnonce_.
+        - Let _R<sub>i,j</sub> = cpoint(pubnonce<sub>i</sub>[(j-1)_33:j_33])_; fail if that fails and blame signer _id<sub>i</sub>_ for invalid _pubnonce_.
     - Let _R<sub>j</sub> = R<sub>1,j</sub> + R<sub>2,j</sub> + ... + R<sub>u,j</sub>_
 - Return _aggnonce = cbytes_ext(R<sub>1</sub>) || cbytes_ext(R<sub>2</sub>)_
 
-TODO: change identifiers of signers to _u_ 4(or 32)-byte arrays? (currently we use _u_ ints)
+TODO: change identifiers of signers to _u_ 32-byte arrays? (currently we use _u_ ints)
 TODO: then, have a function that converts ids byte-array to integer array, must check for 1 <= ids[i] <= max_participant
 ### Session Context
 
 The Session Context is a data structure consisting of the following elements:
 
 - The number _u_ of participants available in the signing session with _min_participants ≤ u ≤ max_participants_
-- The participant identifiers of the signers _id<sub>1..u</sub>: _u_ integers with 1 _≤ id<sub>i</sub> ≤ max_participants_ < n
+- The participant identifiers of the signers _id<sub>1..u</sub>: _u_ 32-byte arrays with 1 _≤ int(id<sub>i</sub>) ≤ max_participants_ < n
 - The individual public shares _pubshare<sub>1..u</sub>_: _u_ 33-byte arrays
 - The aggregate public nonce of signers _aggnonce_: a 66-byte array
 - The number _v_ of tweaks with _0 ≤ v < 2^32_
@@ -249,8 +259,8 @@ Algorithm _GetSessionValues(session_ctx)_:
 - For _i = 1 .. v_:
     - Let _tweak_ctx<sub>i</sub> = ApplyTweak(tweak_ctx<sub>i-1</sub>, tweak<sub>i</sub>, is_xonly_t<sub>i</sub>)_; fail if that fails
 - Let _(Q, gacc, tacc) = tweak_ctx<sub>v</sub>_
-- Let _serialized_ids_ = _ids_to_bytes(id<sub>1..u</sub>)_
-- Let b = _int(hash<sub>FROST/noncecoef</sub>(serialized_ids || aggnonce || xbytes(Q) || m)) mod n_
+- Let _concat_ids_ = _concat_bytearrays(id<sub>1..u</sub>)_
+- Let b = _int(hash<sub>FROST/noncecoef</sub>(concat_ids || aggnonce || xbytes(Q) || m)) mod n_
 - Let _R<sub>1</sub> = cpoint_ext(aggnonce[0:33]), R<sub>2</sub> = cpoint_ext(aggnonce[33:66])_; fail if that fails and blame nonce aggregator for invalid _aggnonce_.
 - Let _R' = R<sub>1</sub> + b⋅R<sub>2</sub>_
 - If _is_infinite(R'):_
@@ -260,19 +270,17 @@ Algorithm _GetSessionValues(session_ctx)_:
 - Let _e = int(hash<sub>BIP0340/challenge</sub>((xbytes(R) || xbytes(Q) || m))) mod n_
 - _Return_ (Q, gacc, tacc, b, R, e)
 
-Internal Algorithm _ids_to_bytes(id<sub>1..u</sub>)_:
-- Let _res_ = _empty_bytestring_
-- For _i = 1..u_:
-    -  _res_ = _res || bytes(32, id<sub></sub>)_
-- Return _res_
-
 Algorithm _GetSessionInterpolatingValue(session_ctx, my_id)_:
 - Let _(u, id<sub>1..u</sub>, _, _, _, _, _) = session_ctx_
 - Return _DeriveInterpolatingValue(id<sub>1..u</sub>, my_id)_; fail if that fails
 
 Internal Algorithm _DeriveInterpolatingValue(id<sub>1..u</sub>, my_id):_
 - Fail if _my_id_ not in _id<sub>1..u</sub>_
-- Fail if not _has_unique_elements(id<sub>1..u</sub>)_
+- Fail if not _has_unique_elements(id<sub>1..u</sub>)
+- _integer_id<sub>1..u</sub> = int_ids(id<sub>1..u</sub>)_; Fail if that fails
+- Return _DeriveInterpolatingValueInternal(_integer_id<sub>1..u</sub>_, int(my_id))_
+
+Internal Algorithm _DeriveInterpolatingValueInternal(id<sub>1..u</sub>, my_id):_
 - Let _num = 1_
 - Let _denom = 1_
 - For _i = 1..u_:
@@ -296,12 +304,12 @@ Internal Algorithm _GroupPubkey(id<sub>1..u</sub>, pubshare<sub>1..u</sub>)_
 - Return _X_
 
 ### Signing
-TODO: get `id` as bytes. Then check for <= max_pariticipants?
+TODO: should be add 1 <= _my_id_ <= max_pariticiapants, check here?
 Algorithm _Sign(secnonce, secshare, my_id, session_ctx)_:
 - Inputs:
     - The secret nonce _secnonce_ that has never been used as input to _Sign_ before: a 64-byte array
     - The secret signing key _secshare_: a 32-byte array
-    - The identifier of the signing participant _my_id_: an integer with 1 _≤ my_id ≤ max_participants_
+    - The identifier of the signing participant _my_id_: a 32-byte array with 1 _≤ int(my_id) ≤ max_participants_
     - The _session_ctx_: a Session Context (todo _link to defn_) data structure
 - Let _(Q, gacc, _, b, R, e) = GetSessionValues(session_ctx)_; fail if that fails
 - Let _k<sub>1</sub>' = int(secnonce[0:32]), k<sub>2</sub>' = int(secnonce[32:64])_
@@ -326,7 +334,7 @@ Algorithm _PartialSigVerify(psig, id<sub>1..u</sub>, pubnonce<sub>1..u</sub>, pu
 - Inputs:
     - The partial signature _psig_: a 32-byte array
     - The number _u_ of identifiers, public nonces, and individual public shares with _min_participants ≤ u ≤ max_participants_
-    - The participant identifiers _id<sub>1..u</sub>_: _u_ integers with _1 ≤ id ≤ max_participants_
+    - The participant identifiers _id<sub>1..u</sub>_: _u_ 32-byte array with _1 ≤ int(id<sub>i</sub>) ≤ max_participants_
     - The public nonces _pubnonce<sub>1..u</sub>_: _u_ 66-byte arrays
     - The individual public shares _pubshare<sub>1..u</sub>_: _u_ 33-byte arrays
     - The number _v_ of tweaks with _0 ≤ v < 2^32_
@@ -359,11 +367,11 @@ Algorithm _PartialSigAgg(psig<sub>1..u</sub>, id<sub>1..u</sub>, session_ctx)_:
 - Inputs:
     - The number _u_ of signatures with _min_participants ≤ u ≤ max_participants_
     - The partial signatures _psig<sub>1..u</sub>_: _u_ 32-byte arrays
-    - The participant identifiers _id<sub>1..u</sub>_: _u_ 32-byte arrays with _1 ≤ int(id[i]) ≤ max_participants_
+    - The participant identifiers _id<sub>1..u</sub>_: _u_ 32-byte arrays with _1 ≤ int(id<sub>i</sub>) ≤ max_participants_
     - The _session_ctx_: a Session Context (todo _link to defn_) data structure
 - Let _(Q, _, tacc, _, _, R, e) = GetSessionValues(session_ctx)_; fail if that fails
 - For _i = 1 .. u_:
-    - Let _s<sub>i</sub> = int(psig<sub>i</sub>)_; fail if _s<sub>i</sub> ≥ n_ and blame signer _id[i]_ for invalid partial signature.
+    - Let _s<sub>i</sub> = int(psig<sub>i</sub>)_; fail if _s<sub>i</sub> ≥ n_ and blame signer _id<sub>i</sub>_ for invalid partial signature.
 - Let _g = 1_ if _has_even_y(Q)_, otherwise let _g = -1 mod n_
 - Let _s = s<sub>1</sub> + ... + s<sub>u</sub> + e⋅g⋅tacc mod n_
 - Return _sig =_ xbytes(R) || bytes(32, s)
