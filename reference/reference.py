@@ -34,7 +34,7 @@ XonlyPk = NewType('XonlyPk', bytes)
 class InvalidContributionError(Exception):
     def __init__(self, signer_id, contrib):
         # participant identifier of the singer who sent the invalid value
-        self.identifier = signer_id
+        self.id = signer_id
         # contrib is one of "pubkey", "pubnonce", "aggnonce", or "psig".
         self.contrib = contrib
 
@@ -112,26 +112,32 @@ def derive_interpolating_value_internal(L: List[int], x_i: int) -> int:
     return num * pow(deno, n - 2, n) % n
 
 def derive_interpolating_value(ids: List[bytes], my_id: bytes) -> int:
-    assert my_id in ids
-    assert all(ids.count(my_id) <= 1 for my_id in ids)
-    assert 1 <= int(my_id) < n
+    if not my_id in ids:
+        raise ValueError('The signer\'s id must be present in the participant identifier list.')
+    if not all(ids.count(my_id) <= 1 for my_id in ids):
+        raise ValueError('The participant identifier list must contain unique elements.')
+    #todo: turn this into raise ValueError?
+    assert 1 <= int_from_bytes(my_id) < n
     integer_ids = int_ids(ids)
-    return derive_interpolating_value_internal(integer_ids, int(my_id))
+    return derive_interpolating_value_internal(integer_ids, int_from_bytes(my_id))
 
+#todo: take ids as input? but we don't need to blame the malicious participant here
 def check_pubshares_correctness(secshares: List[bytes], pubshares: List[PlainPk]) -> bool:
-    assert len(secshares) == len(pubshares)
+    if not len(secshares) == len(pubshares):
+        raise ValueError('The secshares and pubshares arrays must have the same length.')
     for secshare, pubshare in zip(secshares, pubshares):
         if not individual_pk(secshare) == pubshare:
             return False
     return True
 
-def check_group_pubkey_correctness(max_participants: int, min_participants: int, group_pk: PlainPk, secshares: List[bytes], pubshares: List[PlainPk]) -> bool:
-    assert max_participants >= min_participants
-    assert len(secshares) == len(pubshares)
-    participant_ids = [i for i in range(1, max_participants + 1)]
+def check_group_pubkey_correctness(max_participants: int, min_participants: int, group_pk: PlainPk, ids: List[int], secshares: List[bytes], pubshares: List[PlainPk]) -> bool:
+    if not max_participants >= min_participants > 1:
+        raise ValueError('The 2 <= min participants <= max participants condition was violated.')
+    if not len(secshares) == len(pubshares) == max_participants:
+        raise ValueError('The secshares and pubshares arrays length must be equal to max participants.')
     # loop through all possible signer sets
     for num_signers in range(min_participants, max_participants + 1):
-        for signer_set in itertools.combinations(participant_ids, num_signers):
+        for signer_set in itertools.combinations(ids, num_signers):
             # compute the group secret key
             group_sk_ = 0
             for i in signer_set:
@@ -240,11 +246,13 @@ def nonce_gen(secshare: Optional[bytes], pubshare: Optional[PlainPk], group_pk: 
     return nonce_gen_internal(rand_, secshare, pubshare, group_pk, msg, extra_in)
 
 def nonce_agg(pubnonces: List[bytes], ids: List[bytes]) -> bytes:
+    #think: needs check for min_participants <= len <= max_participants?
     if len(pubnonces) != len(ids):
-        raise ValueError('The `pubnonces` and `ids` arrays must have the same length.')
+        raise ValueError('The pubnonces and ids arrays must have the same length.')
     aggnonce = b''
     for j in (1, 2):
         R_j = infinity
+        # use `ids_to_int` fn inside zip?
         for my_id_, pubnonce in zip(ids, pubnonces):
             try:
                 R_ij = cpoint(pubnonce[(j-1)*33:j*33])
@@ -264,13 +272,14 @@ SessionContext = NamedTuple('SessionContext', [('aggnonce', bytes),
                                                ('msg', bytes)])
 
 def derive_group_pubkey(pubshares: List[PlainPk], ids: List[bytes]) -> PlainPk:
+    #think: needs check for min_participants <= len <= max_participants?
     assert len(pubshares) == len(ids)
     Q = infinity
     for pid, pubshare in zip(ids, pubshares):
         try:
             X_i = cpoint(pubshare)
         except ValueError:
-            raise InvalidContributionError(int_from_bytes(pid), "pubkey")
+            raise InvalidContributionError(int_from_bytes(pid), "pubshare")
         lam_i = derive_interpolating_value(ids, pid)
         Q = point_add(Q, point_mul(X_i, lam_i))
     # Q is not the point at infinity except with negligible probability.
@@ -279,9 +288,9 @@ def derive_group_pubkey(pubshares: List[PlainPk], ids: List[bytes]) -> PlainPk:
 
 def group_pubkey_and_tweak(pubshares: List[PlainPk], ids: List[bytes], tweaks: List[bytes], is_xonly: List[bool]) -> TweakContext:
     if len(pubshares) != len(ids):
-        raise ValueError('The `pubshares` and `ids` arrays must have the same length.')
+        raise ValueError('The pubshares and ids arrays must have the same length.')
     if len(tweaks) != len(is_xonly):
-        raise ValueError('The `tweaks` and `is_xonly` arrays must have the same length.')
+        raise ValueError('The tweaks and is_xonly arrays must have the same length.')
     group_pk = derive_group_pubkey(pubshares, ids)
     tweak_ctx = tweak_ctx_init(group_pk)
     v = len(tweaks)
@@ -291,8 +300,10 @@ def group_pubkey_and_tweak(pubshares: List[PlainPk], ids: List[bytes], tweaks: L
 
 def get_session_values(session_ctx: SessionContext) -> Tuple[Point, int, int, int, Point, int]:
     (aggnonce, ids, pubshares, tweaks, is_xonly, msg) = session_ctx
+    #think: add check (or assert) min_participants <= len(ids, pubshares) <= max_participants?
     Q, gacc, tacc = group_pubkey_and_tweak(pubshares, ids, tweaks, is_xonly)
-    concat_ids = b''.join(ids)
+    # sort before serializing because signers set in unordered
+    concat_ids = b''.join(sorted(ids))
     b = int_from_bytes(tagged_hash('FROST/noncecoef', concat_ids + aggnonce + xbytes(Q) + msg)) % n
     try:
         R_1 = cpoint_ext(aggnonce[0:33])
@@ -311,8 +322,14 @@ def get_session_interpolating_value(session_ctx: SessionContext, my_id: bytes) -
     (_, ids, _, _, _, _) = session_ctx
     return derive_interpolating_value(ids, my_id)
 
+def session_has_signer_pubshare(session_ctx: SessionContext, pubshare: PlainPk) -> bool:
+    (_, _, pubshares_list, _, _, _) = session_ctx
+    return pubshare in pubshares_list
+
 def sign(secnonce: bytearray, secshare: bytes, my_id: bytes, session_ctx: SessionContext) -> bytes:
-    #todo: add a check for < max_participant here?
+    #think: add a check for 1 <= my_id <= max_participant here?
+    # do we really need the below check?
+    # add test vector for this check if confirmed
     if not 0 < int_from_bytes(my_id) < n:
         raise ValueError('participant identifier is out of range')
     (Q, gacc, _, b, R, e) = get_session_values(session_ctx)
@@ -332,7 +349,9 @@ def sign(secnonce: bytearray, secshare: bytes, my_id: bytes, session_ctx: Sessio
         raise ValueError('secret key value is out of range.')
     P = point_mul(G, d_)
     assert P is not None
-    pubshare = cbytes(P)
+    pubshare = PlainPk(cbytes(P))
+    if not session_has_signer_pubshare(session_ctx, pubshare):
+        raise ValueError('The signer\'s pubshare must be included in the list of pubshares.')
     a = get_session_interpolating_value(session_ctx, my_id)
     g = 1 if has_even_y(Q) else n - 1
     d = g * gacc * d_ % n
@@ -349,9 +368,9 @@ def sign(secnonce: bytearray, secshare: bytes, my_id: bytes, session_ctx: Sessio
 
 def partial_sig_verify(psig: bytes, ids: List[bytes], pubnonces: List[bytes], pubshares: List[PlainPk], tweaks: List[bytes], is_xonly: List[bool], msg: bytes, i: int) -> bool:
     if not len(ids) == len(pubnonces) == len(pubshares):
-        raise ValueError('The `ids`, `pubnonces` and `pubshares` arrays must have the same length.')
+        raise ValueError('The ids, pubnonces and pubshares arrays must have the same length.')
     if len(tweaks) != len(is_xonly):
-        raise ValueError('The `tweaks` and `is_xonly` arrays must have the same length.')
+        raise ValueError('The tweaks and is_xonly arrays must have the same length.')
     aggnonce = nonce_agg(pubnonces, ids)
     session_ctx = SessionContext(aggnonce, ids, pubshares, tweaks, is_xonly, msg)
     return partial_sig_verify_internal(psig, ids[i], pubnonces[i], pubshares[i], session_ctx)
@@ -361,6 +380,11 @@ def partial_sig_verify_internal(psig: bytes, my_id: bytes, pubnonce: bytes, pubs
     s = int_from_bytes(psig)
     if s >= n:
         return False
+    #it's impossible to perform this check during verify, because we don't have access to the secshare!
+    # we can only make sure the verification fails, when we have such a vector!
+    #todo: Remove this check, also modify the spec accordingly
+    if not session_has_signer_pubshare(session_ctx, pubshare):
+        raise ValueError('The signer\'s pubshare must be included in the list of pubshares.')
     R_s1 = cpoint(pubnonce[0:33])
     R_s2 = cpoint(pubnonce[33:66])
     Re_s_ = point_add(R_s1, point_mul(R_s2, b))
@@ -375,7 +399,7 @@ def partial_sig_verify_internal(psig: bytes, my_id: bytes, pubnonce: bytes, pubs
 
 def partial_sig_agg(psigs: List[bytes], ids: List[bytes], session_ctx: SessionContext) -> bytes:
     if len(psigs) != len(ids):
-        raise ValueError('The `psigs` and `ids` arrays must have the same length.')
+        raise ValueError('The psigs and ids arrays must have the same length.')
     (Q, _, tacc, _, R, e) = get_session_values(session_ctx)
     s = 0
     for my_id_, psig in zip(ids, psigs):
@@ -415,14 +439,19 @@ def assert_raises(exception, try_fn, except_fn):
 
 def get_error_details(test_case):
     error = test_case["error"]
+    def except_fn1(e):
+        print(f"LHS: {str(e)}")
+        print(f"RHS: {error['message']}")
+        return str(e) == error["message"]
     if error["type"] == "invalid_contribution":
         exception = InvalidContributionError
         if "contrib" in error:
-            except_fn = lambda e: e.identifier == error["signer_id"] and e.contrib == error["contrib"]
+            except_fn = lambda e: e.id == error["signer_id"] and e.contrib == error["contrib"]
         else:
-            except_fn = lambda e: e.identifier == error["signer_id"]
+            except_fn = lambda e: e.id == error["signer_id"]
     elif error["type"] == "value":
         exception = ValueError
+        # except_fn = except_fn1
         except_fn = lambda e: str(e) == error["message"]
     else:
         raise RuntimeError(f"Invalid error type: {error['type']}")
@@ -437,11 +466,13 @@ def test_keygen_vectors():
         max_participants = test_case["max_participants"]
         min_participants = test_case["min_participants"]
         group_pk = bytes.fromhex(test_case["group_public_key"])
+        # assert the length using min & max participants
+        ids = test_case["participant_identifiers"]
         pubshares = fromhex_all(test_case["participant_pubshares"])
         secshares = fromhex_all(test_case["participant_secshares"])
 
         assert check_pubshares_correctness(secshares, pubshares) == True
-        assert check_group_pubkey_correctness(max_participants, min_participants, group_pk, secshares, pubshares) == True
+        assert check_group_pubkey_correctness(max_participants, min_participants, group_pk, ids, secshares, pubshares) == True
 
     pubshare_fail_test_cases = test_data["pubshare_correctness_fail_test_cases"]
     for test_case in pubshare_fail_test_cases:
@@ -455,10 +486,11 @@ def test_keygen_vectors():
         max_participants = test_case["max_participants"]
         min_participants = test_case["min_participants"]
         group_pk = bytes.fromhex(test_case["group_public_key"])
+        ids = test_case["participant_identifiers"]
         pubshares = fromhex_all(test_case["participant_pubshares"])
         secshares = fromhex_all(test_case["participant_secshares"])
 
-        assert check_group_pubkey_correctness(max_participants, min_participants, group_pk, secshares, pubshares) == False
+        assert check_group_pubkey_correctness(max_participants, min_participants, group_pk, ids, secshares, pubshares) == False
 
 def test_nonce_gen_vectors():
     with open(os.path.join(sys.path[0], 'vectors', 'nonce_gen_vectors.json')) as f:
@@ -498,6 +530,8 @@ def test_nonce_agg_vectors():
     error_test_cases = test_data["error_test_cases"]
 
     for test_case in valid_test_cases:
+        #todo: assert the min_participants <= len(pubnonces, ids) <= max_participants
+        #todo: assert the values of ids too? 1 <= id <= max_participants?
         pubnonces = [pubnonces_list[i] for i in test_case["pubnonce_indices"]]
         ids = [bytes_from_int(i) for i in test_case["participant_identifiers"]]
         expected_aggnonce = bytes.fromhex(test_case["expected_aggnonce"])
@@ -509,8 +543,115 @@ def test_nonce_agg_vectors():
         ids = [bytes_from_int(i) for i in test_case["participant_identifiers"]]
         assert_raises(exception, lambda: nonce_agg(pubnonces, ids), except_fn)
 
+def print_session_ctx(session_ctx: SessionContext) -> None:
+    aggnonce, ids, pubshares, tweaks, tweak_modes, msg = session_ctx
+    print('----Session Context----')
+    print('aggnonce: {}'.format(bytes_to_hex(aggnonce, len(aggnonce))))
+    ids_ = [int_from_bytes(x) for x in ids]
+    print('ids: {}'.format(ids_))
+    print('pubshares: ')
+    pubshares_ = [hex_cbytes(x) for x in pubshares]
+    for x in pubshares_:
+        print(x)
+    print('msg: {}'.format(bytes_to_hex(msg, len(msg))))
+    print('-----------------------')
+
+def hex_cbytes(x: bytes) -> str:
+    assert len(x) == 33
+    assert (x[:1] == b'\x02' or x[:1] == b'\x03')
+    return '0x' + x[:1].hex() + '{:X}'.format(int_from_bytes(x[1:])).zfill(64)
+
+def bytes_to_hex(x: bytes, l: int) -> str:
+    assert len(x) == l
+    return '0x' + '{:X}'.format(int_from_bytes(x)).zfill(2*l)
+
+
+# todo: include vectors from the frost draft too
+# todo: add a test where group_pk is even (might need to modify json file)
 def test_sign_verify_vectors():
-    pass
+    with open(os.path.join(sys.path[0], 'vectors', 'sign_verify_vectors.json')) as f:
+        test_data = json.load(f)
+
+    max_participants = test_data["max_participants"]
+    min_participants = test_data["min_participants"]
+    group_pk = XonlyPk(bytes.fromhex(test_data["group_public_key"]))
+    secshare_p1 = bytes.fromhex(test_data["secshare_p1"])
+    ids = test_data["identifiers"]
+    pubshares = fromhex_all(test_data["pubshares"])
+    # The public key corresponding to the first participant (secshare_p1) is at index 0
+    assert pubshares[0] == individual_pk(secshare_p1)
+
+    secnonces_p1 = fromhex_all(test_data["secnonces_p1"])
+    pubnonces = fromhex_all(test_data["pubnonces"])
+    # The public nonce corresponding to first participant (secnonce_p1[0]) is at index 0
+    k_1 = int_from_bytes(secnonces_p1[0][0:32])
+    k_2 = int_from_bytes(secnonces_p1[0][32:64])
+    R_s1 = point_mul(G, k_1)
+    R_s2 = point_mul(G, k_2)
+    assert R_s1 is not None and R_s2 is not None
+    assert pubnonces[0] == cbytes(R_s1) + cbytes(R_s2)
+
+    aggnonces = fromhex_all(test_data["aggnonces"])
+    msgs = fromhex_all(test_data["msgs"])
+
+    valid_test_cases = test_data["valid_test_cases"]
+    sign_error_test_cases = test_data["sign_error_test_cases"]
+    verify_fail_test_cases = test_data["verify_fail_test_cases"]
+    verify_error_test_cases = test_data["verify_error_test_cases"]
+
+    for test_case in valid_test_cases:
+        ids_tmp = [bytes_from_int(ids[i]) for i in test_case["id_indices"]]
+        pubshares_tmp = [PlainPk(pubshares[i]) for i in test_case["pubshare_indices"]]
+        pubnonces_tmp = [pubnonces[i] for i in test_case["pubnonce_indices"]]
+        aggnonce_tmp = aggnonces[test_case["aggnonce_index"]]
+        # Make sure that pubnonces and aggnonce in the test vector are consistent
+        assert nonce_agg(pubnonces_tmp, ids_tmp) == aggnonce_tmp
+        msg = msgs[test_case["msg_index"]]
+        signer_index = test_case["signer_index"]
+        my_id = ids_tmp[signer_index]
+        expected = bytes.fromhex(test_case["expected"])
+
+        session_ctx = SessionContext(aggnonce_tmp, ids_tmp, pubshares_tmp, [], [], msg)
+        # WARNING: An actual implementation should _not_ copy the secnonce.
+        # Reusing the secnonce, as we do here for testing purposes, can leak the
+        # secret key.
+        secnonce_tmp = bytearray(secnonces_p1[0])
+        assert sign(secnonce_tmp, secshare_p1, my_id, session_ctx) == expected
+        assert partial_sig_verify(expected, ids_tmp, pubnonces_tmp, pubshares_tmp, [], [], msg, signer_index)
+
+    for test_case in sign_error_test_cases:
+        exception, except_fn = get_error_details(test_case)
+        ids_tmp = [bytes_from_int(ids[i]) for i in test_case["id_indices"]]
+        pubshares_tmp = [PlainPk(pubshares[i]) for i in test_case["pubshare_indices"]]
+        aggnonce_tmp = aggnonces[test_case["aggnonce_index"]]
+        msg = msgs[test_case["msg_index"]]
+        signer_index = test_case["signer_index"]
+        my_id = bytes_from_int(test_case["signer_id"]) if signer_index is None else ids_tmp[signer_index]
+        secnonce_tmp = bytearray(secnonces_p1[test_case["secnonce_index"]])
+
+        session_ctx = SessionContext(aggnonce_tmp, ids_tmp, pubshares_tmp, [], [], msg)
+        assert_raises(exception, lambda: sign(secnonce_tmp, secshare_p1, my_id, session_ctx), except_fn)
+
+    for test_case in verify_fail_test_cases:
+        psig = bytes.fromhex(test_case["psig"])
+        ids_tmp = [bytes_from_int(ids[i]) for i in test_case["id_indices"]]
+        pubshares_tmp = [PlainPk(pubshares[i]) for i in test_case["pubshare_indices"]]
+        pubnonces_tmp = [pubnonces[i] for i in test_case["pubnonce_indices"]]
+        msg = msgs[test_case["msg_index"]]
+        signer_index = test_case["signer_index"]
+
+        assert not partial_sig_verify(psig, ids_tmp, pubnonces_tmp, pubshares_tmp, [], [], msg, signer_index)
+
+    for test_case in verify_error_test_cases:
+        exception, except_fn = get_error_details(test_case)
+
+        psig = bytes.fromhex(test_case["psig"])
+        ids_tmp = [bytes_from_int(ids[i]) for i in test_case["id_indices"]]
+        pubshares_tmp = [PlainPk(pubshares[i]) for i in test_case["pubshare_indices"]]
+        pubnonces_tmp = [pubnonces[i] for i in test_case["pubnonce_indices"]]
+        msg = msgs[test_case["msg_index"]]
+        signer_index = test_case["signer_index"]
+        assert_raises(exception, lambda: partial_sig_verify(psig, ids_tmp, pubnonces_tmp, pubshares_tmp, [], [], msg, signer_index), except_fn)
 
 def test_tweak_vectors():
     pass

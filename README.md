@@ -135,6 +135,7 @@ The following conventions are used, with constants as defined for [secp256k1](h
 	    - For _x_ in _lst_:
 		    - _res = res || x_
 		- Return _res_
+    - The function _sorted(lst)_, where _lst_ is a list of byte array elements, returns a list of byte array sorted based on the numerical values of its elements in ascending order, preserving the relative order of equal elements.
 - Other:
     - Tuples are written by listing the elements within parentheses and separated by commas. For example, _(2, 3, 1)_ is a tuple.
 
@@ -259,7 +260,7 @@ Algorithm _GetSessionValues(session_ctx)_:
 - For _i = 1 .. v_:
     - Let _tweak_ctx<sub>i</sub> = ApplyTweak(tweak_ctx<sub>i-1</sub>, tweak<sub>i</sub>, is_xonly_t<sub>i</sub>)_; fail if that fails
 - Let _(Q, gacc, tacc) = tweak_ctx<sub>v</sub>_
-- Let _concat_ids_ = _concat_bytearrays(id<sub>1..u</sub>)_
+- Let _concat_ids_ = _concat_bytearrays(sorted(id<sub>1..u</sub>))_
 - Let b = _int(hash<sub>FROST/noncecoef</sub>(concat_ids || aggnonce || xbytes(Q) || m)) mod n_
 - Let _R<sub>1</sub> = cpoint_ext(aggnonce[0:33]), R<sub>2</sub> = cpoint_ext(aggnonce[33:66])_; fail if that fails and blame nonce aggregator for invalid _aggnonce_.
 - Let _R' = R<sub>1</sub> + b⋅R<sub>2</sub>_
@@ -303,6 +304,12 @@ Internal Algorithm _GroupPubkey(id<sub>1..u</sub>, pubshare<sub>1..u</sub>)_
     - _X_ = _X_ + _lambda⋅P_
 - Return _X_
 
+Algorithm _SessionHasSignerPubshare(session_ctx, signer_pubshare)_:
+- Let _(u, _, pubshare<sub>1..u</sub>, _, _, _, _) = session_ctx_
+- If _signer_pubshare in pubshare<sub>1..u</sub>_
+	- Return True
+- Otherwise Return False
+
 ### Signing
 TODO: should be add 1 <= _my_id_ <= max_pariticiapants, check here?
 Algorithm _Sign(secnonce, secshare, my_id, session_ctx)_:
@@ -319,6 +326,7 @@ Algorithm _Sign(secnonce, secshare, my_id, session_ctx)_:
 - Fail if _d' = 0_ or _d' ≥ n_
 - Let _P = d'⋅G_
 - Let _pubshare = cbytes(P)_
+- Fail if _SessionHasSignerPubshare(session_ctx, pubshare) = False_
 - Let _a = GetSessionInterpolatingValue(session_ctx, my_id)_; fail if that fails
 - Let _g = 1_ if _has_even_y(Q)_, otherwise let _g = -1 mod n_
 - Let _d = g⋅gacc⋅d' mod n_ (See _negating seckey when signing_)
@@ -350,6 +358,7 @@ Algorithm _PartialSigVerify(psig, id<sub>1..u</sub>, pubnonce<sub>1..u</sub>, pu
 Internal Algorithm _PartialSigVerifyInternal(psig, my_id, pubnonce, pubshare, session_ctx)_:
 - Let _(Q, gacc, _, b, R, e) = GetSessionValues(session_ctx)_; fail if that fails
 - Let _s = int(psig)_; fail if _s ≥ n_
+- Fail if _SessionHasSignerPubshare(session_ctx, pubshare) = False_
 - Let _R<sub>⁎,1</sub> = cpoint(pubnonce[0:33]), R<sub>⁎,2</sub> = cpoint(pubnonce[33:66])_
 - Let _Re<sub>⁎</sub>' = R<sub>⁎,1</sub> + b⋅R<sub>⁎,2</sub>_
 - Let effective nonce _Re<sub>⁎</sub> = Re<sub>⁎</sub>'_ if _has_even_y(R)_, otherwise let _Re<sub>⁎</sub> = -Re<sub>⁎</sub>'_

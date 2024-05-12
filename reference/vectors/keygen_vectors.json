@@ -61,7 +61,7 @@
             "max_participants": 3,
             "min_participants": 3,
             "group_public_key": "0354F1E67AAFFB49654AF3EE5B0C68D8CF24468D014453F1F13B5221512A0BCE78",
-            "participant_identifiers": [1, 2],
+            "participant_identifiers": [1, 2, 3],
             "participant_pubshares": [
                 "037A01FF2705D679CDC34E04366CC3BA95BD9E883AC7E33B640D744BE6BCC2D140",
                 "039E2C0AE44EA1203606D04B711667C07D1695ADC36FBF07DD37B7ECA85490262C",
