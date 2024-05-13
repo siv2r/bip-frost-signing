@@ -1,0 +1,164 @@
+{
+    "max_participants": 5,
+    "min_participants": 3,
+    "group_public_key": "037940B3ED1FDC360252A6F48058C7B94276DFB6AA2B7D51706FB48326B19E7AE1",
+    "secshare_p1":"81D0D40CDF044588167A987C14552954DB187AC5AD3B1CA40D7B03DCA32AFDFB",
+    "identifiers": [1, 2, 3, 4, 5],
+    "pubshares": [
+        "02BB66437FCAA01292BFB4BB6F19D67818FE693215C36C4663857F1DC8AB8BF4FA",
+        "02C3250013C86AA9C3011CD40B2658CBC5B950DD21FFAA4EDE1BB66E18A063CED5",
+        "03259D7068335012C08C5D80E181969ED7FFA08F7973E3ED9C8C0BFF3EC03C223E",
+        "02A22971750242F6DA35B8DB0DFE74F38A3227118B296ADD2C65E324E2B7EB20AD",
+        "03541293535BB662F8294C4BEB7EA25F55FEAE86C6BAE0CEBD741EAAA28639A6E6"
+    ],
+    "secnonce_p1":"96DF27F46CB6E0399C7A02811F6A4D695BBD7174115477679E956658FF2E83D618E4F670DF3DEB215934E4F68D4EEC71055B87288947D75F6E1EA9037FF62173",
+    "pubnonces": [
+        "02FCDBEE416E4426FB4004BAB2B416164845DEC27337AD2B96184236D715965AB2039F71F389F6808DC6176F062F80531E13EA5BC2612B690FC284AE66C2CD859CE9",
+        "02D26EF7E09A4BC0A2CF295720C64BAD56A28EF50B6BECBD59AF6F3ADE6C2480C503D11B9993AE4C2D38EA2591287F7B744976F0F0B79104B96D6399507FC533E893",
+        "03C7E3D6456228347B658911BF612967F36C7791C24F9607ADB34E09F8CC1126D803D2C9C6E3D1A11463F8C2D57B145A814F5D44FD1A42F7A024140AC30D48EE0BEE",
+        "036409E6BA4A00E148E9BE2D3B4217A74B3A65F0D75489176EF8A7D2BD699B949002B1E9FA2A8AE80CD7CE1593B51402B980B56896DB5B5C2B07EDA2C0CFEB08AD93",
+        "02464144C7AFAEF651F63E330B1FFF6EEC43991F9AE75AE6069796C097B04DAE720288B464788E5DFC9C2CCD6A3CCBBED643666749250012DA220D1C9FC559214270"
+    ],
+    "aggnonces": [
+        "02047C99228CEA528AE200A82CBE4CD188BC67D58F537D1904A16B07FCDE07C3A6038708199DFA5BC5C41A0DD0FBD7D0620ADB4AC9991F7DB55A155CE9396AA80D1A",
+        "03AB37C47419536990037B903428008878E4F395823A135C2B39E67FA850CFF41F028967ECFE399759125F59F7142B6580D91F70DE1C9E9C6B0F56754B64370A4438",
+        "0353365AF75F7C246089940D57D3265947A1D27576E411AE9C98702516C72DB51B02F5483E63F474BDD8EAC03F99276ED5A2ED31786F5B0F1A8706BE7367BC1D4555"
+    ],
+    "tweaks": [
+        "E8F791FF9225A2AF0102AFFF4A9A723D9612A682A25EBE79802B263CDFCD83BB",
+        "AE2EA797CC0FE72AC5B97B97F3C6957D7E4199A167A58EB08BCAFFDA70AC0455",
+        "F52ECBC565B3D8BEA2DFD5B75A4F457E54369809322E4120831626F290FA87E0",
+        "1969AD73CC177FA0B4FCED6DF1F7BF9907E665FDE9BA196A74FED0A3CF5AEF9D",
+        "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141"
+    ],
+    "msg": "F95466D086770E689964664219266FE5ED215C92AE20BAB5C9D79ADDDDF3C0CF",
+    "valid_test_cases": [
+        {
+            "id_indices": [1, 2, 0],
+            "pubshare_indices": [1, 2, 0],
+            "pubnonce_indices": [1, 2, 0],
+            "tweak_indices": [],
+            "is_xonly": [],
+            "aggnonce_index": 0,
+            "signer_index": 2,
+            "expected": "DEDAA44E6DB7FF1B40D8CBAA44DF3F8C80BD7CEC6A21AE22F34ED7ABC59E2AEC",
+            "comment": "No tweak. The expected value (partial sig) must match the signing with untweaked group public key."
+        },
+        {
+            "id_indices": [1, 2, 0],
+            "pubshare_indices": [1, 2, 0],
+            "pubnonce_indices": [1, 2, 0],
+            "tweak_indices": [0],
+            "is_xonly": [true],
+            "aggnonce_index": 0,
+            "signer_index": 2,
+            "expected": "00A84851A7D3F53B94FDFDE0BE6C6DCE570B7FF27E8B77FDF75AFF52066F42EE",
+            "comment": "A single x-only tweak"
+        },
+        {
+            "id_indices": [1, 2, 0],
+            "pubshare_indices": [1, 2, 0],
+            "pubnonce_indices": [1, 2, 0],
+            "tweak_indices": [0],
+            "is_xonly": [false],
+            "aggnonce_index": 0,
+            "signer_index": 2,
+            "expected": "FC2D7852AAEF8F3C229FEC7E6B496999C52857387E4274CD2F7625CD4B262D73",
+            "comment": "A single plain tweak"
+        },
+        {
+            "id_indices": [1, 2, 0],
+            "pubshare_indices": [1, 2, 0],
+            "pubnonce_indices": [1, 2, 0],
+            "tweak_indices": [0, 1],
+            "aggnonce_index": 0,
+            "is_xonly": [false, true],
+            "signer_index": 2,
+            "expected": "1634928A5951F23E77DB9D6171E89A04E55B2BC07A492CFE68B611303C96957A",
+            "comment": "A plain tweak followed by an x-only tweak"
+        },
+        {
+            "id_indices": [1, 2, 0],
+            "pubshare_indices": [1, 2, 0],
+            "pubnonce_indices": [1, 2, 0],
+            "tweak_indices": [0, 1, 2, 3],
+            "aggnonce_index": 0,
+            "is_xonly": [true, false, true, false],
+            "signer_index": 2,
+            "expected": "4252C4EA9641F1B8C502F3B63C3D0AFEF3274CFE7C70D94AE2F2DC54FA16D216",
+            "comment": "Four tweaks: x-only, plain, x-only, plain. If an implementation prohibits applying plain tweaks after x-only tweaks, it can skip this test vector or return an error."
+        },
+        {
+            "id_indices": [1, 2, 0],
+            "pubshare_indices": [1, 2, 0],
+            "pubnonce_indices": [1, 2, 0],
+            "tweak_indices": [0, 1, 2, 3],
+            "aggnonce_index": 0,
+            "is_xonly": [false, false, true, true],
+            "signer_index": 2,
+            "expected": "CF079FD835F00CF6A737FDC19D602AA445C95825B6A5D1C0FFB32A848427F49E",
+            "comment": "Four tweaks: plain, plain, x-only, x-only."
+        },
+        {
+            "id_indices": [0, 1, 2],
+            "pubshare_indices": [0, 1, 2],
+            "pubnonce_indices": [0, 1, 2],
+            "tweak_indices": [0, 1, 2, 3],
+            "aggnonce_index": 0,
+            "is_xonly": [false, false, true, true],
+            "signer_index": 0,
+            "expected": "CF079FD835F00CF6A737FDC19D602AA445C95825B6A5D1C0FFB32A848427F49E",
+            "comment": "Order of the signers shouldn't affect tweaking. The expected value (partial sig) must match the previous test vector."
+        },
+        {
+            "id_indices": [0, 1, 2, 3],
+            "pubshare_indices": [0, 1, 2, 3],
+            "pubnonce_indices": [0, 1, 2, 3],
+            "tweak_indices": [0, 1, 2, 3],
+            "aggnonce_index": 1,
+            "is_xonly": [false, false, true, true],
+            "signer_index": 0,
+            "expected": "22B8AE565FB2A52E07F1D6D0B5F85DD16932ADF77C0D61C473554133C22EE617",
+            "comment": "Number of the signers won't affect tweaking but the expected value (partial sig) will change because of interpolating value."
+        },
+        {
+            "id_indices": [0, 1, 2, 3, 4],
+            "pubshare_indices": [0, 1, 2, 3, 4],
+            "pubnonce_indices": [0, 1, 2, 3, 4],
+            "tweak_indices": [0, 1, 2, 3],
+            "aggnonce_index": 2,
+            "is_xonly": [false, false, true, true],
+            "signer_index": 0,
+            "expected": "7BCA92625F1C83D1EE6A855A198D25410BBE3867E2B61400A02D12BA2D6E2384",
+            "comment": "Tweaking with maximum possible signers"
+        }
+    ],
+    "error_test_cases": [
+        {
+            "id_indices": [1, 2, 0],
+            "pubshare_indices": [1, 2, 0],
+            "tweak_indices": [4],
+            "aggnonce_index": 0,
+            "is_xonly": [false],
+            "signer_index": 2,
+            "error": {
+                "type": "value",
+                "message": "The tweak must be less than n."
+            },
+            "comment": "Tweak is invalid because it exceeds group size"
+        },
+        {
+            "id_indices": [1, 2, 0],
+            "pubshare_indices": [1, 2, 0],
+            "tweak_indices": [0, 1, 2, 3],
+            "aggnonce_index": 0,
+            "is_xonly": [false, false],
+            "signer_index": 2,
+            "error": {
+                "type": "value",
+                "message": "The tweaks and is_xonly arrays must have the same length."
+            },
+            "comment": "Tweaks count doesn't match the tweak modes count"
+        }
+    ]
+}

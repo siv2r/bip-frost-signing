@@ -654,7 +654,68 @@ def test_sign_verify_vectors():
         assert_raises(exception, lambda: partial_sig_verify(psig, ids_tmp, pubnonces_tmp, pubshares_tmp, [], [], msg, signer_index), except_fn)
 
 def test_tweak_vectors():
-    pass
+    with open(os.path.join(sys.path[0], 'vectors', 'tweak_vectors.json')) as f:
+        test_data = json.load(f)
+
+    max_participants = test_data["max_participants"]
+    min_participants = test_data["min_participants"]
+    group_pk = XonlyPk(bytes.fromhex(test_data["group_public_key"]))
+    secshare_p1 = bytes.fromhex(test_data["secshare_p1"])
+    ids = test_data["identifiers"]
+    pubshares = fromhex_all(test_data["pubshares"])
+    # The public key corresponding to the first participant (secshare_p1) is at index 0
+    assert pubshares[0] == individual_pk(secshare_p1)
+
+    secnonce_p1 = bytearray(bytes.fromhex(test_data["secnonce_p1"]))
+    pubnonces = fromhex_all(test_data["pubnonces"])
+    # The public nonce corresponding to first participant (secnonce_p1[0]) is at index 0
+    k_1 = int_from_bytes(secnonce_p1[0:32])
+    k_2 = int_from_bytes(secnonce_p1[32:64])
+    R_s1 = point_mul(G, k_1)
+    R_s2 = point_mul(G, k_2)
+    assert R_s1 is not None and R_s2 is not None
+    assert pubnonces[0] == cbytes(R_s1) + cbytes(R_s2)
+
+    aggnonces = fromhex_all(test_data["aggnonces"])
+    tweaks = fromhex_all(test_data["tweaks"])
+
+    msg = bytes.fromhex(test_data["msg"])
+
+    valid_test_cases = test_data["valid_test_cases"]
+    error_test_cases = test_data["error_test_cases"]
+
+    for test_case in valid_test_cases:
+        ids_tmp = [bytes_from_int(ids[i]) for i in test_case["id_indices"]]
+        pubshares_tmp = [PlainPk(pubshares[i]) for i in test_case["pubshare_indices"]]
+        pubnonces_tmp = [pubnonces[i] for i in test_case["pubnonce_indices"]]
+        aggnonce_tmp = aggnonces[test_case["aggnonce_index"]]
+        # Make sure that pubnonces and aggnonce in the test vector are consistent
+        assert nonce_agg(pubnonces_tmp, ids_tmp) == aggnonce_tmp
+        tweaks_tmp = [tweaks[i] for i in test_case["tweak_indices"]]
+        tweak_modes_tmp = test_case["is_xonly"]
+        signer_index = test_case["signer_index"]
+        my_id = ids_tmp[signer_index]
+        expected = bytes.fromhex(test_case["expected"])
+
+        session_ctx = SessionContext(aggnonce_tmp, ids_tmp, pubshares_tmp, tweaks_tmp, tweak_modes_tmp, msg)
+        # WARNING: An actual implementation should _not_ copy the secnonce.
+        # Reusing the secnonce, as we do here for testing purposes, can leak the
+        # secret key.
+        assert sign(secnonce_p1, secshare_p1, my_id, session_ctx) == expected
+        assert partial_sig_verify(expected, ids_tmp, pubnonces_tmp, pubshares_tmp, tweaks_tmp, tweak_modes_tmp, msg, signer_index)
+
+    for test_case in error_test_cases:
+        exception, except_fn = get_error_details(test_case)
+        ids_tmp = [bytes_from_int(ids[i]) for i in test_case["id_indices"]]
+        pubshares_tmp = [PlainPk(pubshares[i]) for i in test_case["pubshare_indices"]]
+        aggnonce_tmp = aggnonces[test_case["aggnonce_index"]]
+        tweaks_tmp = [tweaks[i] for i in test_case["tweak_indices"]]
+        tweak_modes_tmp = test_case["is_xonly"]
+        signer_index = test_case["signer_index"]
+        my_id = ids_tmp[signer_index]
+
+        session_ctx = SessionContext(aggnonce_tmp, ids_tmp, pubshares_tmp, tweaks_tmp, tweak_modes_tmp, msg)
+        assert_raises(exception, lambda: sign(secnonce_p1, secshare_p1, my_id, session_ctx), except_fn)
 
 def test_sig_agg_vectors():
     pass
