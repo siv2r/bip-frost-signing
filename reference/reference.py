@@ -158,6 +158,7 @@ def get_xonly_pk(tweak_ctx: TweakContext) -> XonlyPk:
     Q, _, _ = tweak_ctx
     return XonlyPk(xbytes(Q))
 
+#todo: remove this func, if unused
 def get_plain_pk(tweak_ctx: TweakContext) -> PlainPk:
     Q, _, _ = tweak_ctx
     return PlainPk(cbytes(Q))
@@ -718,7 +719,62 @@ def test_tweak_vectors():
         assert_raises(exception, lambda: sign(secnonce_p1, secshare_p1, my_id, session_ctx), except_fn)
 
 def test_sig_agg_vectors():
-    pass
+    with open(os.path.join(sys.path[0], 'vectors', 'sig_agg_vectors.json')) as f:
+        test_data = json.load(f)
+
+    max_participants = test_data["max_participants"]
+    min_participants = test_data["min_participants"]
+    group_pk = XonlyPk(bytes.fromhex(test_data["group_public_key"]))
+    ids = test_data["identifiers"]
+    pubshares = fromhex_all(test_data["pubshares"])
+    # These nonces are only required if the tested API takes the individual
+    # nonces and not the aggregate nonce.
+    pubnonces = fromhex_all(test_data["pubnonces"])
+
+    tweaks = fromhex_all(test_data["tweaks"])
+    psigs = fromhex_all(test_data["psigs"])
+    msg = bytes.fromhex(test_data["msg"])
+
+    valid_test_cases = test_data["valid_test_cases"]
+    error_test_cases = test_data["error_test_cases"]
+
+    for test_case in valid_test_cases:
+        ids_tmp = [bytes_from_int(ids[i]) for i in test_case["id_indices"]]
+        pubshares_tmp = [PlainPk(pubshares[i]) for i in test_case["pubshare_indices"]]
+        pubnonces_tmp = [pubnonces[i] for i in test_case["pubnonce_indices"]]
+        aggnonce_tmp = bytes.fromhex(test_case["aggnonce"])
+        # Make sure that pubnonces and aggnonce in the test vector are consistent
+        assert aggnonce_tmp == nonce_agg(pubnonces_tmp, ids_tmp)
+
+        tweaks_tmp = [tweaks[i] for i in test_case["tweak_indices"]]
+        tweak_modes_tmp = test_case["is_xonly"]
+        psigs_tmp = [psigs[i] for i in test_case["psig_indices"]]
+        expected = bytes.fromhex(test_case["expected"])
+
+        session_ctx = SessionContext(aggnonce_tmp, ids_tmp, pubshares_tmp, tweaks_tmp, tweak_modes_tmp, msg)
+        # Make sure that the partial signatures in the test vector are consistent. The tested API takes only aggnonce (not pubnonces list), this check can be ignored
+        for i in range(len(ids_tmp)):
+            partial_sig_verify(psigs_tmp[i], ids_tmp, pubnonces_tmp, pubshares_tmp, tweaks_tmp, tweak_modes_tmp, msg, i)
+
+        bip340sig = partial_sig_agg(psigs_tmp, ids_tmp, session_ctx)
+        assert bip340sig == expected
+        tweaked_group_pk = get_xonly_pk(group_pubkey_and_tweak(pubshares_tmp, ids_tmp, tweaks_tmp, tweak_modes_tmp))
+        assert schnorr_verify(msg, tweaked_group_pk, bip340sig)
+
+    for test_case in error_test_cases:
+        exception, except_fn = get_error_details(test_case)
+
+        ids_tmp = [bytes_from_int(ids[i]) for i in test_case["id_indices"]]
+        pubshares_tmp = [PlainPk(pubshares[i]) for i in test_case["pubshare_indices"]]
+        pubnonces_tmp = [pubnonces[i] for i in test_case["pubnonce_indices"]]
+        aggnonce_tmp = bytes.fromhex(test_case["aggnonce"])
+
+        tweaks_tmp = [tweaks[i] for i in test_case["tweak_indices"]]
+        tweak_modes_tmp = test_case["is_xonly"]
+        psigs_tmp = [psigs[i] for i in test_case["psig_indices"]]
+
+        session_ctx = SessionContext(aggnonce_tmp, ids_tmp, pubshares_tmp, tweaks_tmp, tweak_modes_tmp, msg)
+        assert_raises(exception, lambda: partial_sig_agg(psigs_tmp, ids_tmp, session_ctx), except_fn)
 
 def test_sign_and_verify_random(iters: int) -> None:
     pass
