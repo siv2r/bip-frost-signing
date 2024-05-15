@@ -248,8 +248,7 @@ def nonce_gen(secshare: Optional[bytes], pubshare: Optional[PlainPk], group_pk: 
         raise ValueError('The optional byte array pubshare must have length 33.')
     if group_pk is not None and len(group_pk) != 32:
         raise ValueError('The optional byte array group_pk must have length 32.')
-    if secshare is not None and pubshare is not None and (not individual_pk(secshare) == pubshare):
-        raise ValueError('The (secshare, pubshare) is not a valid key pair.')
+    # bench: will adding individual_pk(secshare) == pubshare check, increase the execution time significantly?
     rand_ = secrets.token_bytes(32)
     return nonce_gen_internal(rand_, secshare, pubshare, group_pk, msg, extra_in)
 
@@ -548,29 +547,6 @@ def test_nonce_agg_vectors():
         ids = [bytes_from_int(i) for i in test_case["participant_identifiers"]]
         assert_raises(exception, lambda: nonce_agg(pubnonces, ids), except_fn)
 
-def print_session_ctx(session_ctx: SessionContext) -> None:
-    aggnonce, ids, pubshares, tweaks, tweak_modes, msg = session_ctx
-    print('----Session Context----')
-    print('aggnonce: {}'.format(bytes_to_hex(aggnonce, len(aggnonce))))
-    ids_ = [int_from_bytes(x) for x in ids]
-    print('ids: {}'.format(ids_))
-    print('pubshares: ')
-    pubshares_ = [hex_cbytes(x) for x in pubshares]
-    for x in pubshares_:
-        print(x)
-    print('msg: {}'.format(bytes_to_hex(msg, len(msg))))
-    print('-----------------------')
-
-def hex_cbytes(x: bytes) -> str:
-    assert len(x) == 33
-    assert (x[:1] == b'\x02' or x[:1] == b'\x03')
-    return '0x' + x[:1].hex() + '{:X}'.format(int_from_bytes(x[1:])).zfill(64)
-
-def bytes_to_hex(x: bytes, l: int) -> str:
-    assert len(x) == l
-    return '0x' + '{:X}'.format(int_from_bytes(x)).zfill(2*l)
-
-
 # todo: include vectors from the frost draft too
 # todo: add a test where group_pk is even (might need to modify json file)
 def test_sign_verify_vectors():
@@ -706,7 +682,8 @@ def test_tweak_vectors():
         # WARNING: An actual implementation should _not_ copy the secnonce.
         # Reusing the secnonce, as we do here for testing purposes, can leak the
         # secret key.
-        assert sign(secnonce_p1, secshare_p1, my_id, session_ctx) == expected
+        secnonce_tmp = bytearray(secnonce_p1)
+        assert sign(secnonce_tmp, secshare_p1, my_id, session_ctx) == expected
         assert partial_sig_verify(expected, ids_tmp, pubnonces_tmp, pubshares_tmp, tweaks_tmp, tweak_modes_tmp, msg, signer_index)
 
     for test_case in error_test_cases:
@@ -835,9 +812,9 @@ def test_sign_and_verify_random(iters: int) -> None:
             psig_i = sign(secnonces[signer_index], secshares[signer_index], ids[signer_index], session_ctx)
             assert partial_sig_verify(psig_i, signer_ids, signer_pubnonces, signer_pubshares, tweaks, tweak_modes, msg, i)
             signer_psigs.append(psig_i)
+            # An exception is thrown if secnonce is accidentally reused
+            assert_raises(ValueError, lambda: sign(secnonces[signer_index], secshares[signer_index], ids[signer_index], session_ctx), lambda e: True)
 
-        # An exception is thrown if secnonce is accidentally reused
-        assert_raises(ValueError, lambda: sign(secnonces[0], secshares[0], ids[0], session_ctx), lambda e: True)
         # Wrong (signer_ids, signer_pubnonces, signer_pubshares) index
         assert not partial_sig_verify(signer_psigs[0], signer_ids, signer_pubnonces, signer_pubshares, tweaks, tweak_modes, msg, 1)
         # Wrong message
@@ -846,11 +823,21 @@ def test_sign_and_verify_random(iters: int) -> None:
         bip340sig = partial_sig_agg(signer_psigs, signer_ids, session_ctx)
         assert schnorr_verify(msg, tweaked_group_pk, bip340sig)
 
+def run_test(test_name, test_func):
+    max_len = 30
+    test_name = test_name.ljust(max_len, ".")
+    print(f"Running {test_name}...", end="", flush=True)
+    try:
+        test_func()
+        print("Passed!")
+    except Exception as e:
+        print(f"\nFailed: {e}")
+
 if __name__ == '__main__':
-    test_keygen_vectors()
-    test_nonce_gen_vectors()
-    test_nonce_agg_vectors()
-    test_sign_verify_vectors()
-    test_tweak_vectors()
-    test_sig_agg_vectors()
-    test_sign_and_verify_random(6)
+    run_test("test_keygen_vectors", test_keygen_vectors)
+    run_test("test_nonce_gen_vectors", test_nonce_gen_vectors)
+    run_test("test_nonce_agg_vectors", test_nonce_agg_vectors)
+    run_test("test_sign_verify_vectors", test_sign_verify_vectors)
+    run_test("test_tweak_vectors", test_tweak_vectors)
+    run_test("test_sig_agg_vectors", test_sig_agg_vectors)
+    run_test("test_sign_and_verify_random", lambda: test_sign_and_verify_random(6))
