@@ -6,26 +6,51 @@
 # https://github.com/BlockstreamResearch/bip-frost-dkg
 
 # todo: use the `Scalar` type like BIP-DKG?
-
-from typing import Tuple, List
-import unittest
-import random
-from bip340 import (
-    Point, n as curve_order, bytes_from_int,
-    point_mul, G, has_even_y
-)
-# import functions from reference
 #todo: this shows mypy error, but the file runs
-import sys, os
-script_dir = os.path.dirname(os.path.abspath(__file__))
-parent_dir = os.path.abspath(os.path.join(script_dir, '..'))
-sys.path.append(parent_dir)
-from reference import cbytes, PlainPk, derive_interpolating_value_internal
+
+from typing import Tuple, List, NewType
+import unittest
+# todo: replace random module with secrets
+import random
+# for [1] import functions from reference
+#     [2] specify path for bip340 when running reference.py
+# import sys, os
+# script_dir = os.path.dirname(os.path.abspath(__file__))
+# parent_dir = os.path.abspath(os.path.join(script_dir, '..'))
+# sys.path.append(parent_dir)
+from .bip340 import (
+    Point, n as curve_order, bytes_from_int,
+    point_mul, G, has_even_y, x
+)
 
 # point on the secret polynomial, represents a signer's secret share
 PolyPoint = Tuple[int, int]
 # point on the secp256k1 curve, represents a signer's public share
 ECPoint = Point
+
+#
+# The following helper functions and types were copied from reference.py
+#
+PlainPk = NewType('PlainPk', bytes)
+
+def xbytes(P: Point) -> bytes:
+    return bytes_from_int(x(P))
+
+def cbytes(P: Point) -> bytes:
+    a = b'\x02' if has_even_y(P) else b'\x03'
+    return a + xbytes(P)
+
+def derive_interpolating_value_internal(L: List[int], x_i: int) -> int:
+    num, deno = 1, 1
+    for x_j in L:
+        if x_j == x_i:
+            continue
+        num *= x_j
+        deno *= (x_j - x_i)
+    return num * pow(deno, n - 2, n) % n
+#
+# End of helper functions and types copied from reference.py.
+#
 
 # evaluates poly using Horner's method, assuming coeff[0] corresponds
 # to the coefficient of highest degree term
@@ -84,9 +109,10 @@ def generate_frost_keys(max_participants: int, min_participants: int) -> Tuple[P
     P, secshares, pubshares = trusted_dealer_keygen(secret, max_participants, min_participants)
 
     group_pk = PlainPk(cbytes(P))
+    ser_identifiers = [bytes_from_int(secshare_i[0]) for secshare_i in secshares]
     ser_secshares = [bytes_from_int(secshare_i[1]) for secshare_i in secshares]
     ser_pubshares = [PlainPk(cbytes(pubshare_i)) for pubshare_i in pubshares]
-    return (group_pk, ser_secshares, ser_pubshares)
+    return (group_pk, ser_identifiers, ser_secshares, ser_pubshares)
 
 # Test vector from RFC draft.
 # section F.5 of https://datatracker.ietf.org/doc/draft-irtf-cfrg-frost/15/
