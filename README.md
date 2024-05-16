@@ -387,6 +387,11 @@ Algorithm _PartialSigAgg(psig<sub>1..u</sub>, id<sub>1..u</sub>, session_ctx)_:
 
 ### Test Vectors & Reference Code
 
+We provide a naive, highly inefficient, and non-constant time [pure Python 3 reference implementation of the group public key tweaking, nonce generation, partial signing, and partial signature verification algorithms](./reference/reference.py).
+
+Standalone JSON test vectors are also available in the [same directory](./reference/vectors/), to facilitate porting the test vectors into other implementations.
+
+The reference implementation is for demonstration purposes only and not to be used in production environments.
 
 ## Remarks on Security and Correctness
 
