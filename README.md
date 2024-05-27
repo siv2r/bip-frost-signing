@@ -260,8 +260,8 @@ Algorithm _GetSessionValues(session_ctx)_:
 - For _i = 1 .. v_:
     - Let _tweak_ctx<sub>i</sub> = ApplyTweak(tweak_ctx<sub>i-1</sub>, tweak<sub>i</sub>, is_xonly_t<sub>i</sub>)_; fail if that fails
 - Let _(Q, gacc, tacc) = tweak_ctx<sub>v</sub>_
-- Let _concat_ids_ = _concat_bytearrays(sorted(id<sub>1..u</sub>))_
-- Let b = _int(hash<sub>FROST/noncecoef</sub>(concat_ids || aggnonce || xbytes(Q) || m)) mod n_
+- Let _ser_ids_ = _concat_bytearrays(sorted(id<sub>1..u</sub>))_
+- Let b = _int(hash<sub>FROST/noncecoef</sub>(ser_ids || aggnonce || xbytes(Q) || m)) mod n_
 - Let _R<sub>1</sub> = cpoint_ext(aggnonce[0:33]), R<sub>2</sub> = cpoint_ext(aggnonce[33:66])_; fail if that fails and blame nonce aggregator for invalid _aggnonce_.
 - Let _R' = R<sub>1</sub> + b⋅R<sub>2</sub>_
 - If _is_infinite(R'):_

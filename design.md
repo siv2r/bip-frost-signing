@@ -1,12 +1,12 @@
-# Design Decisions
+This document provides reasoning behind the major design decisions in the BIP and lists alternative designs for consideration.
 
-This document provides additional reasoning behind the major design decisions in the BIP and lists alternative designs for consideration.
-
-## Signing Flow
+## General Signing Flow
 
 ![General Signing Flow](images/frost-signing-flow.png)
 
 ## Current Design
+
+In this BIP, we follow the FROST3 scheme (see section 2.3 in [ROAST paper](https://eprint.iacr.org/2022/550.pdf)), which is a variant of the [original FROST](https://eprint.iacr.org/2020/852.pdf).
 
 ### Key Generation
 
@@ -34,13 +34,13 @@ To ensure compatibility with various key generation methods, we have avoided the
 
 ### No Mandatory PK in Nonce Generation
 
-MuSig2 requires the public key to be given as an input argument for nonce generation. This is done to prevent a vulnerability that arises when a user attempts to sign with their tweaked individual public key. ( See [mailing list](https://lists.linuxfoundation.org/pipermail/bitcoin-dev/2022-October/021000.html) & [this bip324 section](https://github.com/bitcoin/bips/blob/master/bip-0327.mediawiki#signing-with-tweaked-individual-keys)).
+MuSig2 requires the public key to be given as an input argument for nonce generation. This is done to prevent a vulnerability that arises when a user attempts to sign with their tweaked individual public key. (See [mailing list](https://lists.linuxfoundation.org/pipermail/bitcoin-dev/2022-October/021000.html) & [this bip324 section](https://github.com/bitcoin/bips/blob/master/bip-0327.mediawiki#signing-with-tweaked-individual-keys)).
 
 On the other hand, FROST does not have a non-interactive key aggregation mechanism like MuSig2, which means this vulnerability does not affect it. Hence, we do not mandate the public share argument during nonce generation.
 
 ### Nonce Aggregation
 
-We use the nonce aggregation technique described in the FROST3 scheme (see section 2.3 in [ROAST paper](https://eprint.iacr.org/2022/550.pdf)), which is a variant of the original [FROST](https://eprint.iacr.org/2020/852.pdf). The advantage of using FROST3 is that all co-signers involved in the signing process share the same binding factor, which makes the nonce aggregation process simpler.
+We use the nonce aggregation technique described in the FROST3 scheme. The advantage here is that all co-signers involved in the signing process will create the same binding factor, which makes the nonce aggregation process simpler.
 
 An alternative approach is to follow the original FROST protocol, where the aggregator does not perform the aggregation. Instead, it sends the set $\bigcup \limits_{i=1}^{u}{(i, R_{i, 1}, R_{i, 2})}$ to each signer. The disadvantage is that the size of this set is $(32+33+33) \times u$ bytes, which is larger than the 66-byte aggregate nonce sent in the FROST3 scheme. The advantage is that signers can detect a malicious aggregator when their nonce commitment is absent in this set. However, this detection mechanism cannot validate the set when some signers collude with the malicious aggregator.
 
@@ -51,6 +51,14 @@ There are two ways to store the group public key in the Session context data str
 - Option 2: The Session context contains the group public key itself.
 
 I chose Option 1 because it fits nicely with the _PartialSigVerify_ algorithm which requires the list of individual public shares.
+
+### Sorting Ids While Signing
+
+The FROST3 scheme computes the binding factor as
+```math
+b = H_{non}(T, \text{group\_pk}, \text{aggnonce}, \text{msg})
+```
+where $T$ represents the signer set. Since $T$ is a set, it must be independent of the order of signers, i.e., {1, 2, 3} = {2, 1, 3}. Therefore, we sort the IDs (see [_GetSessionValues_](README.md#session-context)) when computing the binding factor.
 
 ## Some Bike Shedding
 - how to write out inverse in lagrange coeff calc?
