@@ -34,9 +34,9 @@ To ensure compatibility with various key generation methods, we have avoided the
 
 ### No Mandatory PK in Nonce Generation
 
-MuSig2 requires the public key to be given as an input argument for nonce generation. This is done to prevent a vulnerability that arises when a user attempts to sign with their tweaked individual public key. (See [mailing list](https://lists.linuxfoundation.org/pipermail/bitcoin-dev/2022-October/021000.html) & [this bip324 section](https://github.com/bitcoin/bips/blob/master/bip-0327.mediawiki#signing-with-tweaked-individual-keys)).
+MuSig2 requires the public key to be given as an input argument for nonce generation. This is done to prevent a vulnerability that arises when a user attempts to sign with their tweaked individual public key. (See [mailing list](https://lists.linuxfoundation.org/pipermail/bitcoin-dev/2022-October/021000.html), [bip324 section](https://github.com/bitcoin/bips/blob/master/bip-0327.mediawiki#signing-with-tweaked-individual-keys), and [this writeup](https://github.com/jonasnick/musig2-tweaking)).
 
-On the other hand, FROST does not have a non-interactive key aggregation mechanism like MuSig2, which means this vulnerability does not affect it. Hence, we do not mandate the public share argument during nonce generation.
+The above vulnerability is exploited by creating rogue keyagg coefficients (that adds up to a rogue bip340 challenge) using wagner's algorithm. FROST does not rely on any non-interactive key aggregation mechanism (i.e., no key agg coeffs involved), meaning this vulnerability does not affect it. Hence, we do not mandate the public share argument during nonce generation.
 
 ### Nonce Aggregation
 
