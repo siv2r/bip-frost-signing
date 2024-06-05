@@ -14,11 +14,23 @@ TODO: some intro about frost (see rfc-draft for idea): [1] threshold property [2
 
 Certain parts of this document are reproduced from [BIP 327](https://github.com/bitcoin/bips/blob/master/bip-0327.mediawiki) due to the similarity of the FROST and MuSig2 signature schemes.
 
-- [ ] subsections
-	- [ ] motivation
-	- [ ] design subsections
+### Motivation
+
+### Design
 
 ## Overview
+
+### Optionality of Features
+
+### Compatible Key Generation Methods
+
+### Nonce Generation
+
+### Identifying Disruptive Signers
+
+#### Further Remarks
+
+### Tweaking the Group Public Key
 
 - [ ] subsections
 	- [ ] optionality of features
@@ -155,7 +167,7 @@ We write "Let _(Q, gacc, tacc) = tweak_ctx_" to assign names to the elements of 
 
 Algorithm _TweakCtxInit(group_pk):_
 - Input:
-    - The group public key _group_pk_: u 33-byte arrays
+    - The group public key _group_pk_: a 33-byte array
 - Let _Q = cpoint(group_pk)_
 - Fail if _is_infinite(Q)_.
 - Let _gacc = 1_
@@ -394,6 +406,16 @@ Standalone JSON test vectors are also available in the [same directory](./refer
 The reference implementation is for demonstration purposes only and not to be used in production environments.
 
 ## Remarks on Security and Correctness
+
+### Tweaking Definition
+
+### Negation of the Secret Share when Signing
+
+#### Negation of the Pubshare when Partially Verifying
+
+### Dealing with Infinity in Nonce Aggregation
+
+### Choosing the Size of the Nonce
 
 ## Backwards Compatibility
 
