@@ -74,6 +74,7 @@ where $T$ represents the signer set. Since $T$ is a set, it must be independent 
   - If yes, how to blame the singer if their `id` itself is incorrect?
 - hash tag for b, "noncecoef" vs "noncecoeff"
   - follow musig2. It uses "noncecoef"
+- we currently use the symbol &lambda; in Sign & ParialSigVerify. Is it okay? Or should we use an ASCII char instead?
 
 ## Todo List
 - [ ] reference implementation & test vectors

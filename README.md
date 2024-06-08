@@ -158,7 +158,6 @@ TODO remove unused functions above
 #### Tweak Context
 
 The Tweak Context is a data structure consisting of the following elements:
-
 - The point _Q_ representing the potentially tweaked group public key: an elliptic curve point
 - The accumulated tweak _tacc_: an integer with _0 ≤ tacc < n_
 - The value _gacc_: 1 or -1 mod n
@@ -250,10 +249,10 @@ Algorithm _NonceAgg(pubnonce<sub>1..u</sub>, id<sub>1..u</sub>)_:
 
 TODO: change identifiers of signers to _u_ 32-byte arrays? (currently we use _u_ ints)
 TODO: then, have a function that converts ids byte-array to integer array, must check for 1 <= ids[i] <= max_participant
+
 ### Session Context
 
 The Session Context is a data structure consisting of the following elements:
-
 - The number _u_ of participants available in the signing session with _min_participants ≤ u ≤ max_participants_
 - The participant identifiers of the signers _id<sub>1..u</sub>: _u_ 32-byte arrays with 1 _≤ int(id<sub>i</sub>) ≤ max_participants_ < n
 - The individual public shares _pubshare<sub>1..u</sub>_: _u_ 33-byte arrays
@@ -267,7 +266,7 @@ We write "Let _(u, id<sub>1..u</sub>, pubshare<sub>1..u</sub>, aggnonce, v, twea
 
 Algorithm _GetSessionValues(session_ctx)_:
 - Let _(u, id<sub>1..u</sub>, pubshare<sub>1..u</sub>, aggnonce, v, tweak<sub>1..v</sub>, is_xonly_t<sub>1..v</sub>, m) = session_ctx_
-- _group_pk_ = _GroupPubkey(id<sub>1..u</sub>, pubshare<sub>1..u</sub>)_
+- _group_pk_ = _DeriveGroupPubkey(id<sub>1..u</sub>, pubshare<sub>1..u</sub>)_
 - Let _tweak_ctx<sub>0</sub> = TweakCtxInit(group_pk)_; fail if that fails
 - For _i = 1 .. v_:
     - Let _tweak_ctx<sub>i</sub> = ApplyTweak(tweak_ctx<sub>i-1</sub>, tweak<sub>i</sub>, is_xonly_t<sub>i</sub>)_; fail if that fails
@@ -305,16 +304,16 @@ Internal Algorithm _DeriveInterpolatingValueInternal(id<sub>1..u</sub>, my_id):_
 
 Algorithm _GetSessionGroupPubkey(session_ctx)_:
 - Let _(u, id<sub>1..u</sub>, pubshare<sub>1..u</sub>, _, _, _, _) = session_ctx_
-- Return _GroupPubkey(id<sub>1..u</sub>, pubshare<sub>1..u</sub>)_; fail if that fails
+- Return _DeriveGroupPubkey(id<sub>1..u</sub>, pubshare<sub>1..u</sub>)_; fail if that fails
 
-Internal Algorithm _GroupPubkey(id<sub>1..u</sub>, pubshare<sub>1..u</sub>)_
+Algorithm _DeriveGroupPubkey(id<sub>1..u</sub>, pubshare<sub>1..u</sub>)_
 - _inf_point = bytes(33, 0)_
-- _X_ = _cpoint_ext(inf_point)_
+- _Q_ = _cpoint_ext(inf_point)_
 - For _i_ = _1..u_:
     - _P_ = _cpoint(pubshare<sub>i</sub>)_; fail if that fails
     - _lambda_ = _DeriveInterpolatingValue(id<sub>1..u</sub>, id<sub>i</sub>)_
-    - _X_ = _X_ + _lambda⋅P_
-- Return _X_
+    - _Q_ = _Q_ + _lambda⋅P_
+- Return _Q_
 
 Algorithm _SessionHasSignerPubshare(session_ctx, signer_pubshare)_:
 - Let _(u, _, pubshare<sub>1..u</sub>, _, _, _, _) = session_ctx_
@@ -323,7 +322,8 @@ Algorithm _SessionHasSignerPubshare(session_ctx, signer_pubshare)_:
 - Otherwise Return False
 
 ### Signing
-TODO: should be add 1 <= _my_id_ <= max_pariticiapants, check here?
+
+TODO: should we add 1 <= _my_id_ <= max_pariticiapants, check here?
 Algorithm _Sign(secnonce, secshare, my_id, session_ctx)_:
 - Inputs:
     - The secret nonce _secnonce_ that has never been used as input to _Sign_ before: a 64-byte array
@@ -339,10 +339,10 @@ Algorithm _Sign(secnonce, secshare, my_id, session_ctx)_:
 - Let _P = d'⋅G_
 - Let _pubshare = cbytes(P)_
 - Fail if _SessionHasSignerPubshare(session_ctx, pubshare) = False_
-- Let _a = GetSessionInterpolatingValue(session_ctx, my_id)_; fail if that fails
+- Let _&lambda; = GetSessionInterpolatingValue(session_ctx, my_id)_; fail if that fails
 - Let _g = 1_ if _has_even_y(Q)_, otherwise let _g = -1 mod n_
 - Let _d = g⋅gacc⋅d' mod n_ (See _negating seckey when signing_)
-- Let _s = (k<sub>1</sub> + b⋅k<sub>2</sub> + e⋅a⋅d) mod n_
+- Let _s = (k<sub>1</sub> + b⋅k<sub>2</sub> + e⋅&lambda;⋅d) mod n_
 - Let _psig = bytes(32, s)_
 - Let _pubnonce = cbytes(k<sub>1</sub>'⋅G) || cbytes(k<sub>2</sub>'⋅G)_
 - If _PartialSigVerifyInternal(psig, my_id, pubnonce, pubshare, session_ctx)_ (see below) returns failure, fail
@@ -375,16 +375,15 @@ Internal Algorithm _PartialSigVerifyInternal(psig, my_id, pubnonce, pubshare, se
 - Let _Re<sub>⁎</sub>' = R<sub>⁎,1</sub> + b⋅R<sub>⁎,2</sub>_
 - Let effective nonce _Re<sub>⁎</sub> = Re<sub>⁎</sub>'_ if _has_even_y(R)_, otherwise let _Re<sub>⁎</sub> = -Re<sub>⁎</sub>'_
 - Let _P = cpoint(pubshare)_; fail if that fails
-- Let _a = GetSessionInterpolatingValue(session_ctx, my_id)_
+- Let _&lambda; = GetSessionInterpolatingValue(session_ctx, my_id)_
 - Let _g = 1_ if _has_even_y(Q)_, otherwise let _g = -1 mod n_
 - Let _g' = g⋅gacc mod n_ (See _link to neg of seckey when signing_)
-- Fail if _s⋅G ≠ Re<sub>⁎</sub> + e⋅a⋅g'⋅P_
+- Fail if _s⋅G ≠ Re<sub>⁎</sub> + e⋅&lambda;⋅g'⋅P_
 - Return success iff no failure occurred before reaching this point.
 
 ### Partial Signature Aggregation
 
 Algorithm _PartialSigAgg(psig<sub>1..u</sub>, id<sub>1..u</sub>, session_ctx)_:
-
 - Inputs:
     - The number _u_ of signatures with _min_participants ≤ u ≤ max_participants_
     - The partial signatures _psig<sub>1..u</sub>_: _u_ 32-byte arrays
@@ -409,9 +408,83 @@ The reference implementation is for demonstration purposes only and not to be us
 
 ### Tweaking Definition
 
+Two modes of tweaking the group public key are supported. They correspond to the following algorithms:
+
+Algorithm _ApplyPlainTweak(P, t)_:
+- Inputs:
+    - _P_: a point
+    - The tweak _t_: an integer with _0 ≤ t < n_
+- Return _P + t⋅G_
+
+Algorithm _ApplyXonlyTweak(P, t)_:
+- Return _with_even_y(P) + t⋅G_
+
 ### Negation of the Secret Share when Signing
 
+During the signing process, the *[Sign](./README.md#signing)* algorithm might have to negate the secret share in order to produce a partial signature for an X-only group public key. This public key is derived from *u* public shares and *u* participant identifiers (denoted by the signer set *U*) and then tweaked *v* times (X-only or plain).
+
+The following elliptic curve points arise as intermediate steps when creating a signature:  
+• _P<sub>i</sub>_ as computed in any compatible key generation method is the point corresponding to the *i*-th signer's public share. Defining *d<sub>i</sub>'* to be the *i*-th signer's secret share as an integer, i.e., the *d’* value as computed in the *Sign* algorithm of the *i*-th signer, we have:  
+&emsp;&ensp;*P<sub>i</sub> = d<sub>i</sub>'⋅G*  
+• *Q<sub>0</sub>* is the group public key derived from the signer’s public shares. It is identical to the value *Q* computed in *DeriveGroupPubkey* and therefore defined as:  
+&emsp;&ensp;_Q<sub>0</sub> = &lambda;<sub>1, U</sub>⋅P<sub>1</sub> + &lambda;<sub>2, U</sub>⋅P<sub>2</sub> + ... + &lambda;<sub>u, U</sub>⋅P<sub>u</sub>_  
+• *Q<sub>i</sub>* is the tweaked group public key after the *i*-th execution of *ApplyTweak* for *1 ≤ i ≤ v*. It holds that  
+&emsp;&ensp;*Q<sub>i</sub> = f(i-1) + t<sub>i</sub>⋅G* for *i = 1, ..., v* where  
+&emsp;&ensp;&emsp;&ensp;*f(i-1) := with_even_y(Q<sub>i-1</sub>)* if *is_xonly_t<sub>i</sub>* and  
+&emsp;&ensp;&emsp;&ensp;*f(i-1) := Q<sub>i-1</sub>* otherwise.  
+• *with_even_y(Q*<sub>v</sub>*)* is the final result of the group public key derivation and tweaking operations. It corresponds to the output of *GetXonlyPubkey* applied on the final Tweak Context.
+
+The signer's goal is to produce a partial signature corresponding to the final result of group pubkey derivation and tweaking, i.e., the X-only public key *with_even_y(Q<sub>v</sub>)*.
+
+For _1 ≤ i ≤ v_, we denote the value _g_ computed in the _i_-th execution of _ApplyTweak_ by _g<sub>i-1</sub>_. Therefore, _g<sub>i-1</sub>_ is _-1 mod n_ if and only if _is_xonly_t<sub>i</sub>_ is true and _Q<sub>i-1</sub>_ has an odd Y coordinate. In other words, _g<sub>i-1</sub>_ indicates whether _Q<sub>i-1</sub>_ needed to be negated to apply an X-only tweak:  
+&emsp;&ensp;_f(i-1) = g<sub>i-1</sub>⋅Q<sub>i-1</sub>_ for _1 ≤ i ≤ v_.  
+Furthermore, the _Sign_ and _PartialSigVerify_ algorithms set value _g_ depending on whether Q<sub>v</sub> needed to be negated to produce the (X-only) final output. For consistency, this value _g_ is referred to as _g<sub>v</sub>_ in this section.  
+&emsp;&ensp;_with_even_y(Q<sub>v</sub>) = g<sub>v</sub>⋅Q<sub>v</sub>_.
+
+So, the (X-only) final public key is  
+&emsp;&ensp;_with_even_y(Q<sub>v</sub>)_  
+&emsp;&ensp;&emsp;&ensp;= _g<sub>v</sub>⋅Q<sub>v</sub>_  
+&emsp;&ensp;&emsp;&ensp;= _g<sub>v</sub>⋅(f(v-1)_ + _t<sub>v</sub>⋅G)_  
+&emsp;&ensp;&emsp;&ensp;= _g<sub>v</sub>⋅(g<sub>v-1</sub>⋅(f(v-2)_ + _t<sub>v-1</sub>⋅G)_ + _t<sub>v</sub>⋅G)_  
+&emsp;&ensp;&emsp;&ensp;= _g<sub>v</sub>⋅g<sub>v-1</sub>⋅f(v-2)_ + _g<sub>v</sub>⋅(t<sub>v</sub>_ + _g<sub>v-1</sub>⋅t<sub>v-1</sub>)⋅G_  
+&emsp;&ensp;&emsp;&ensp;= _g<sub>v</sub>⋅g<sub>v-1</sub>⋅f(v-2)_ + _(sum<sub>i=v-1..v</sub> t<sub>i</sub>⋅prod<sub>j=i..v</sub> g<sub>j</sub>)⋅G_  
+&emsp;&ensp;&emsp;&ensp;= _g<sub>v</sub>⋅g<sub>v-1</sub>⋅...⋅g<sub>1</sub>⋅f(0)_ + _(sum<sub>i=1..v</sub> t<sub>i</sub>⋅prod<sub>j=i..v</sub> g<sub>j</sub>)⋅G_  
+&emsp;&ensp;&emsp;&ensp;= _g<sub>v</sub>⋅...⋅g<sub>0</sub>⋅Q<sub>0</sub>_ + _g<sub>v</sub>⋅tacc<sub>v</sub>⋅G_   
+&emsp;&ensp;where _tacc<sub>i</sub>_ is computed by _TweakCtxInit_ and _ApplyTweak_ as follows:  
+&emsp;&ensp;&emsp;&ensp;_tacc<sub>0</sub>_ = _0_  
+&emsp;&ensp;&emsp;&ensp;_tacc<sub>i</sub>_ = _t<sub>i</sub>_ + _g<sub>i-1</sub>⋅tacc<sub>i-1</sub> for i=1..v mod n_  
+&emsp;&ensp;for which it holds that _g<sub>v</sub>⋅tacc<sub>v</sub>_ = _sum<sub>i=1..v</sub> t<sub>i</sub>⋅prod<sub>j=i..v</sub> g<sub>j</sub>_.
+
+_TweakCtxInit_ and _ApplyTweak_ compute  
+&emsp;&ensp;_gacc<sub>0</sub>_ = 1  
+&emsp;&ensp;_gacc<sub>i</sub>_ = _g<sub>i-1</sub>⋅gacc<sub>i-1</sub> for i=1..v mod n_  
+So we can rewrite above equation for the final public key as  
+&emsp;&ensp;_with_even_y(Q<sub>v</sub>)_ = _g<sub>v</sub>⋅gacc<sub>v</sub>⋅Q<sub>0</sub>_ + _g<sub>v</sub>⋅tacc<sub>v</sub>⋅G._
+
+Then we have  
+&emsp;&ensp;_with_even_y(Q<sub>v</sub>)_ - _g<sub>v</sub>⋅tacc<sub>v</sub>⋅G_  
+&emsp;&ensp;&emsp;&ensp;= _g<sub>v</sub>⋅gacc<sub>v</sub>⋅Q<sub>0</sub>_  
+&emsp;&ensp;&emsp;&ensp;= _g<sub>v</sub>⋅gacc<sub>v</sub>⋅(&lambda;<sub>1, U</sub>⋅P<sub>1</sub> + ... + &lambda;<sub>u, U</sub>⋅P<sub>u</sub>)_  
+&emsp;&ensp;&emsp;&ensp;= _g<sub>v</sub>⋅gacc<sub>v</sub>⋅(&lambda;<sub>1, U</sub>⋅d<sub>1</sub>'⋅G + ... + &lambda;<sub>u, U</sub>⋅d<sub>u</sub>'⋅G)_  
+&emsp;&ensp;&emsp;&ensp;= _sum<sub>i=1..u</sub>(g<sub>v</sub>⋅gacc<sub>v</sub>⋅&lambda;<sub>i, U</sub>⋅d<sub>i</sub>')*G._  
+
+Intuitively, _gacc<sub>i</sub>_ tracks accumulated sign flipping and _tacc<sub>i</sub>_ tracks the accumulated tweak value after applying the first _i_ individual tweaks. Additionally, _g<sub>v</sub>_ indicates whether _Q<sub>v</sub>_ needed to be negated to produce the final X-only result. Thus, signer _i_ multiplies its secret share _d<sub>i</sub>'_ with _g<sub>v</sub>⋅gacc<sub>v</sub>_ in the [_Sign_](./README.md#signing) algorithm.
+
 #### Negation of the Pubshare when Partially Verifying
+
+As explained in [Negation Of The Secret Share When Signing](./README.md#negation-of-the-secret-share-when-signing) the signer uses a possibly negated secret share  
+&emsp;&ensp;_d = g<sub>v</sub>⋅gacc<sub>v</sub>⋅d' mod n_  
+when producing a partial signature to ensure that the aggregate signature will correspond to a group public key with even Y coordinate.
+
+The [_PartialSigVerifyInternal_](./README.md#partial-signature-verification) algorithm is supposed to check  
+&emsp;&ensp;_s⋅G = Re<sub>⁎</sub> + e⋅&lambda;⋅d⋅G_.
+
+The verifier doesn't have access to _d⋅G_ but can construct it using the participant public share _pubshare_ as follows:  
+_d⋅G  
+&emsp;&ensp;= g<sub>v</sub>⋅gacc<sub>v</sub>⋅d'⋅G  
+&emsp;&ensp;= g<sub>v</sub>⋅gacc<sub>v</sub>⋅cpoint(pubshare)_  
+Note that the group public key and list of tweaks are inputs to partial signature verification, so the verifier can also construct _g<sub>v</sub>_ and _gacc<sub>v</sub>_.
+
 
 ### Dealing with Infinity in Nonce Aggregation
 
