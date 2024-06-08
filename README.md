@@ -2,7 +2,7 @@
 
 ### Abstract
 
-This document proposes a standard for the FROST threshold signing protocol ([paper](https://eprint.iacr.org/2020/852.pdf) and [RFC draft](https://datatracker.ietf.org/doc/draft-irtf-cfrg-frost/)). The standard is compatible with [BIP340](https://github.com/bitcoin/bips/blob/master/bip-0340.mediawiki) public keys and signatures. It supports _tweaking_, which allows deriving [BIP32](https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki) child keys from aggregate public keys and creating [BIP341](https://github.com/bitcoin/bips/blob/master/bip-0341.mediawiki) Taproot outputs with key and script paths.
+This document proposes a standard for the Flexible Round-Optimized Schnorr Threshold (FROST) signing protocol. The standard is compatible with [BIP340](https://github.com/bitcoin/bips/blob/master/bip-0340.mediawiki) public keys and signatures. It supports _tweaking_, which allows deriving [BIP32](https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki) child keys from the group public key and creating [BIP341](https://github.com/bitcoin/bips/blob/master/bip-0341.mediawiki) Taproot outputs with key and script paths.
 
 ### Copyright
 
@@ -10,9 +10,9 @@ This document is licensed under the 3-clause BSD license.
 
 ## Introduction
 
-TODO: some intro about frost (see rfc-draft for idea): [1] threshold property [2] verifiable like using single pubkey (like normal schnorrsig)
+This document proposes the FROST signing protocol based on the FROST3 variant (see section 2.3) introduced in the [ROAST paper](https://eprint.iacr.org/2022/550.pdf). Key generation for FROST signing is out of scope for this document. However, we specify the requirements that a key generation method must satisfy to be compatible with this signing protocol.
 
-Certain parts of this document are reproduced from [BIP 327](https://github.com/bitcoin/bips/blob/master/bip-0327.mediawiki) due to the similarity of the FROST and MuSig2 signature schemes.
+Many sections of this document have been directly copied or modified from [BIP327](https://github.com/bitcoin/bips/blob/master/bip-0327.mediawiki) due to the similarities between the FROST3 and [MuSig2](https://eprint.iacr.org/2020/1261.pdf) signature schemes.
 
 ### Motivation
 
@@ -22,7 +22,10 @@ Certain parts of this document are reproduced from [BIP 327](https://github.com/
 
 ### Optionality of Features
 
-### Compatible Key Generation Methods
+### General Signing Flow
+TODO: can we add that the excalidraw image here?
+
+### Key Generation
 
 ### Nonce Generation
 
