@@ -10,11 +10,29 @@ This document is licensed under the 3-clause BSD license.
 
 ## Introduction
 
-This document proposes the FROST signing protocol based on the FROST3 variant (see section 2.3) introduced in the [ROAST paper](https://eprint.iacr.org/2022/550.pdf). Key generation for FROST signing is out of scope for this document. However, we specify the requirements that a key generation method must satisfy to be compatible with this signing protocol.
+This document proposes the FROST signing protocol based on the FROST3 variant (see section 2.3) introduced in ROAST[[RRJSS22](https://eprint.iacr.org/2022/550)], instead of the original FROST[[KG20](https://eprint.iacr.org/2020/852)]. Key generation for FROST signing is out of scope for this document. However, we specify the requirements that a key generation method must satisfy to be compatible with this signing protocol.
 
 Many sections of this document have been directly copied or modified from [BIP327](https://github.com/bitcoin/bips/blob/master/bip-0327.mediawiki) due to the similarities between the FROST3 and [MuSig2](https://eprint.iacr.org/2020/1261.pdf) signature schemes.
 
 ### Motivation
+
+The FROST signature scheme [[KG20](https://eprint.iacr.org/2020/852),[CKM21](https://eprint.iacr.org/2021/1375),[BTZ21](https://eprint.iacr.org/2022/833),[CGRS23](https://eprint.iacr.org/2023/899)] enables _t-of-n_ Schnorr threshold signatures,in which a threshold _t_ of some set of _n_ signers is required to produce a signature.
+FROST remains unforgeable as long as at most _t-1_ signers are compromised, and remains functional as long as _t_ honest signers do not lose their secret key material. It supports any choice of _t_ as long as _1 ≤ t ≤ n_[^t-edge-cases].
+
+The primary motivation is to create a standard that allows users of different software projects to jointly control Taproot outputs ([BIP341](https://github.com/bitcoin/bips/blob/master/bip-0341.mediawiki)).
+Such an output contains a public key which, in this case, would be the group public key derived from the public shares of threshold signers.
+It can be spent using FROST to produce a signature for the key-based spending path.
+
+The on-chain footprint of a FROST Taproot output is essentially a single BIP340 public key, and a transaction spending the output only requires a single signature cooperatively produced by _threshold_ signers. This is **more compact** and has **lower verification cost** than signers providing _n_ individual public keys and _t_ signatures, as would be required by an _t-of-n_ policy implemented using <code>OP_CHECKSIGADD</code> as introduced in ([BIP342](https://github.com/bitcoin/bips/blob/master/bip-0342.mediawiki)).
+As a side effect, the numbers _t_ and _n_ of signers are not limited by any consensus rules when using FROST.
+
+Moreover, FROST offers a **higher level of privacy** than <code>OP_CHECKSIGADD</code>: FROST Taproot outputs are indistinguishable for a blockchain observer from regular, single-signer Taproot outputs even though they are actually controlled by multiple signers. By tweaking a group public key, the shared Taproot output can have script spending paths that are hidden unless used.
+
+There are threshold-signature schemes other than FROST that are fully compatible with Schnorr signatures.
+The FROST variant proposed below stands out by combining all the following features:
+* **Two Communication Rounds**: FROST is faster in practice than other threshold-signature schemes [[GJKR03](https://link.springer.com/chapter/10.1007/3-540-36563-x_26)] which requires at least three rounds, particularly when signers are connected through high-latency anonymous links. Moreover, the need for fewer communication rounds simplifies the algorithms and reduces the probability that implementations and users make security-relevant mistakes.
+* **Efficiency over Robustness**: FROST trades off the robustness property for network efficiency (fewer rounds), requiring the protocol to be aborted in the case of any misbehaving participant.
+* **Provable security**: FROST3 with an idealized key generation (i.e., trusted setup) has been [proven existentially unforgeable](https://eprint.iacr.org/2022/550.pdf) under the one-more discrete logarithm (OMDL) assumption (instead of the discrete logarithm assumption required for single-signer Schnorr signatures).
 
 ### Design
 
@@ -497,7 +515,11 @@ Note that the group public key and list of tweaks are inputs to partial signatur
 
 This document proposes a standard for the FROST threshold signature scheme that is compatible with [BIP340](https://github.com/bitcoin/bips/blob/master/bip-0340.mediawiki). FROST is _not_ compatible with ECDSA signatures traditionally used in Bitcoin.
 
-## Footnotes
-
 ## Acknowledgments
 
+<!-- Footnotes -->
+
+[^t-edge-cases]: While `t = n` and `t = 1` are in principle supported, simpler alternatives are available in these cases.
+In the case `t = n`, using a dedicated `n`-of-`n` multi-signature scheme such as MuSig2 (see [BIP327](bip-0327.mediawiki)) instead of FROST avoids the need for an interactive DKG.
+The case `t = 1` can be realized by letting one signer generate an ordinary [BIP340](bip-0340.mediawiki) key pair and transmitting the key pair to every other signer, who can check its consistency and then simply use the ordinary [BIP340](bip-0340.mediawiki) signing algorithm.
+Signers still need to ensure that they agree on key pair. A detailed specification is not in scope of this document.
