@@ -17,7 +17,7 @@ Many sections of this document have been directly copied or modified from [BIP32
 ### Motivation
 
 The FROST signature scheme [[KG20](https://eprint.iacr.org/2020/852),[CKM21](https://eprint.iacr.org/2021/1375),[BTZ21](https://eprint.iacr.org/2022/833),[CGRS23](https://eprint.iacr.org/2023/899)] enables _t-of-n_ Schnorr threshold signatures,in which a threshold _t_ of some set of _n_ signers is required to produce a signature.
-FROST remains unforgeable as long as at most _t-1_ signers are compromised, and remains functional as long as _t_ honest signers do not lose their secret key material. It supports any choice of _t_ as long as _1 ≤ t ≤ n_[^t-edge-cases].
+FROST remains unforgeable as long as at most _t-1_ signers are compromised, and remains functional as long as _t_ honest signers do not lose their secret key material. It supports any choice of _t_ as long as _1 ≤ t ≤ n_.[^t-edge-cases]
 
 The primary motivation is to create a standard that allows users of different software projects to jointly control Taproot outputs ([BIP341](https://github.com/bitcoin/bips/blob/master/bip-0341.mediawiki)).
 Such an output contains a public key which, in this case, would be the group public key derived from the public shares of threshold signers.
@@ -31,7 +31,7 @@ Moreover, FROST offers a **higher level of privacy** than <code>OP_CHECKSIGADD</
 There are threshold-signature schemes other than FROST that are fully compatible with Schnorr signatures.
 The FROST variant proposed below stands out by combining all the following features:
 * **Two Communication Rounds**: FROST is faster in practice than other threshold-signature schemes [[GJKR03](https://link.springer.com/chapter/10.1007/3-540-36563-x_26)] which requires at least three rounds, particularly when signers are connected through high-latency anonymous links. Moreover, the need for fewer communication rounds simplifies the algorithms and reduces the probability that implementations and users make security-relevant mistakes.
-* **Efficiency over Robustness**: FROST trades off the robustness property for network efficiency (fewer rounds), requiring the protocol to be aborted in the case of any misbehaving participant.
+* **Efficiency over Robustness**: FROST trades off the robustness property for network efficiency (fewer communication rounds), requiring the protocol to be aborted in the case of any misbehaving participant.
 * **Provable security**: FROST3 with an idealized key generation (i.e., trusted setup) has been [proven existentially unforgeable](https://eprint.iacr.org/2022/550.pdf) under the one-more discrete logarithm (OMDL) assumption (instead of the discrete logarithm assumption required for single-signer Schnorr signatures).
 
 ### Design
@@ -46,12 +46,52 @@ The FROST variant proposed below stands out by combining all the following featu
 
 ## Overview
 
+Implementers must make sure to understand this section thoroughly to avoid subtle mistakes that may lead to catastrophic failure.
+
 ### Optionality of Features
 
-### General Signing Flow
-TODO: can we add that the excalidraw image here?
+The goal of this proposal is to support a wide range of possible application scenarios.
+Given a specific application scenario, some features may be unnecessary or not desirable, and implementers can choose not to support them.
+Such optional features include:
+- Applying plain tweaks after x-only tweaks.
+- Applying tweaks at all.
+- Dealing with messages that are not exactly 32 bytes.
+- Identifying a disruptive signer after aborting (aborting itself remains mandatory).
+If applicable, the corresponding algorithms should simply fail when encountering inputs unsupported by a particular implementation. (For example, the signing algorithm may fail when given a message which is not 32 bytes.)
+Similarly, the test vectors that exercise the unimplemented features should be re-interpreted to expect an error, or be skipped if appropriate.
 
 ### Key Generation
+todo: introduce min_particiapnts and max_pariticipant constants here
+
+### General Signing Flow
+
+The signing protocol is designed to operate with a specified number of signer participants, referred to as _NUM_PARTICIPANTS_. This value is a positive non-zero integer that MUST be at least _MIN_PARTICIPANTS_ and MUST NOT exceed _MAX_PARTICIPANTS_. Therefore, the selection of signing participants from the group must be performed outside the protocol.
+
+Whenever the signing participants want to sign a message, the basic order of operations to create a threshold-signature is as follows:
+
+**First broadcast round:**
+The signers start the signing session by running _NonceGen_ to compute _secnonce_ and _pubnonce_.[^nonce-serialization-detail]
+Then, the signers broadcast their _pubnonce_ to each other and run _NonceAgg_ to compute an aggregate nonce.
+
+**Second broadcast round:**
+At this point, every signer has the required data to sign, which, in the algorithms specified below, is stored in a data structure called [Session Context](./README.md#session-context).
+Every signer computes a partial signature by running _Sign_ with the participant identifier, the secret share, the _secnonce_ and the session context.
+Then, the signers broadcast their partial signatures to each other and run _PartialSigAgg_ to obtain the final signature.
+If all signers behaved honestly, the result passes [https://github.com/bitcoin/bips/blob/master/bip-0340.mediawiki BIP340] verification.
+
+Both broadcast rounds can be optimized by using an aggregator who collects all signers' nonces or partial signatures, aggregates them using _NonceAgg_ or _PartialSigAgg_, respectively, and broadcasts the aggregate result back to the signers. A malicious aggregator can force the signing session to fail to produce a valid Schnorr signature but cannot negatively affect the unforgeability of the scheme, i.e., even a malicious aggregator colluding with all but one signer cannot forge a signature.
+
+> [!IMPORTANT]
+> The _Sign_ algorithm must **not** be executed twice with the same _secnonce_.
+> Otherwise, it is possible to extract the secret signing key from the two partial signatures output by the two executions of _Sign_.
+> To avoid accidental reuse of _secnonce_, an implementation may securely erase the _secnonce_ argument by overwriting it with 64 zero bytes after it has been read by _Sign_.
+> A _secnonce_ consisting of only zero bytes is invalid for _Sign_ and will cause it to fail.
+
+To simplify the specification of the algorithms, some intermediary values are unnecessarily recomputed from scratch, e.g., when executing _GetSessionValues_ multiple times.
+Actual implementations can cache these values.
+As a result, the [Session Context](./README.md#session-context) may look very different in implementations or may not exist at all.
+However, computation of _GetSessionValues_ and storage of the result must be protected against modification from an untrusted third party.
+This party would have complete control over the aggregate public key and message to be signed.
 
 ### Nonce Generation
 
@@ -60,16 +100,6 @@ TODO: can we add that the excalidraw image here?
 #### Further Remarks
 
 ### Tweaking the Group Public Key
-
-- [ ] subsections
-	- [ ] optionality of features
-	- [ ] key generation compatibility
-		TODO give a link to "frost keys" in "algorithms"
-	- [ ] general signing flow
-		TODO mention various keygen protocols
-	- [ ] nonce generation
-	- [ ] identifying disruptive signers
-	- [ ] tweaking the aggregate public key
 
 ## Key Generation
 
@@ -523,7 +553,7 @@ Note that the group public key and list of tweaks are inputs to partial signatur
 
 This document proposes a standard for the FROST threshold signature scheme that is compatible with [BIP340](https://github.com/bitcoin/bips/blob/master/bip-0340.mediawiki). FROST is _not_ compatible with ECDSA signatures traditionally used in Bitcoin.
 
-## Acknowledgments
+<!-- ## Acknowledgments -->
 
 <!-- Footnotes -->
 
@@ -531,3 +561,5 @@ This document proposes a standard for the FROST threshold signature scheme that 
 In the case `t = n`, using a dedicated `n`-of-`n` multi-signature scheme such as MuSig2 (see [BIP327](bip-0327.mediawiki)) instead of FROST avoids the need for an interactive DKG.
 The case `t = 1` can be realized by letting one signer generate an ordinary [BIP340](bip-0340.mediawiki) key pair and transmitting the key pair to every other signer, who can check its consistency and then simply use the ordinary [BIP340](bip-0340.mediawiki) signing algorithm.
 Signers still need to ensure that they agree on key pair. A detailed specification is not in scope of this document.
+
+[^nonce-serialization-detail]: We treat the _secnonce_ and _pubnonce_ as grammatically singular even though they include serializations of two scalars and two elliptic curve points, respectively. This treatment may be confusing for readers familiar with the MuSig2 paper. However, serialization is a technical detail that is irrelevant for users of MuSig2 interfaces.
