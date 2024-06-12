@@ -133,6 +133,7 @@ def check_pubshares_correctness(secshares: List[bytes], pubshares: List[PlainPk]
             return False
     return True
 
+#TODO: do this without reconstructing the group secret key
 def check_group_pubkey_correctness(max_participants: int, min_participants: int, group_pk: PlainPk, ids: List[bytes], secshares: List[bytes], pubshares: List[PlainPk]) -> bool:
     if not max_participants >= min_participants > 1:
         raise ValueError('The 2 <= min participants <= max participants condition was violated.')

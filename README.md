@@ -61,11 +61,34 @@ If applicable, the corresponding algorithms should simply fail when encountering
 Similarly, the test vectors that exercise the unimplemented features should be re-interpreted to expect an error, or be skipped if appropriate.
 
 ### Key Generation
-todo: introduce min_particiapnts and max_pariticipant constants here
+
+We distinguish between two public key types, namely _plain public keys_, the key type traditionally used in Bitcoin, and _X-only public keys_.
+Plain public keys are byte strings of length 33 (often called _compressed_ format).
+In contrast, X-only public keys are 32-byte strings defined in [BIP340](https://github.com/bitcoin/bips/blob/master/bip-0340.mediawiki).
+
+FROST generates signatures that are verifiable as if produced by a single signer using a secret key _s_ with the corresponding public key. As a threshold signing protocol, the group secret key _s_ is shared among all _MAX_PARTICIPANTS_ participants using Shamir's secret sharing, and at least _MIN_PARTICIPANTS_ participants must collaborate to issue a valid signature.  
+&emsp;&ensp;_MIN_PARTICIPANTS_ is a positive non-zero integer lesser than or equal to _MAX_PARTICIPANTS_  
+&emsp;&ensp;_MAX_PARTICIPANTS_ MUST be a positive integer lesser than the secp256k1 curve order.
+
+In particular, FROST signing assumes each participant is configured with the following information:
+- An identifier _id_, which is a positive non-zero integer in the range _[1, MAX_PARTICIPANTS]_ and MUST be distinct from the identifier of every other participant.
+- A secret share _secshare<sub>id</sub>_, which is a positive non-zero integer lesser than the secp256k1 curve order. This value represents the _i_-th Shamir secret share of the group secret key _s_.  In particular, _secshare<sub>id</sub>_ is the value _f(id)_ on a secret polynomial _f_ of degree _(MIN_PARTICIPANTS - 1)_, where _s_ is _f(0)_.
+- A Group public key _group_pk_, which is point on the secp256k1 curve.
+- A public share _pubshare<sub>id</sub>_, which is point on the secp256k1 curve.
+
+> [!NOTE]
+>  The definitions for the secp256k1 curve and its order can be found in the [Notation section](./README.md#notation).
+
+As key generation for FROST signing is beyond the scope of this document, we do not specify how this information is configured and distributed to the participants. Generally, there are two possible key generation mechanisms: one involves a single, trusted dealer (see Appendix D of [FROST RFC draft](https://datatracker.ietf.org/doc/draft-irtf-cfrg-frost/15/)), and the other requires performing a distributed key generation protocol (see [BIP FROST DKG draft](https://github.com/BlockstreamResearch/bip-frost-dkg)).
+
+For a key generation mechanism to be compatible with FROST signing, the participant information it generates MUST successfully pass both the _ValidateGroupPubkey_ and _ValidatePubshares_ functions (see [Key Generation Compatibility](./README.md#key-generation-compatibility)).
+
+> [!IMPORTANT]
+> It should be noted that while passing these functions ensures functional compatibility, it does not guarantee the security of the key generation mechanism.
 
 ### General Signing Flow
 
-The signing protocol is designed to operate with a specified number of signer participants, referred to as _NUM_PARTICIPANTS_. This value is a positive non-zero integer that MUST be at least _MIN_PARTICIPANTS_ and MUST NOT exceed _MAX_PARTICIPANTS_. Therefore, the selection of signing participants from the group must be performed outside the protocol.
+FROST signing is designed to be executed by a predetermined number of signer participants, referred to as _NUM_PARTICIPANTS_. This value is a positive non-zero integer that MUST be at least _MIN_PARTICIPANTS_ and MUST NOT exceed _MAX_PARTICIPANTS_. Therefore, the selection of signing participants from the participant group must be performed outside the signing protocol, prior to its initiation.
 
 Whenever the signing participants want to sign a message, the basic order of operations to create a threshold-signature is as follows:
 
@@ -100,54 +123,6 @@ This party would have complete control over the aggregate public key and message
 #### Further Remarks
 
 ### Tweaking the Group Public Key
-
-## Key Generation
-
-This document does not provide information on the key generation method necessary for FROST signing. To learn about such methods, you can refer to [RFC-frost (Appendix D)](https://datatracker.ietf.org/doc/draft-irtf-cfrg-frost/) and [BIP-DKG](https://github.com/BlockstreamResearch/bip-frost-dkg).
-
-It is important to note that any FROST keys generated using the aforementioned methods must meet the correctness conditions (refer to <link subsection>) to be compatible with the signing protocol. However, it is essential to understand that the correctness conditions do not guarantee the security of these key generation methods. The conditions only ensure that the keys generated are functionally compatible with the signing protocol.
-
-TODO will duplicating the necessary notations here improve readability? rather than mentioning its link
-
-### Key Specification
-
-FROST signatures function as if they were created by an individual signer using a signing key, thus enabling them to be verified with the corresponding public key. In order to achieve this functionality, a key generation protocol divides the group signing key among each participant using Shamir secret sharing.
-
-FROST keys produced by a key generation protocol can be represented by the following parameters:
-
-#### General parameters
-
-|No|Name|Type|Range (Inclusive)|Description|
-|---|---|---|---|---|
-|1|_max_participants_|integer|2..n|maximum number of signers allowed in the signing process|
-|2|_min_participants_|integer|2..max_participants|minimum number of signers required to initiate the signing process|
-
-#### Participant parameters
-
-|No|Name|Type|Range (Inclusive)|Description|
-|---|---|---|---|---|
-|1|_id_|integer|1..max_participants|used to uniquely identify each participant, must be distinct from the _id_ of every other participant|
-|2|_secshare_<sub>id</sub>|integer (scalar)|1..n|signing key of a participant|
-|3|_pubshare_<sub>id</sub>|curve point (_plain public key_)|shouldn't be infinity point|public key associated with the above signing key|
-|4|_group_pubkey_|curve point (_plain public key_)|shouldn't be infinity point|group public key used to verify the BIP340 Schnorr signature produced by the FROST-signing protocol|
-
-### Correctness Conditions
-
-The notations used in this section can be found in _todo link_
-
-#### Public shares condition
-
-For each participants _i_ in the range [_1..max_participants_], their public share must equal to their secret share scalar multiplied with the generator point, represented as: _pubshare<sub>i</sub> = secshare<sub>i</sub>⋅G_
-
-#### Group public key condition
-
-TODO: For this condt, the ROAST paper forces the |T| = t. Why? Every signer set with t <= |T| <= n, must satisfy this condition, right?
-
-Consider a set of participants, denoted by _T_, chosen from a total pool of participants whose size is _max_participants_. For this set _T_, we can define a special parameter called the "group secret key". It is calculated by summing the secret share and interpolating value for each participant in T:
-
-_group_seckey_ = sum (_derive_interpolating_value<sub>j, T</sub>_._secshare_<sub>j</sub>) mod _n_, for every _j_ in _T_
-
-For all possible values of T, the group public key must equal to their group secret key scalar multiplied by the generator point represented as _group_pubkey<sub>i</sub>_ = _group_seckey<sub>j, T</sub>_⋅_G_.
 
 ## Algorithms
 
@@ -195,7 +170,7 @@ The following conventions are used, with constants as defined for [secp256k1](h
           - if _count(lst, x)_ > 1:
             - Return False
         - Return True
-    - The function _int_ids(lst)_, where _lst_ is a list of 32-byte array, returns a list of integers. The function _int_ids(lst)_ is equivalent to the following pseudocode:
+    - The function _integer_ids(lst)_, where _lst_ is a list of 32-byte array, returns a list of integers. The function _integer_ids(lst)_ is equivalent to the following pseudocode:
 	    - _res_ = []
 	    - For _x_ in _lst_:
 		    - Fail if _int(x)_ ≥ n or _int(x)_ < 1
@@ -211,6 +186,41 @@ The following conventions are used, with constants as defined for [secp256k1](h
     - Tuples are written by listing the elements within parentheses and separated by commas. For example, _(2, 3, 1)_ is a tuple.
 
 TODO remove unused functions above
+
+### Key Generation Compatibility
+
+Internal Algorithm _PlainPubkeyGen(sk):_[^pubkey-gen-ecdsa]
+- Input:
+    - The secret key _sk_: a 32-byte array, freshly generated uniformly at random
+- Let _d' = int(sk)_.
+- Fail if _d' = 0_ or _d' &ge; n_.
+- Return _cbytes(d'⋅G)_.
+
+Algorithm _ValidatePubshares(secshare<sub>1..u</sub>, pubshare<sub>1..u</sub>)_
+- Inputs:
+    - The number _u_ of participants involved in keygen: an integer equal to _max_participants_
+    - The participant secret shares _secshare<sub>1..u</sub>_: _u_ 32-byte arrays
+    - The corresponding public shares _pubshare<sub>1..u</sub>_: _u_ 33-byte arrays
+- For _i = 1 .. u_:
+    - Fail if _PlainPubkeyGen(secshare<sub>i</sub>)_ ≠ _pubshare<sub>i</sub>_
+- Return success iff no failure occurred before reaching this point.
+
+Algorithm _ValidateGroupPubkey(threshold, group_pk, id<sub>1..u</sub>, pubshare<sub>1..u</sub>)_:
+- Inputs:
+    - The number _u_ of participants involved in keygen: an integer equal to _max_participants_
+    - The number _threshold_ of participants required to issue a signature: an integer equal to _min_participants_
+    - The group public key _group_pk_: a 33-byte array
+    - The participant identifiers _id<sub>1..u</sub>_: _u_ 32-byte arrays
+    - The participant public shares _pubshares<sub>1..u</sub>_: _u_ 33-byte arrays
+- Fail if _threshold_ > _u_
+- _int_id<sub>1..u</sub> = integer_ids(id<sub>1..u</sub>)_; Fail if that fails
+- For _t_ = _threshold..u_:
+    - For each combination of _t_ elements from _int_id<sub>1..u</sub>_:[^itertools-combinations]
+        - Let _signer_id<sub>1..t</sub>_ be the current combination of participant identifiers
+        - Let _signer_pubshare<sub>1..t</sub>_ be their corresponding participant pubshares[^calc-signer-pubshares]
+        - _expected_pk_ = _DeriveGroupPubkey(signer_id<sub>1..t</sub>, signer_pubshare<sub>1..t</sub>)_
+        - Fail if _group_pk_ ≠ _expected_pk_
+- Return success iff no failure occurred before reaching this point.
 
 ### Tweaking Group Public Key
 
@@ -266,8 +276,8 @@ think: what the max msg len? we use 8 bytes while hashing it
 
 Algorithm _NonceGen(secshare, pubshare, group_pk, m, extra_in)_:
 - Inputs:
-    - The participant’s secret signing key _secshare_: a 32-byte array (optional argument)
-    - The corresponding public key _pubshare_: a 33-byte array (optional argument)
+    - The participant’s secret share _secshare_: a 32-byte array (optional argument)
+    - The corresponding public share _pubshare_: a 33-byte array (optional argument)
     - The x-only group public key _group_pk_: a 32-byte array (optional argument)
     - The message _m_: a byte array (optional argument)
     - The auxiliary input _extra_in_: a byte array with _0 ≤ len(extra_in) ≤ 2<sup>32</sup>-1_ (optional argument)
@@ -348,8 +358,8 @@ Algorithm _GetSessionInterpolatingValue(session_ctx, my_id)_:
 Internal Algorithm _DeriveInterpolatingValue(id<sub>1..u</sub>, my_id):_
 - Fail if _my_id_ not in _id<sub>1..u</sub>_
 - Fail if not _has_unique_elements(id<sub>1..u</sub>)
-- _integer_id<sub>1..u</sub> = int_ids(id<sub>1..u</sub>)_; Fail if that fails
-- Return _DeriveInterpolatingValueInternal(_integer_id<sub>1..u</sub>_, int(my_id))_
+- _int_id<sub>1..u</sub> = integer_ids(id<sub>1..u</sub>)_; Fail if that fails
+- Return _DeriveInterpolatingValueInternal(_int_id<sub>1..u</sub>_, int(my_id))_
 
 Internal Algorithm _DeriveInterpolatingValueInternal(id<sub>1..u</sub>, my_id):_
 - Let _num = 1_
@@ -461,7 +471,8 @@ We provide a naive, highly inefficient, and non-constant time [pure Python 3 re
 
 Standalone JSON test vectors are also available in the [same directory](./reference/vectors/), to facilitate porting the test vectors into other implementations.
 
-The reference implementation is for demonstration purposes only and not to be used in production environments.
+> [!CAUTION]
+> The reference implementation is for demonstration purposes only and not to be used in production environments.
 
 ## Remarks on Security and Correctness
 
@@ -563,3 +574,11 @@ The case `t = 1` can be realized by letting one signer generate an ordinary [BIP
 Signers still need to ensure that they agree on key pair. A detailed specification is not in scope of this document.
 
 [^nonce-serialization-detail]: We treat the _secnonce_ and _pubnonce_ as grammatically singular even though they include serializations of two scalars and two elliptic curve points, respectively. This treatment may be confusing for readers familiar with the MuSig2 paper. However, serialization is a technical detail that is irrelevant for users of MuSig2 interfaces.
+
+[^pubkey-gen-ecdsa]: The ''PlainPubkeyGen'' algorithm matches the key generation procedure traditionally used for ECDSA in Bitcoin
+
+[^itertools-combinations]: This line represents a loop over every possible combination of `t` elements sourced from the `int_ids` array. This operation is equivalent to invoking the [`itertools.combinations(int_ids, t)`](https://docs.python.org/3/library/itertools.html#itertools.combinations) function call in Python.
+
+[^calc-signer-pubshares]: This _signer_pubshare<sub>1..t</sub>_ list can be computed from the input _pubshare<sub>1..u</sub>_ list.  
+Method 1 - use `itertools.combinations(zip(int_ids, pubshares), t)`  
+Method 2 - For _i = 1..t_ :  signer_pubshare<sub>i</sub> = pubshare<sub>signer_id<sub>i</sub></sub>
