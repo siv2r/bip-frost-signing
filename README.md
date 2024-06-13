@@ -118,6 +118,35 @@ This party would have complete control over the aggregate public key and message
 
 ### Nonce Generation
 
+> [!IMPORTANT]
+> _NonceGen_ must have access to a high-quality random generator to draw an unbiased, uniformly random value _rand'_.
+> In contrast to BIP340 signing, the values _k<sub>1</sub>_ and _k<sub>2</sub>_ **must not be derived deterministically** from the session parameters because deriving nonces deterministically allows for a [complete key-recovery attack in multi-party discrete logarithm-based signatures](https://medium.com/blockstream/musig-dn-schnorr-multisignatures-with-verifiably-deterministic-nonces-27424b5df9d6#e3b6).
+
+The optional arguments to _NonceGen_ enable a defense-in-depth mechanism that may prevent secret share exposure if _rand'_ is accidentally not drawn uniformly at random.
+If the value _rand'_ was identical in two _NonceGen_ invocations, but any other argument was different, the _secnonce_ would still be guaranteed to be different as well (with overwhelming probability), and thus accidentally using the same _secnonce_ for _Sign_ in both sessions would be avoided.
+Therefore, it is recommended to provide the optional arguments _secshare_, _pubshare_, _group_pk_, and _m_ if these session parameters are already determined during nonce generation.
+The auxiliary input _extra_in_ can contain additional contextual data that has a chance of changing between _NonceGen_ runs,
+e.g., a supposedly unique session id (taken from the application), a session counter wide enough not to repeat in practice, any nonces by other signers (if already known), or the serialization of a data structure containing multiple of the above.
+However, the protection provided by the optional arguments should only be viewed as a last resort.
+In most conceivable scenarios, the assumption that the arguments are different between two executions of _NonceGen_ is relatively strong, particularly when facing an active adversary.
+
+In some applications, it is beneficial to generate and send a _pubnonce_ before the other signers, their _pubshare_, or the message to sign is known.
+In this case, only the available arguments are provided to the _NonceGen_ algorithm.
+After this preprocessing phase, the _Sign_ algorithm can be run immediately when the message and set of signers is determined.
+This way, the final signature is created quicker and with fewer round trips.
+However, applications that use this method presumably store the nonces for a longer time and must therefore be even more careful not to reuse them.
+Moreover, this method is not compatible with the defense-in-depth mechanism described in the previous paragraph.
+
+Instead of every signer broadcasting their _pubnonce_ to every other signer, the signers can send their _pubnonce_ to a single aggregator node that runs _NonceAgg_ and sends the _aggnonce_ back to the signers.
+This technique reduces the overall communication.
+A malicious aggregator can force the signing session to fail to produce a valid Schnorr signature but cannot negatively affect the unforgeability of the scheme.
+
+In general, FROST signers are stateful in the sense that they first generate _secnonce_ and then need to store it until they receive the other signers' _pubnonces_ or the _aggnonce_.
+However, it is possible for one of the signers to be stateless.
+This signer waits until it receives the _pubnonce_ of all the other signers and until session parameters such as a message to sign, participant identifiers, participant public shares, and tweaks are determined.
+Then, the signer can run _NonceGen_, _NonceAgg_ and _Sign_ in sequence and send out its _pubnonce_ along with its partial signature.
+Stateless signers may want to consider signing deterministically (see [Modifications to Nonce Generation](./README.md#modifications-to-nonce-generation)) to remove the reliance on the random number generator in the _NonceGen_ algorithm.
+
 ### Identifying Disruptive Signers
 
 #### Further Remarks
@@ -335,7 +364,7 @@ We write "Let _(u, id<sub>1..u</sub>, pubshare<sub>1..u</sub>, aggnonce, v, twea
 
 Algorithm _GetSessionValues(session_ctx)_:
 - Let _(u, id<sub>1..u</sub>, pubshare<sub>1..u</sub>, aggnonce, v, tweak<sub>1..v</sub>, is_xonly_t<sub>1..v</sub>, m) = session_ctx_
-- _group_pk_ = _DeriveGroupPubkey(id<sub>1..u</sub>, pubshare<sub>1..u</sub>)_
+- _group_pk_ = _DeriveGroupPubkey(id<sub>1..u</sub>, pubshare<sub>1..u</sub>)_; fail if that fails
 - Let _tweak_ctx<sub>0</sub> = TweakCtxInit(group_pk)_; fail if that fails
 - For _i = 1 .. v_:
     - Let _tweak_ctx<sub>i</sub> = ApplyTweak(tweak_ctx<sub>i-1</sub>, tweak<sub>i</sub>, is_xonly_t<sub>i</sub>)_; fail if that fails
@@ -370,7 +399,8 @@ Internal Algorithm _DeriveInterpolatingValueInternal(id<sub>1..u</sub>, my_id):_
 	    - Let _denom_ = _denom⋅(id<sub>i</sub> - my_id)_
 - _lambda_ = _num⋅denom<sup>-1</sup> mod n_
 - Return _lambda_
-
+  
+TODO: remove this fn, if not used anywhere
 Algorithm _GetSessionGroupPubkey(session_ctx)_:
 - Let _(u, id<sub>1..u</sub>, pubshare<sub>1..u</sub>, _, _, _, _) = session_ctx_
 - Return _DeriveGroupPubkey(id<sub>1..u</sub>, pubshare<sub>1..u</sub>)_; fail if that fails
@@ -382,7 +412,7 @@ Algorithm _DeriveGroupPubkey(id<sub>1..u</sub>, pubshare<sub>1..u</sub>)_
     - _P_ = _cpoint(pubshare<sub>i</sub>)_; fail if that fails
     - _lambda_ = _DeriveInterpolatingValue(id<sub>1..u</sub>, id<sub>i</sub>)_
     - _Q_ = _Q_ + _lambda⋅P_
-- Return _Q_
+- Return _cbytes(Q)_
 
 Algorithm _SessionHasSignerPubshare(session_ctx, signer_pubshare)_:
 - Let _(u, _, pubshare<sub>1..u</sub>, _, _, _, _) = session_ctx_
@@ -475,6 +505,65 @@ Standalone JSON test vectors are also available in the [same directory](./refer
 > The reference implementation is for demonstration purposes only and not to be used in production environments.
 
 ## Remarks on Security and Correctness
+
+### Modifications to Nonce Generation
+
+Implementers must avoid modifying the _NonceGen_ algorithm without being fully aware of the implications.
+We provide two modifications to _NonceGen_ that are secure when applied correctly and may be useful in special circumstances, summarized in the following table.
+
+|  | needs secure randomness | needs secure counter | needs to keep state securely | needs aggregate nonce of all other signers (only possible for one signer) |
+| --- | --- | --- | --- | --- |
+| **NonceGen** | ✓ |  | ✓ |  |
+| **CounterNonceGen** |  | ✓ | ✓ |  |
+| **DeterministicSign** |  |  |  | ✓ |
+
+First, on systems where obtaining uniformly random values is much harder than maintaining a global atomic counter, it can be beneficial to modify _NonceGen_.
+The resulting algorithm _CounterNonceGen_ does not draw _rand'_ uniformly at random but instead sets _rand'_ to the value of an atomic counter that is incremented whenever it is read.
+With this modification, the secret share _secshare_ of the signer generating the nonce is **not** an optional argument and must be provided to _NonceGen_.
+The security of the resulting scheme then depends on the requirement that reading the counter must never yield the same counter value in two _NonceGen_ invocations with the same _secshare_.
+
+Second, if there is a unique signer who is supposed to send the _pubnonce_ last, it is possible to modify nonce generation for this single signer to not require high-quality randomness.
+Such a nonce generation algorithm _DeterministicSign_ is specified below.
+Note that the only optional argument is _rand_, which can be omitted if randomness is entirely unavailable.
+_DeterministicSign_ requires the argument _aggothernonce_ which should be set to the output of _NonceAgg_ run on the _pubnonce_ value of **all** other signers (but can be provided by an untrusted party).
+Hence, using _DeterministicSign_ is only possible for the last signer to generate a nonce and makes the signer stateless, similar to the stateless signer described in the [Nonce Generation](./README.md#nonce-generation) section.
+
+#### Deterministic and Stateless Signing for a Single Signer
+
+Algorithm _DeterministicSign(sk, aggothernonce, pk<sub>1..u</sub>, tweak<sub>1..v</sub>, is_xonly_t<sub>1..v</sub>, m, rand)_:
+- Inputs:
+    - The secret share _secshare_: a 32-byte array
+    - The identifier of the signing participant _my_id_: a 32-byte array with 1 _≤ int(my_id) ≤ max_participants_
+    - The aggregate public nonce _aggothernonce_ (see [above](./README.md#modifications-to-nonce-generation)): a 66-byte array
+    - The number _u_ of identifiers and individual public shares with _min_participants ≤ u ≤ max_participants_
+    - The participant identifiers _id<sub>1..u</sub>_: _u_ 32-byte arrays
+    - The individual public shares _pubshare<sub>1..u</sub>_: _u_ 32-byte arrays
+    - The number _v_ of tweaks with _0 &le; v < 2^32_
+    - The tweaks _tweak<sub>1..v</sub>_: _v_ 32-byte arrays
+    - The tweak methods _is_xonly_t<sub>1..v</sub>_: _v_ booleans
+    - The message _m_: a byte array[^m-len]
+    - The auxiliary randomness _rand_: a 32-byte array (optional argument)
+- If the optional argument _rand_ is present:
+    - Let _secshare'_ be the byte-wise xor of _secshare_ and _hash<sub>FROST/aux</sub>(rand)_
+- Else:
+    - Let _secshare' = secshare_
+- _group_pk_ = _DeriveGroupPubkey(id<sub>1..u</sub>, pubshare<sub>1..u</sub>)_; fail if that fails
+- Let _tweak_ctx<sub>0</sub> = TweakCtxInit(group_pk)_; fail if that fails
+- For _i = 1 .. v_:
+    - Let _tweak_ctx<sub>i</sub> = ApplyTweak(tweak_ctx<sub>i-1</sub>, tweak<sub>i</sub>, is_xonly_t<sub>i</sub>)_; fail if that fails
+- Let _tweaked_gpk = GetXonlyPubkey(tweak_ctx<sub>v</sub>)_
+- Let _k<sub>i</sub> = int(hash<sub>FROST/deterministic/nonce</sub>(secshare' || aggothernonce || tweaked_gpk || bytes(8, len(m)) || m || bytes(1, i - 1))) mod n_ for _i = 1,2_
+- Fail if _k<sub>1</sub> = 0_ or _k<sub>2</sub> = 0_
+- Let _R<sub>⁎,1</sub> = k<sub>1</sub>⋅G, R<sub>⁎,2</sub> = k<sub>2</sub>⋅G_
+- Let _pubnonce = cbytes(R<sub>⁎,2</sub>) || cbytes(R<sub>⁎,2</sub>)_
+- Let _d = int(secshare)_
+- Fail if _d = 0_ or _d &ge; n_
+- Let _signer_pshare = cbytes(d⋅G)_
+- Fail if _signer_pshare_ is not present in _pubshare<sub>1..u</sub>_
+- Let _secnonce = bytes(32, k<sub>1</sub>) || bytes(32, k<sub>2</sub>)_
+- Let _aggnonce = NonceAgg((pubnonce, aggothernonce))_; fail if that fails and blame nonce aggregator for invalid _aggothernonce_.
+- Let _session_ctx = (u, id<sub>1..u</sub>, pubshare<sub>1..u</sub>, aggnonce, v, tweak<sub>1..v</sub>, is_xonly_t<sub>1..v</sub>, m)_
+- Return _(pubnonce, Sign(secnonce, secshare, my_id, session_ctx))_
 
 ### Tweaking Definition
 
@@ -582,3 +671,5 @@ Signers still need to ensure that they agree on key pair. A detailed specificati
 [^calc-signer-pubshares]: This _signer_pubshare<sub>1..t</sub>_ list can be computed from the input _pubshare<sub>1..u</sub>_ list.  
 Method 1 - use `itertools.combinations(zip(int_ids, pubshares), t)`  
 Method 2 - For _i = 1..t_ :  signer_pubshare<sub>i</sub> = pubshare<sub>signer_id<sub>i</sub></sub>
+
+[^m-len]: to be decided
