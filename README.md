@@ -100,7 +100,7 @@ Then, the signers broadcast their _pubnonce_ to each other and run _NonceAgg_ to
 At this point, every signer has the required data to sign, which, in the algorithms specified below, is stored in a data structure called [Session Context](./README.md#session-context).
 Every signer computes a partial signature by running _Sign_ with the participant identifier, the secret share, the _secnonce_ and the session context.
 Then, the signers broadcast their partial signatures to each other and run _PartialSigAgg_ to obtain the final signature.
-If all signers behaved honestly, the result passes [https://github.com/bitcoin/bips/blob/master/bip-0340.mediawiki BIP340] verification.
+If all signers behaved honestly, the result passes [BIP340](https://github.com/bitcoin/bips/blob/master/bip-0340.mediawiki) verification.
 
 Both broadcast rounds can be optimized by using an aggregator who collects all signers' nonces or partial signatures, aggregates them using _NonceAgg_ or _PartialSigAgg_, respectively, and broadcasts the aggregate result back to the signers. A malicious aggregator can force the signing session to fail to produce a valid Schnorr signature but cannot negatively affect the unforgeability of the scheme, i.e., even a malicious aggregator colluding with all but one signer cannot forge a signature.
 
@@ -152,6 +152,24 @@ Stateless signers may want to consider signing deterministically (see [Modificat
 #### Further Remarks
 
 ### Tweaking the Group Public Key
+
+The group public key can be _tweaked_, which modifies the key as defined in the [Tweaking Definition](./README.md#tweaking-definition) subsection.
+In order to apply a tweak, the Tweak Context output by _TweakCtxInit_ is provided to the _ApplyTweak_ algorithm with the _is_xonly_t_ argument set to false for plain tweaking and true for X-only tweaking.
+The resulting Tweak Context can be used to apply another tweak with _ApplyTweak_ or obtain the group public key with _GetXonlyPubkey_ or _GetPlainPubkey_.
+
+The purpose of supporting tweaking is to ensure compatibility with existing uses of tweaking, i.e., that the result of signing is a valid signature for the tweaked public key.
+The FROST signing algorithms take arbitrary tweaks as input but accepting arbitrary tweaks may negatively affect the security of the scheme.[^arbitrary-tweaks]
+Instead, signers should obtain the tweaks according to other specifications.
+This typically involves deriving the tweaks from a hash of the aggregate public key and some other information.
+Depending on the specific scheme that is used for tweaking, either the plain or the X-only aggregate public key is required.
+For example, to do [BIP32](https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki) derivation, you call _GetPlainPubkey_ to be able to compute the tweak, whereas [BIP341](https://github.com/bitcoin/bips/blob/master/bip-0341.mediawiki) TapTweaks require X-only public keys that are obtained with _GetXonlyPubkey_.
+
+The tweak mode provided to _ApplyTweak_ depends on the application:
+Plain tweaking can be used to derive child public keys from an aggregate public key using [BIP32](https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki).
+On the other hand, X-only tweaking is required for Taproot tweaking per [BIP341](https://github.com/bitcoin/bips/blob/master/bip-0341.mediawiki).
+A Taproot-tweaked public key commits to a _script path_, allowing users to create transaction outputs that are spendable either with a FROST threshold-signature or by providing inputs that satisfy the script path.
+Script path spends require a control block that contains a parity bit for the tweaked X-only public key.
+The bit can be obtained with _GetPlainPubkey(tweak_ctx)[0] & 1_.
 
 ## Algorithms
 
@@ -673,3 +691,5 @@ Method 1 - use `itertools.combinations(zip(int_ids, pubshares), t)`
 Method 2 - For _i = 1..t_ :  signer_pubshare<sub>i</sub> = pubshare<sub>signer_id<sub>i</sub></sub>
 
 [^m-len]: to be decided
+
+[^arbitrary-tweaks]: It is an open question whether allowing arbitrary tweaks from an adversary affects the unforgeability of MuSig2. TODO: does this apply to frost as well?
