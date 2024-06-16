@@ -2,12 +2,13 @@ This document provides reasoning behind the major design decisions in the BIP an
 
 ## General Signing Flow
 
-![General Signing Flow](images/frost-signing-flow.png)
+![General Signing Flow](docs/signing_flow.png)
 
 ## Current Design
 
 In this BIP, we follow the FROST3 scheme (see section 2.3 in [ROAST paper](https://eprint.iacr.org/2022/550.pdf)), which is a variant of the [original FROST](https://eprint.iacr.org/2020/852.pdf).
 
+TODO: update this section to reflect that we currently follow the alternative 1 instead.
 ### Key Generation
 
 We aim to represent $(t, n)$ FROST keys using [1] input/output arguments of keygen and [2] conditions that output arguments must satisfy (see definition 2.5 in the [ROAST paper](https://eprint.iacr.org/2022/550.pdf)). This representation should be easy to understand without sacrificing precision. I am currently trying to improve the way we represent correctness conditions. At present, we represent them in an English-math like language to make it easier for non-mathematicians to understand. However, I am open to other ways to represent them. Here are two alternatives:

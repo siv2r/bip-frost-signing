@@ -149,7 +149,28 @@ Stateless signers may want to consider signing deterministically (see [Modificat
 
 ### Identifying Disruptive Signers
 
+The signing protocol makes it possible to identify malicious signers who send invalid contributions to a signing session in order to make the signing session abort and prevent the honest signers from obtaining a valid signature.
+This property is called "identifiable aborts" and ensures that honest parties can assign blame to malicious signers who cause an abort in the signing protocol.
+
+Aborts are identifiable for an honest party if the following conditions hold in a signing session:
+- The contributions received from all signers have not been tampered with (e.g., because they were sent over authenticated connections).
+- Nonce aggregation is performed honestly (e.g., because the honest signer performs nonce aggregation on its own or because the aggregator is trusted).
+- The partial signatures received from all signers are verified using the algorithm _PartialSigVerify_.
+
+If these conditions hold and an honest party (signer or aggregator) runs an algorithm that fails due to invalid protocol contributions from malicious signers, then the algorithm run by the honest party will output the participant identifier of exactly one malicious signer.
+Additionally, if the honest parties agree on the contributions sent by all signers in the signing session, all the honest parties who run the aborting algorithm will identify the same malicious signer.
+
 #### Further Remarks
+
+Some of the algorithms specified below may also assign blame to a malicious aggregator.
+While this is possible for some particular misbehavior of the aggregator, it is not guaranteed that a malicious aggregator can be identified.
+More specifically, a malicious aggregator (whose existence violates the second condition above) can always make signing abort and wrongly hold honest signers accountable for the abort (e.g., by claiming to have received an invalid contribution from a particular honest signer).
+
+The only purpose of the algorithm _PartialSigVerify_ is to ensure identifiable aborts, and it is not necessary to use it when identifiable aborts are not desired.
+In particular, partial signatures are _not_ signatures.
+An adversary can forge a partial signature, i.e., create a partial signature without knowing the secret share for that particular participant public share.[^partialsig-forgery]
+However, if _PartialSigVerify_ succeeds for all partial signatures then _PartialSigAgg_ will return a valid Schnorr signature.[^pok-for-seckeys]
+
 
 ### Tweaking the Group Public Key
 
@@ -693,3 +714,7 @@ Method 2 - For _i = 1..t_ :  signer_pubshare<sub>i</sub> = pubshare<sub>signer_i
 [^m-len]: to be decided
 
 [^arbitrary-tweaks]: It is an open question whether allowing arbitrary tweaks from an adversary affects the unforgeability of MuSig2. TODO: does this apply to frost as well?
+
+[^partialsig-forgery]: Assume a malicious participant intends to forge a partial signature for the participant with public share _P_. It participates in the signing session pretending to be two distinct signers: one with the public share _P_ and the other with its own public share. The adversary then sets the nonce for the second signer in such a way that allows it to generate a partial signature for _P_. As a side effect, it cannot generate a valid partial signature for its own public share. An explanation of the steps required to create a partial signature forgery can be found in [this document](./docs/partialsig_forgery.md).
+
+[^pok-for-seckeys]: Given a list of individual public keys, it is an open question whether a BIP-340 signature valid under the corresponding aggregate public key is a proof of knowledge of all secret keys of the individual public keys. todo: this doesn't apply to frost right? cause here the group pubkey can be from any set of secshares.
