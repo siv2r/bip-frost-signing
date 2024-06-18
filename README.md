@@ -194,7 +194,7 @@ The bit can be obtained with _GetPlainPubkey(tweak_ctx)[0] & 1_.
 
 ## Algorithms
 
-The following specification of the algorithms has been written with a focus on clarity. As a result, the specified algorithms are not always optimal in terms of computation and space. In particular, some values are recomputed but can be cached in actual implementations (todo see _mention link here_).
+The following specification of the algorithms has been written with a focus on clarity. As a result, the specified algorithms are not always optimal in terms of computation and space. In particular, some values are recomputed but can be cached in actual implementations (see [General Signing Flow](./README.md#general-signing-flow)).
 
 ### Notation
 
@@ -222,7 +222,7 @@ The following conventions are used, with constants as defined for [secp256k1](h
     - The function _cbytes(P)_, where _P_ is a point for which _not is_infinite(P)_, returns _a || xbytes(P)_ where _a_ is a byte that is _2_ if _has_even_y(P)_ and _3_ otherwise.
     - The function _cbytes_ext(P)_, where _P_ is a point, returns _bytes(33, 0)_ if _is_infinite(P)_. Otherwise, it returns _cbytes(P)_.
     - The function _int(x)_, where _x_ is a 32-byte array, returns the 256-bit unsigned integer whose most significant byte first encoding is _x_.
-    - The function _lift_x(x)_, where _x_ is an integer in range _0..2<sup>256</sup>-1_, returns the point _P_ for which _x(P) = x<sup>todo add ref here</sup>_ and _has_even_y(P)_, or fails if _x_ is greater than _p-1_ or no such point exists. The function _lift_x(x)_ is equivalent to the following pseudocode: TODO: add footnote
+    - The function _lift_x(x)_, where _x_ is an integer in range _0..2<sup>256</sup>-1_, returns the point _P_ for which _x(P) = x_[^liftx-soln] and _has_even_y(P)_, or fails if _x_ is greater than _p-1_ or no such point exists. The function _lift_x(x)_ is equivalent to the following pseudocode: TODO: add footnote
 		- Fail if _x > p-1_.
 		- Let _c = x<sup>3</sup> + 7 mod p_.
 		- Let _y' = c<sup>(p+1)/4</sup> mod p_.
@@ -322,7 +322,7 @@ Algorithm _GetPlainPubkey(tweak_ctx)_:
 
 Algorithm _ApplyTweak(tweak_ctx, tweak, is_xonly_t)_:
 - Inputs:
-    - The _tweak_ctx_: a Tweak Context (todo link the defn) data structure
+    - The _tweak_ctx_: a [Tweak Context](./README.md#tweak-context) data structure
     - The _tweak_: a 32-byte array
     - The tweak mode _is_xonly_t_: a boolean
 - Let _(Q, gacc, tacc) = tweak_ctx_
@@ -339,7 +339,7 @@ Algorithm _ApplyTweak(tweak_ctx, tweak, is_xonly_t)_:
 
 ### Nonce Generation
 
-TODO include participant identifier in the input args? Commiting to a signer set will prevent using the preprocessed nonce with another signer set. But commiting only the signer's pariticipant identifier should be fine.
+TODO include participant identifier in the input args? Commiting to a signer set will prevent using the preprocessed nonce with another signer set. But commiting only the signer's participant identifier should be fine.
 think: what the max msg len? we use 8 bytes while hashing it
 
 Algorithm _NonceGen(secshare, pubshare, group_pk, m, extra_in)_:
@@ -347,11 +347,11 @@ Algorithm _NonceGen(secshare, pubshare, group_pk, m, extra_in)_:
     - The participant’s secret share _secshare_: a 32-byte array (optional argument)
     - The corresponding public share _pubshare_: a 33-byte array (optional argument)
     - The x-only group public key _group_pk_: a 32-byte array (optional argument)
-    - The message _m_: a byte array (optional argument)
+    - The message _m_: a byte array (optional argument)[^max-msg-len]
     - The auxiliary input _extra_in_: a byte array with _0 ≤ len(extra_in) ≤ 2<sup>32</sup>-1_ (optional argument)
 - Let _rand'_ be a 32-byte array freshly drawn uniformly at random
 - If the optional argument _secshare_ is present:
-    - Let _rand_ be the byte-wise xor of _secshare_ and _hash<sub>FROST/aux</sub>(rand')_
+    - Let _rand_ be the byte-wise xor of _secshare_ and _hash<sub>FROST/aux</sub>(rand')_[^sk-xor-rand]
 - Else:
     - Let _rand = rand'_
 - If the optional argument _pubshare_ is not present:
@@ -368,7 +368,7 @@ Algorithm _NonceGen(secshare, pubshare, group_pk, m, extra_in)_:
 - Fail if _k<sub>1</sub> = 0_ or _k<sub>2</sub> = 0_
 - Let _R<sub>⁎,1</sub> = k<sub>1</sub>⋅G, R<sub>⁎,2</sub> = k<sub>2</sub>⋅G_
 - Let _pubnonce = cbytes(R<sub>,1</sub>) || cbytes(R<sub>⁎,2</sub>)_
-- Let _secnonce = bytes(32, k<sub>1</sub>) || bytes(32, k<sub>2</sub>)_
+- Let _secnonce = bytes(32, k<sub>1</sub>) || bytes(32, k<sub>2</sub>)_[^secnonce-ser]
 - Return _(secnonce, pubnonce)_
 
 ### Nonce Aggregation
@@ -397,7 +397,7 @@ The Session Context is a data structure consisting of the following elements:
 - The number _v_ of tweaks with _0 ≤ v < 2^32_
 - The tweaks _tweak<sub>1..v</sub>_: _v_ 32-byte arrays
 - The tweak modes _is_xonly_t<sub>1..v</sub>_ : _v_ booleans
-- The message _m_: a byte array
+- The message _m_: a byte array[^max-msg-len]
 
 We write "Let _(u, id<sub>1..u</sub>, pubshare<sub>1..u</sub>, aggnonce, v, tweak<sub>1..v</sub>, is_xonly_t<sub>1..v</sub>, m) = session_ctx_" to assign names to the elements of a Session Context.
 
@@ -413,7 +413,7 @@ Algorithm _GetSessionValues(session_ctx)_:
 - Let _R<sub>1</sub> = cpoint_ext(aggnonce[0:33]), R<sub>2</sub> = cpoint_ext(aggnonce[33:66])_; fail if that fails and blame nonce aggregator for invalid _aggnonce_.
 - Let _R' = R<sub>1</sub> + b⋅R<sub>2</sub>_
 - If _is_infinite(R'):_
-    - _Let final nonce_ R = G _(see dealing with inf nonce agg link)_
+    - _Let final nonce_ R = G _([see Dealing with Infinity in Nonce Aggregation](./README.md#dealing-with-infinity-in-nonce-aggregation))_
 - _Else:_
     - _Let final nonce_ R = R'
 - Let _e = int(hash<sub>BIP0340/challenge</sub>((xbytes(R) || xbytes(Q) || m))) mod n_
@@ -461,13 +461,13 @@ Algorithm _SessionHasSignerPubshare(session_ctx, signer_pubshare)_:
 
 ### Signing
 
-TODO: should we add 1 <= _my_id_ <= max_pariticiapants, check here?
+TODO: should we add 1 <= _my_id_ <= max_participants, check here?
 Algorithm _Sign(secnonce, secshare, my_id, session_ctx)_:
 - Inputs:
-    - The secret nonce _secnonce_ that has never been used as input to _Sign_ before: a 64-byte array
+    - The secret nonce _secnonce_ that has never been used as input to _Sign_ before: a 64-byte array[^secnonce-ser]
     - The secret signing key _secshare_: a 32-byte array
     - The identifier of the signing participant _my_id_: a 32-byte array with 1 _≤ int(my_id) ≤ max_participants_
-    - The _session_ctx_: a Session Context (todo _link to defn_) data structure
+    - The _session_ctx_: a [Session Context](./README.md#session-context) data structure
 - Let _(Q, gacc, _, b, R, e) = GetSessionValues(session_ctx)_; fail if that fails
 - Let _k<sub>1</sub>' = int(secnonce[0:32]), k<sub>2</sub>' = int(secnonce[32:64])_
 - Fail if _k<sub>i</sub>' = 0_ or _k<sub>i</sub>' ≥ n_ for _i = 1..2_
@@ -498,7 +498,7 @@ Algorithm _PartialSigVerify(psig, id<sub>1..u</sub>, pubnonce<sub>1..u</sub>, pu
     - The number _v_ of tweaks with _0 ≤ v < 2^32_
     - The tweaks _tweak<sub>1..v</sub>_: _v_ 32-byte arrays
     - The tweak modes _is_xonly_t<sub>1..v</sub>_ : _v_ booleans
-    - The message _m_: a byte array
+    - The message _m_: a byte array[^max-msg-len]
     - The index _i_ of the signer in the list of identifiers, public nonces, and individual public shares where _0 < i ≤ u_
 - Let _aggnonce = NonceAgg(pubnonce<sub>1..u</sub>)_; fail if that fails
 - Let _session_ctx = (u, id<sub>1..u</sub>, pubshare<sub>1..u</sub>, aggnonce, v, tweak<sub>1..v</sub>, is_xonly_t<sub>1..v</sub>, m)_
@@ -580,7 +580,7 @@ Algorithm _DeterministicSign(sk, aggothernonce, pk<sub>1..u</sub>, tweak<sub>1..
     - The number _v_ of tweaks with _0 &le; v < 2^32_
     - The tweaks _tweak<sub>1..v</sub>_: _v_ 32-byte arrays
     - The tweak methods _is_xonly_t<sub>1..v</sub>_: _v_ booleans
-    - The message _m_: a byte array[^m-len]
+    - The message _m_: a byte array[^max-msg-len]
     - The auxiliary randomness _rand_: a 32-byte array (optional argument)
 - If the optional argument _rand_ is present:
     - Let _secshare'_ be the byte-wise xor of _secshare_ and _hash<sub>FROST/aux</sub>(rand)_
@@ -703,7 +703,7 @@ Signers still need to ensure that they agree on key pair. A detailed specificati
 
 [^nonce-serialization-detail]: We treat the _secnonce_ and _pubnonce_ as grammatically singular even though they include serializations of two scalars and two elliptic curve points, respectively. This treatment may be confusing for readers familiar with the MuSig2 paper. However, serialization is a technical detail that is irrelevant for users of MuSig2 interfaces.
 
-[^pubkey-gen-ecdsa]: The ''PlainPubkeyGen'' algorithm matches the key generation procedure traditionally used for ECDSA in Bitcoin
+[^pubkey-gen-ecdsa]: The _PlainPubkeyGen_ algorithm matches the key generation procedure traditionally used for ECDSA in Bitcoin
 
 [^itertools-combinations]: This line represents a loop over every possible combination of `t` elements sourced from the `int_ids` array. This operation is equivalent to invoking the [`itertools.combinations(int_ids, t)`](https://docs.python.org/3/library/itertools.html#itertools.combinations) function call in Python.
 
@@ -711,10 +711,17 @@ Signers still need to ensure that they agree on key pair. A detailed specificati
 Method 1 - use `itertools.combinations(zip(int_ids, pubshares), t)`  
 Method 2 - For _i = 1..t_ :  signer_pubshare<sub>i</sub> = pubshare<sub>signer_id<sub>i</sub></sub>
 
-[^m-len]: to be decided
-
 [^arbitrary-tweaks]: It is an open question whether allowing arbitrary tweaks from an adversary affects the unforgeability of MuSig2. TODO: does this apply to frost as well?
 
-[^partialsig-forgery]: Assume a malicious participant intends to forge a partial signature for the participant with public share _P_. It participates in the signing session pretending to be two distinct signers: one with the public share _P_ and the other with its own public share. The adversary then sets the nonce for the second signer in such a way that allows it to generate a partial signature for _P_. As a side effect, it cannot generate a valid partial signature for its own public share. An explanation of the steps required to create a partial signature forgery can be found in [this document](./docs/partialsig_forgery.md).
+[^partialsig-forgery]: Assume a malicious participant intends to forge a partial signature for the participant with public share _P_. It participates in the signing session pretending to be two distinct signers: one with the public share _P_ and the other with its own public share. The adversary then sets the nonce for the second signer in such a way that allows it to generate a partial signature for _P_. As a side effect, it cannot generate a valid partial signature for its own public share. An explanation of the steps required to create a partial signature forgery can be found in [this document](docs/partialsig_forgery.md).
 
 [^pok-for-seckeys]: Given a list of individual public keys, it is an open question whether a BIP-340 signature valid under the corresponding aggregate public key is a proof of knowledge of all secret keys of the individual public keys. todo: this doesn't apply to frost right? cause here the group pubkey can be from any set of secshares.
+
+[^liftx-soln]: Given a candidate X coordinate _x_ in the range _0..p-1_, there exist either exactly two or exactly zero valid Y coordinates. If no valid Y coordinate exists, then _x_ is not a valid X coordinate either, i.e., no point _P_ exists for which _x(P) = x_. The valid Y coordinates for a given candidate _x_ are the square roots of _c = x<sup>3</sup> + 7 mod p_ and they can be computed as _y = &plusmn;c<sup>(p+1)/4</sup> mod p_ (see [Quadratic residue](https://en.wikipedia.org/wiki/Quadratic_residue#Prime_or_prime_power_modulus)) if they exist, which can be checked by squaring and comparing with _c_.
+
+[^max-msg-len]: In theory, the allowed message size is restricted because SHA256 accepts byte strings only up to size of 2^61-1 bytes (and because of the 8-byte length encoding).
+
+[^sk-xor-rand]: The random data is hashed (with a unique tag) as a precaution against situations where the randomness may be correlated with the secret signing key itself. It is xored with the secret key (rather than combined with it in a hash) to reduce the number of operations exposed to the actual secret key.
+
+[^secnonce-ser]: The algorithms as specified here assume that the _secnonce_ is stored as a 64-byte array using the serialization _secnonce = bytes(32, k<sub>1</sub>) || bytes(32, k<sub>2</sub>)_. The same format is used in the reference implementation and in the test vectors. However, since the _secnonce_ is (obviously) not meant to be sent over the wire, compatibility between implementations is not a concern, and this method of storing the _secnonce_ is merely a suggestion.<br />
+The _secnonce_ is effectively a local data structure of the signer which comprises the value triple _(k<sub>1</sub>, k<sub>2</sub>)_, and implementations may choose any suitable method to carry it from _NonceGen_ (first communication round) to _Sign_ (second communication round). In particular, implementations may choose to hide the _secnonce_ in internal state without exposing it in an API explicitly, e.g., in an effort to prevent callers from reusing a _secnonce_ accidentally.
