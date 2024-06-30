@@ -36,7 +36,7 @@ The FROST variant proposed below stands out by combining all the following featu
 
 ### Design
 
-* **Compatibility with BIP340**: In this proposal, the group public key is a BIP340 X-only public key, and the signature output at the end of the signing protocol is a BIP340 signature that passes BIP340 verification for the group public key and a message. The individual public keys that are input to the key aggregation algorithm are _plain_ public keys in compressed format. (todo may be change this to suit keygen producing compressed group pubkeys)
+* **Compatibility with BIP340**: In this proposal, the group public key is a BIP340 X-only public key, and the signature output at the end of the signing protocol is a BIP340 signature that passes BIP340 verification for the group public key and a message. The individual public keys that are input to the key aggregation algorithm are _plain_ public keys in compressed format. (todo change this to suit keygen producing compressed group pubkeys and pubshares)
 * **Tweaking for BIP32 derivations and Taproot**: This proposal supports tweaking group public key and signing for this tweaked group public key. We distinguish two modes of tweaking: _Plain_ tweaking can be used to derive child group public keys per [BIP32](https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki)._X-only_ tweaking, on the other hand, allows creating a [BIP341](https://github.com/bitcoin/bips/blob/master/bip-0341.mediawiki) tweak to add script paths to a Taproot output. See [tweaking the group public key](./README.md#tweaking-group-public-key) below for details.
 * **Non-interactive signing with preprocessing**: The first communication round, exchanging the nonces, can happen before the message or the exact set of signers is determined. Once the parameters of the signing session are finalized, the signers can send partial signatures without additional interaction.
 * **Partial signature independent of order**: The output of the signing algorithm remains consistent regardless of the order in which participant identifiers and public shares are used during the session context initialization. This property is inherent when combining Shamir shares to derive any value.
@@ -222,7 +222,7 @@ The following conventions are used, with constants as defined for [secp256k1](h
     - The function _cbytes(P)_, where _P_ is a point for which _not is_infinite(P)_, returns _a || xbytes(P)_ where _a_ is a byte that is _2_ if _has_even_y(P)_ and _3_ otherwise.
     - The function _cbytes_ext(P)_, where _P_ is a point, returns _bytes(33, 0)_ if _is_infinite(P)_. Otherwise, it returns _cbytes(P)_.
     - The function _int(x)_, where _x_ is a 32-byte array, returns the 256-bit unsigned integer whose most significant byte first encoding is _x_.
-    - The function _lift_x(x)_, where _x_ is an integer in range _0..2<sup>256</sup>-1_, returns the point _P_ for which _x(P) = x_[^liftx-soln] and _has_even_y(P)_, or fails if _x_ is greater than _p-1_ or no such point exists. The function _lift_x(x)_ is equivalent to the following pseudocode: TODO: add footnote
+    - The function _lift_x(x)_, where _x_ is an integer in range _0..2<sup>256</sup>-1_, returns the point _P_ for which _x(P) = x_[^liftx-soln] and _has_even_y(P)_, or fails if _x_ is greater than _p-1_ or no such point exists. The function _lift_x(x)_ is equivalent to the following pseudocode:
 		- Fail if _x > p-1_.
 		- Let _c = x<sup>3</sup> + 7 mod p_.
 		- Let _y' = c<sup>(p+1)/4</sup> mod p_.
@@ -479,11 +479,11 @@ Algorithm _Sign(secnonce, secshare, my_id, session_ctx)_:
 - Fail if _SessionHasSignerPubshare(session_ctx, pubshare) = False_
 - Let _&lambda; = GetSessionInterpolatingValue(session_ctx, my_id)_; fail if that fails
 - Let _g = 1_ if _has_even_y(Q)_, otherwise let _g = -1 mod n_
-- Let _d = g⋅gacc⋅d' mod n_ (See _negating seckey when signing_)
+- Let _d = g⋅gacc⋅d' mod n_ (See [_Negation of Secret Share When Signing_](./README.md#negation-of-the-secret-share-when-signing))
 - Let _s = (k<sub>1</sub> + b⋅k<sub>2</sub> + e⋅&lambda;⋅d) mod n_
 - Let _psig = bytes(32, s)_
 - Let _pubnonce = cbytes(k<sub>1</sub>'⋅G) || cbytes(k<sub>2</sub>'⋅G)_
-- If _PartialSigVerifyInternal(psig, my_id, pubnonce, pubshare, session_ctx)_ (see below) returns failure, fail
+- If _PartialSigVerifyInternal(psig, my_id, pubnonce, pubshare, session_ctx)_ (see below) returns failure, fail[^why-verify-partialsig]
 - Return partial signature _psig_
 
 ### Partial Signature Verification
@@ -513,9 +513,9 @@ Internal Algorithm _PartialSigVerifyInternal(psig, my_id, pubnonce, pubshare, se
 - Let _Re<sub>⁎</sub>' = R<sub>⁎,1</sub> + b⋅R<sub>⁎,2</sub>_
 - Let effective nonce _Re<sub>⁎</sub> = Re<sub>⁎</sub>'_ if _has_even_y(R)_, otherwise let _Re<sub>⁎</sub> = -Re<sub>⁎</sub>'_
 - Let _P = cpoint(pubshare)_; fail if that fails
-- Let _&lambda; = GetSessionInterpolatingValue(session_ctx, my_id)_
+- Let _&lambda; = GetSessionInterpolatingValue(session_ctx, my_id)_[^lambda-cant-fail]
 - Let _g = 1_ if _has_even_y(Q)_, otherwise let _g = -1 mod n_
-- Let _g' = g⋅gacc mod n_ (See _link to neg of seckey when signing_)
+- Let _g' = g⋅gacc mod n_ (See [_Negation of Pubshare When Partially Verifying_](./README.md#negation-of-the-pubshare-when-partially-verifying))
 - Fail if _s⋅G ≠ Re<sub>⁎</sub> + e⋅&lambda;⋅g'⋅P_
 - Return success iff no failure occurred before reaching this point.
 
@@ -526,7 +526,7 @@ Algorithm _PartialSigAgg(psig<sub>1..u</sub>, id<sub>1..u</sub>, session_ctx)_:
     - The number _u_ of signatures with _min_participants ≤ u ≤ max_participants_
     - The partial signatures _psig<sub>1..u</sub>_: _u_ 32-byte arrays
     - The participant identifiers _id<sub>1..u</sub>_: _u_ 32-byte arrays with _1 ≤ int(id<sub>i</sub>) ≤ max_participants_
-    - The _session_ctx_: a Session Context (todo _link to defn_) data structure
+    - The _session_ctx_: a [Session Context](./README.md#session-context) data structure
 - Let _(Q, _, tacc, _, _, R, e) = GetSessionValues(session_ctx)_; fail if that fails
 - For _i = 1 .. u_:
     - Let _s<sub>i</sub> = int(psig<sub>i</sub>)_; fail if _s<sub>i</sub> ≥ n_ and blame signer _id<sub>i</sub>_ for invalid partial signature.
@@ -725,3 +725,8 @@ Method 2 - For _i = 1..t_ :  signer_pubshare<sub>i</sub> = pubshare<sub>signer_i
 
 [^secnonce-ser]: The algorithms as specified here assume that the _secnonce_ is stored as a 64-byte array using the serialization _secnonce = bytes(32, k<sub>1</sub>) || bytes(32, k<sub>2</sub>)_. The same format is used in the reference implementation and in the test vectors. However, since the _secnonce_ is (obviously) not meant to be sent over the wire, compatibility between implementations is not a concern, and this method of storing the _secnonce_ is merely a suggestion.<br />
 The _secnonce_ is effectively a local data structure of the signer which comprises the value triple _(k<sub>1</sub>, k<sub>2</sub>)_, and implementations may choose any suitable method to carry it from _NonceGen_ (first communication round) to _Sign_ (second communication round). In particular, implementations may choose to hide the _secnonce_ in internal state without exposing it in an API explicitly, e.g., in an effort to prevent callers from reusing a _secnonce_ accidentally.
+
+[^why-verify-partialsig]: Verifying the signature before leaving the signer prevents random or adversarially provoked computation errors. This prevents publishing invalid signatures which may leak information about the secret key. It is recommended but can be omitted if the computation cost is prohibitive.
+
+[^lambda-cant-fail]: _GetSessionInterpolatingValue(session_ctx, my_id)_ cannot fail when called from _PartialSigVerifyInternal_.
+
