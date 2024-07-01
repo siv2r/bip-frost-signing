@@ -11,11 +11,7 @@ In this BIP, we follow the FROST3 scheme (see section 2.3 in [ROAST paper](https
 TODO: update this section to reflect that we currently follow the alternative 1 instead.
 ### Key Generation
 
-We aim to represent $(t, n)$ FROST keys using [1] input/output arguments of keygen and [2] conditions that output arguments must satisfy (see definition 2.5 in the [ROAST paper](https://eprint.iacr.org/2022/550.pdf)). This representation should be easy to understand without sacrificing precision. I am currently trying to improve the way we represent correctness conditions. At present, we represent them in an English-math like language to make it easier for non-mathematicians to understand. However, I am open to other ways to represent them. Here are two alternatives:
-
-Alternative 1: We could represent these conditions using boolean functions. In this case, we would say that the key generation is compatible with this BIP if these functions return true.
-
-Alternative 2: Since Github supports LaTeX, could we represent these conditions as LaTeX equations? Does BIP allow for this?
+We aim to represent $(t, n)$ FROST keys using [1] input/output arguments of keygen and [2] conditions that output arguments must satisfy (see definition 2.5 in the [ROAST paper](https://eprint.iacr.org/2022/550.pdf)). This representation should be easy to understand without sacrificing precision. At present, we represent these conditions using boolean functions _ValidateGroupPubkey_ and _ValidatePubshares_.
 
 ### No Key Sorting
 
@@ -25,9 +21,9 @@ In FROST, the order of the public shares does not affect the group public key cr
 
 ### Group Pubkey Type
 
-If a key generation method produces a group public key incompatible with BIP340 (i.e., a plain pubkey), it doesn't automatically render the method incompatible with our signing protocol. Hence, in the [participant parameters section](README.md#participant-parameters), we define the group public key type as `PlainPk` (33 bytes) instead of `XonlyPk` (32 bytes). For example, BIP-FROST-DKG outputs a `PlainPk` not `XonlyPk`.
+If a key generation method produces a group public key incompatible with BIP340 (i.e., a plain pubkey), it doesn't automatically render the method incompatible with our signing protocol. Hence, we allow the keygen to produce the group public key as `PlainPk` (33 bytes) instead of `XonlyPk` (32 bytes). For example, BIP-FROST-DKG outputs a `PlainPk` not `XonlyPk`.
 
-It is crucial to note that the signatures generated through our [signing protocol](README.md#signing) are only verifiable with a BIP340 compatible pubkey. Therefore, if you are using a key generation method that outputs a `PlainPk` type group pubkey, you need to convert it to `XonlyPk` using the [`secp256k1_xonly_pubkey_from_pubkey`](https://github.com/bitcoin-core/secp256k1/blob/master/include/secp256k1_extrakeys.h#L93) API.
+It is crucial to note that the signatures generated through our [signing protocol](README.md#signing) are only verifiable with a BIP340 compatible group pubkey. Therefore, if you are using a key generation method that outputs a `PlainPk` type group pubkey, you need to convert it to `XonlyPk` using the [`secp256k1_xonly_pubkey_from_pubkey`](https://github.com/bitcoin-core/secp256k1/blob/master/include/secp256k1_extrakeys.h#L93) API (TODO change this sentence, sign algo takes care of this).
 
 ### Tweak Context
 
