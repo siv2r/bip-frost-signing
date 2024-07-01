@@ -36,7 +36,7 @@ The FROST variant proposed below stands out by combining all the following featu
 
 ### Design
 
-* **Compatibility with BIP340**: In this proposal, the group public key is a BIP340 X-only public key, and the signature output at the end of the signing protocol is a BIP340 signature that passes BIP340 verification for the group public key and a message. The individual public keys that are input to the key aggregation algorithm are _plain_ public keys in compressed format. (todo change this to suit keygen producing compressed group pubkeys and pubshares)
+* **Compatibility with BIP340**: The group public key and participant public shares produced by a compatible key generation algorithm MUST be _plain_ public keys in compressed format. In this proposal, the signature output at the end of the signing protocol is a BIP340 signature, which passes BIP340 verification for the BIP340 X-only version of the group public key and a message.
 * **Tweaking for BIP32 derivations and Taproot**: This proposal supports tweaking group public key and signing for this tweaked group public key. We distinguish two modes of tweaking: _Plain_ tweaking can be used to derive child group public keys per [BIP32](https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki)._X-only_ tweaking, on the other hand, allows creating a [BIP341](https://github.com/bitcoin/bips/blob/master/bip-0341.mediawiki) tweak to add script paths to a Taproot output. See [tweaking the group public key](./README.md#tweaking-group-public-key) below for details.
 * **Non-interactive signing with preprocessing**: The first communication round, exchanging the nonces, can happen before the message or the exact set of signers is determined. Once the parameters of the signing session are finalized, the signers can send partial signatures without additional interaction.
 * **Partial signature independent of order**: The output of the signing algorithm remains consistent regardless of the order in which participant identifiers and public shares are used during the session context initialization. This property is inherent when combining Shamir shares to derive any value.
@@ -253,8 +253,6 @@ The following conventions are used, with constants as defined for [secp256k1](h
 - Other:
     - Tuples are written by listing the elements within parentheses and separated by commas. For example, _(2, 3, 1)_ is a tuple.
 
-TODO remove unused functions above
-
 ### Key Generation Compatibility
 
 Internal Algorithm _PlainPubkeyGen(sk):_[^pubkey-gen-ecdsa]
@@ -339,9 +337,6 @@ Algorithm _ApplyTweak(tweak_ctx, tweak, is_xonly_t)_:
 
 ### Nonce Generation
 
-TODO include participant identifier in the input args? Commiting to a signer set will prevent using the preprocessed nonce with another signer set. But commiting only the signer's participant identifier should be fine.
-think: what the max msg len? we use 8 bytes while hashing it
-
 Algorithm _NonceGen(secshare, pubshare, group_pk, m, extra_in)_:
 - Inputs:
     - The participant’s secret share _secshare_: a 32-byte array (optional argument)
@@ -383,9 +378,6 @@ Algorithm _NonceAgg(pubnonce<sub>1..u</sub>, id<sub>1..u</sub>)_:
         - Let _R<sub>i,j</sub> = cpoint(pubnonce<sub>i</sub>[(j-1)_33:j_33])_; fail if that fails and blame signer _id<sub>i</sub>_ for invalid _pubnonce_.
     - Let _R<sub>j</sub> = R<sub>1,j</sub> + R<sub>2,j</sub> + ... + R<sub>u,j</sub>_
 - Return _aggnonce = cbytes_ext(R<sub>1</sub>) || cbytes_ext(R<sub>2</sub>)_
-
-TODO: change identifiers of signers to _u_ 32-byte arrays? (currently we use _u_ ints)
-TODO: then, have a function that converts ids byte-array to integer array, must check for 1 <= ids[i] <= max_participant
 
 ### Session Context
 
@@ -438,7 +430,7 @@ Internal Algorithm _DeriveInterpolatingValueInternal(id<sub>1..u</sub>, my_id):_
 	    - Let _denom_ = _denom⋅(id<sub>i</sub> - my_id)_
 - _lambda_ = _num⋅denom<sup>-1</sup> mod n_
 - Return _lambda_
-  
+
 TODO: remove this fn, if not used anywhere
 Algorithm _GetSessionGroupPubkey(session_ctx)_:
 - Let _(u, id<sub>1..u</sub>, pubshare<sub>1..u</sub>, _, _, _, _) = session_ctx_
