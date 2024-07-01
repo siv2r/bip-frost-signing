@@ -431,11 +431,6 @@ Internal Algorithm _DeriveInterpolatingValueInternal(id<sub>1..u</sub>, my_id):_
 - _lambda_ = _num⋅denom<sup>-1</sup> mod n_
 - Return _lambda_
 
-TODO: remove this fn, if not used anywhere
-Algorithm _GetSessionGroupPubkey(session_ctx)_:
-- Let _(u, id<sub>1..u</sub>, pubshare<sub>1..u</sub>, _, _, _, _) = session_ctx_
-- Return _DeriveGroupPubkey(id<sub>1..u</sub>, pubshare<sub>1..u</sub>)_; fail if that fails
-
 Algorithm _DeriveGroupPubkey(id<sub>1..u</sub>, pubshare<sub>1..u</sub>)_
 - _inf_point = bytes(33, 0)_
 - _Q_ = _cpoint_ext(inf_point)_
