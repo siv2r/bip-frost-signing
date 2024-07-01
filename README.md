@@ -32,7 +32,7 @@ There are threshold-signature schemes other than FROST that are fully compatible
 The FROST variant proposed below stands out by combining all the following features:
 * **Two Communication Rounds**: FROST is faster in practice than other threshold-signature schemes [[GJKR03](https://link.springer.com/chapter/10.1007/3-540-36563-x_26)] which requires at least three rounds, particularly when signers are connected through high-latency anonymous links. Moreover, the need for fewer communication rounds simplifies the algorithms and reduces the probability that implementations and users make security-relevant mistakes.
 * **Efficiency over Robustness**: FROST trades off the robustness property for network efficiency (fewer communication rounds), requiring the protocol to be aborted in the case of any misbehaving participant.
-* **Provable security**: FROST3 with an idealized key generation (i.e., trusted setup) has been [proven existentially unforgeable](https://eprint.iacr.org/2022/550.pdf) under the one-more discrete logarithm (OMDL) assumption (instead of the discrete logarithm assumption required for single-signer Schnorr signatures).
+* **Provable security**: FROST3 with an idealized key generation (i.e., trusted setup) has been [proven existentially unforgeable](https://eprint.iacr.org/2022/550.pdf) under the one-more discrete logarithm (OMDL) assumption (instead of the discrete logarithm assumption required for single-signer Schnorr signatures) in the random oracle model (ROM).
 
 ### Design
 
@@ -683,10 +683,22 @@ _d⋅G
 &emsp;&ensp;= g<sub>v</sub>⋅gacc<sub>v</sub>⋅cpoint(pubshare)_  
 Note that the group public key and list of tweaks are inputs to partial signature verification, so the verifier can also construct _g<sub>v</sub>_ and _gacc<sub>v</sub>_.
 
-
 ### Dealing with Infinity in Nonce Aggregation
 
-### Choosing the Size of the Nonce
+If the nonce aggregator provides _aggnonce = bytes(33,0) || bytes(33,0)_, either the nonce aggregator is dishonest or there is at least one dishonest signer (except with negligible probability).
+If signing aborted in this case, it would be impossible to determine who is dishonest.
+Therefore, signing continues so that the culprit is revealed when collecting and verifying partial signatures.
+
+However, the final nonce _R_ of a BIP340 Schnorr signature cannot be the point at infinity.
+If we would nonetheless allow the final nonce to be the point at infinity, then the scheme would lose the following property:
+if _PartialSigVerify_ succeeds for all partial signatures, then _PartialSigAgg_ will return a valid Schnorr signature.
+Since this is a valuable feature, we modify FROST3 (which is defined in the section 2.3 of the [ROAST paper](https://eprint.iacr.org/2022/550.pdf)) to avoid producing an invalid Schnorr signature while still allowing detection of the dishonest signer: In _GetSessionValues_, if the final nonce _R_ would be the point at infinity, set it to the generator instead (an arbitrary choice).
+
+This modification to _GetSessionValues_ does not affect the unforgeability of the scheme.
+Given a successful adversary against the unforgeability game (EUF-CMA) for the modified scheme, a reduction can win the unforgeability game for the original scheme by simulating the modification towards the adversary:
+When the adversary provides _aggnonce' = bytes(33, 0) || bytes(33, 0)_, the reduction sets _aggnonce = cbytes_ext(G) || bytes(33, 0)_.
+For any other _aggnonce'_, the reduction sets _aggnonce = aggnonce'_.
+(The case that the adversary provides an _aggnonce' ≠ bytes(33, 0) || bytes(33, 0)_ but nevertheless _R'_ in _GetSessionValues_ is the point at infinity happens only with negligible probability.)
 
 ## Backwards Compatibility
 
