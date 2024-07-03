@@ -556,14 +556,14 @@ Hence, using _DeterministicSign_ is only possible for the last signer to generat
 
 #### Deterministic and Stateless Signing for a Single Signer
 
-Algorithm _DeterministicSign(sk, aggothernonce, pk<sub>1..u</sub>, tweak<sub>1..v</sub>, is_xonly_t<sub>1..v</sub>, m, rand)_:
+Algorithm _DeterministicSign(secshare, my_id, aggothernonce, id<sub>1..u</sub>, pubshare<sub>1..u</sub>, tweak<sub>1..v</sub>, is_xonly_t<sub>1..v</sub>, m, rand)_:
 - Inputs:
     - The secret share _secshare_: a 32-byte array
     - The identifier of the signing participant _my_id_: a 32-byte array with 1 _≤ int(my_id) ≤ max_participants_
     - The aggregate public nonce _aggothernonce_ (see [above](./README.md#modifications-to-nonce-generation)): a 66-byte array
-    - The number _u_ of identifiers and individual public shares with _min_participants ≤ u ≤ max_participants_
+    - The number _u_ of identifiers and participant public shares with _min_participants ≤ u ≤ max_participants_
     - The participant identifiers _id<sub>1..u</sub>_: _u_ 32-byte arrays
-    - The individual public shares _pubshare<sub>1..u</sub>_: _u_ 32-byte arrays
+    - The individual public shares _pubshare<sub>1..u</sub>_: _u_ 33-byte arrays
     - The number _v_ of tweaks with _0 &le; v < 2^32_
     - The tweaks _tweak<sub>1..v</sub>_: _v_ 32-byte arrays
     - The tweak methods _is_xonly_t<sub>1..v</sub>_: _v_ booleans
@@ -584,8 +584,8 @@ Algorithm _DeterministicSign(sk, aggothernonce, pk<sub>1..u</sub>, tweak<sub>1..
 - Let _pubnonce = cbytes(R<sub>⁎,2</sub>) || cbytes(R<sub>⁎,2</sub>)_
 - Let _d = int(secshare)_
 - Fail if _d = 0_ or _d &ge; n_
-- Let _signer_pshare = cbytes(d⋅G)_
-- Fail if _signer_pshare_ is not present in _pubshare<sub>1..u</sub>_
+- Let _signer_pubshare = cbytes(d⋅G)_
+- Fail if _signer_pubshare_ is not present in _pubshare<sub>1..u</sub>_
 - Let _secnonce = bytes(32, k<sub>1</sub>) || bytes(32, k<sub>2</sub>)_
 - Let _aggnonce = NonceAgg((pubnonce, aggothernonce))_; fail if that fails and blame nonce aggregator for invalid _aggothernonce_.
 - Let _session_ctx = (u, id<sub>1..u</sub>, pubshare<sub>1..u</sub>, aggnonce, v, tweak<sub>1..v</sub>, is_xonly_t<sub>1..v</sub>, m)_

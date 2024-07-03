@@ -337,7 +337,7 @@ def sign(secnonce: bytearray, secshare: bytes, my_id: bytes, session_ctx: Sessio
     # do we really need the below check?
     # add test vector for this check if confirmed
     if not 0 < int_from_bytes(my_id) < n:
-        raise ValueError('participant identifier is out of range')
+        raise ValueError('The signer\'s participant identifier is out of range')
     (Q, gacc, _, b, R, e) = get_session_values(session_ctx)
     k_1_ = int_from_bytes(secnonce[0:32])
     k_2_ = int_from_bytes(secnonce[32:64])
@@ -352,7 +352,7 @@ def sign(secnonce: bytearray, secshare: bytes, my_id: bytes, session_ctx: Sessio
     k_2 = k_2_ if has_even_y(R) else n - k_2_
     d_ = int_from_bytes(secshare)
     if not 0 < d_ < n:
-        raise ValueError('secret key value is out of range.')
+        raise ValueError('The signer\'s secret share value is out of range.')
     P = point_mul(G, d_)
     assert P is not None
     pubshare = PlainPk(cbytes(P))
@@ -371,6 +371,50 @@ def sign(secnonce: bytearray, secshare: bytes, my_id: bytes, session_ctx: Sessio
     # Optional correctness check. The result of signing should pass signature verification.
     assert partial_sig_verify_internal(psig, my_id, pubnonce, pubshare, session_ctx)
     return psig
+
+def det_nonce_hash(secshare_: bytes, aggothernonce: bytes, tweaked_gpk: bytes, msg: bytes, i: int) -> int:
+    buf = b''
+    buf += secshare_
+    buf += tweaked_gpk
+    buf += aggpk
+    buf += len(msg).to_bytes(8, 'big')
+    buf += msg
+    buf += i.to_bytes(1, 'big')
+    return int_from_bytes(tagged_hash('FROST/deterministic/nonce', buf))
+
+def deterministic_sign(secshare: bytes, my_id: bytes, aggothernonce: bytes, ids: List[bytes], pubshares: List[PlainPk], tweaks: List[bytes], is_xonly: List[bool], msg: bytes, rand: Optional[bytes]) -> Tuple[bytes, bytes]:
+    if not 0 < int_from_bytes(secshare) < n:
+        raise ValueError('The signer\'s secret share value is out of range.')
+    signer_pubshare = individual_pk(secshare)
+    if signer_pubshare not in pubshares:
+         raise ValueError('The signer\'s pubshare must be included in the list of pubshares.')
+
+    if rand is not None:
+        secshare_ = bytes_xor(secshare, tagged_hash('FROST/aux', rand))
+    else:
+        secshare_ = secshare
+    tweaked_gpk = get_xonly_pk(group_pubkey_and_tweak(pubshares, ids, tweaks, is_xonly))
+
+    k_1 = det_nonce_hash(secshare_, aggothernonce, tweaked_gpk, msg, 0) % n
+    k_2 = det_nonce_hash(secshare_, aggothernonce, tweaked_gpk, msg, 1) % n
+    # k_1 == 0 or k_2 == 0 cannot occur except with negligible probability.
+    assert k_1 != 0
+    assert k_2 != 0
+
+    R_s1 = point_mul(G, k_1)
+    R_s2 = point_mul(G, k_2)
+    assert R_s1 is not None
+    assert R_s2 is not None
+    pubnonce = cbytes(R_s1) + cbytes(R_s2)
+    secnonce = bytearray(bytes_from_int(k_1) + bytes_from_int(k_2))
+    try:
+        # use null 32-bytes as an identifier for the aggregator
+        aggnonce = nonce_agg([pubnonce, aggothernonce], [my_id, b'\x00' * 32])
+    except Exception:
+        raise InvalidContributionError(None, "aggothernonce")
+    session_ctx = SessionContext(aggnonce, ids, pubshares, tweaks, is_xonly, msg)
+    psig = sign(secnonce, secshare, my_id, session_ctx)
+    return (pubnonce, psig)
 
 def partial_sig_verify(psig: bytes, ids: List[bytes], pubnonces: List[bytes], pubshares: List[PlainPk], tweaks: List[bytes], is_xonly: List[bool], msg: bytes, i: int) -> bool:
     if not len(ids) == len(pubnonces) == len(pubshares):
