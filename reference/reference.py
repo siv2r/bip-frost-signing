@@ -408,8 +408,9 @@ def deterministic_sign(secshare: bytes, my_id: bytes, aggothernonce: bytes, ids:
     pubnonce = cbytes(R_s1) + cbytes(R_s2)
     secnonce = bytearray(bytes_from_int(k_1) + bytes_from_int(k_2))
     try:
-        # use null 32-bytes as an identifier for the aggregator
-        aggnonce = nonce_agg([pubnonce, aggothernonce], [my_id, b'\x00' * 32])
+        # use `None` as an identifier for the aggregator
+        #TODO: will using None throw error? some sign_error test case seem to use `null` for signer_id incase of invalid aggnonce.
+        aggnonce = nonce_agg([pubnonce, aggothernonce], [my_id, None])
     except Exception:
         raise InvalidContributionError(None, "aggothernonce")
     session_ctx = SessionContext(aggnonce, ids, pubshares, tweaks, is_xonly, msg)

@@ -59,7 +59,7 @@
             "msg_index": 0,
             "signer_index": 1,
             "expected": "DEDAA44E6DB7FF1B40D8CBAA44DF3F8C80BD7CEC6A21AE22F34ED7ABC59E2AEC",
-            "comment": "Partial-signature shouldn't change if the order of signers set changes"
+            "comment": "Partial-signature shouldn't change if the order of signers set changes (without changing secnonces)"
         },
         {
             "id_indices": [2, 1, 0],
@@ -69,7 +69,7 @@
             "msg_index": 0,
             "signer_index": 2,
             "expected": "DEDAA44E6DB7FF1B40D8CBAA44DF3F8C80BD7CEC6A21AE22F34ED7ABC59E2AEC",
-            "comment": "Partial-signature shouldn't change if the order of signers set changes"
+            "comment": "Partial-signature shouldn't change if the order of signers set changes (without changing secnonces)"
         },
         {
             "id_indices": [0, 3, 4],
@@ -128,7 +128,7 @@
             "msg_index": 2,
             "signer_index": 0,
             "expected": "78E04F68D813CBAF68CB5E19A835C69B833138ED18BDE63CB399F52F559EAA17",
-            "comment": "38-byte message"
+            "comment": "Message longer than 32 bytes (38-byte msg)"
         }
     ],
     "sign_error_test_cases": [
@@ -197,7 +197,7 @@
                 "signer_id": 3,
                 "contrib": "pubshare"
             },
-            "comment": "Signer 3 provided an invalid public key"
+            "comment": "Signer 3 provided an invalid participant public share"
         },
         {
             "id_indices": [0, 1, 2],
