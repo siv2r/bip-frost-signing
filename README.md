@@ -698,7 +698,7 @@ This document proposes a standard for the FROST threshold signature scheme that 
 [^t-edge-cases]: While `t = n` and `t = 1` are in principle supported, simpler alternatives are available in these cases.
 In the case `t = n`, using a dedicated `n`-of-`n` multi-signature scheme such as MuSig2 (see [BIP327](bip-0327.mediawiki)) instead of FROST avoids the need for an interactive DKG.
 The case `t = 1` can be realized by letting one signer generate an ordinary [BIP340](bip-0340.mediawiki) key pair and transmitting the key pair to every other signer, who can check its consistency and then simply use the ordinary [BIP340](bip-0340.mediawiki) signing algorithm.
-Signers still need to ensure that they agree on key pair. A detailed specification is not in scope of this document.
+Signers still need to ensure that they agree on a key pair. A detailed specification for this key sharing protocol is not in the scope of this document.
 
 [^nonce-serialization-detail]: We treat the _secnonce_ and _pubnonce_ as grammatically singular even though they include serializations of two scalars and two elliptic curve points, respectively. This treatment may be confusing for readers familiar with the MuSig2 paper. However, serialization is a technical detail that is irrelevant for users of MuSig2 interfaces.
 
