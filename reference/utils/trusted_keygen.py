@@ -47,7 +47,7 @@ def derive_interpolating_value_internal(L: List[int], x_i: int) -> int:
             continue
         num *= x_j
         deno *= (x_j - x_i)
-    return num * pow(deno, n - 2, n) % n
+    return num * pow(deno, curve_order - 2, curve_order) % curve_order
 #
 # End of helper functions and types copied from reference.py.
 #

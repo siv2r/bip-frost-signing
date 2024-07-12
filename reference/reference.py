@@ -159,6 +159,7 @@ def check_group_pubkey_correctness(max_participants: int, min_participants: int,
 TweakContext = NamedTuple('TweakContext', [('Q', Point),
                                            ('gacc', int),
                                            ('tacc', int)])
+AGGREGATOR_ID = b'aggregator'
 
 def get_xonly_pk(tweak_ctx: TweakContext) -> XonlyPk:
     Q, _, _ = tweak_ctx
@@ -260,11 +261,12 @@ def nonce_agg(pubnonces: List[bytes], ids: List[bytes]) -> bytes:
     aggnonce = b''
     for j in (1, 2):
         R_j = infinity
-        for my_id, pubnonce in zip(ids, pubnonces):
+        for my_id_, pubnonce in zip(ids, pubnonces):
             try:
                 R_ij = cpoint(pubnonce[(j-1)*33:j*33])
             except ValueError:
-                raise InvalidContributionError(int_from_bytes(my_id), "pubnonce")
+                my_id = int_from_bytes(my_id_) if my_id_ != AGGREGATOR_ID else my_id_
+                raise InvalidContributionError(my_id, "pubnonce")
             R_j = point_add(R_j, R_ij)
         aggnonce += cbytes_ext(R_j)
     return aggnonce
@@ -280,6 +282,7 @@ SessionContext = NamedTuple('SessionContext', [('aggnonce', bytes),
 def derive_group_pubkey(pubshares: List[PlainPk], ids: List[bytes]) -> PlainPk:
     #think: needs check for min_participants <= len <= max_participants?
     assert len(pubshares) == len(ids)
+    assert AGGREGATOR_ID not in ids
     Q = infinity
     for my_id, pubshare in zip(ids, pubshares):
         try:
@@ -375,8 +378,8 @@ def sign(secnonce: bytearray, secshare: bytes, my_id: bytes, session_ctx: Sessio
 def det_nonce_hash(secshare_: bytes, aggothernonce: bytes, tweaked_gpk: bytes, msg: bytes, i: int) -> int:
     buf = b''
     buf += secshare_
+    buf += aggothernonce
     buf += tweaked_gpk
-    buf += aggpk
     buf += len(msg).to_bytes(8, 'big')
     buf += msg
     buf += i.to_bytes(1, 'big')
@@ -410,7 +413,7 @@ def deterministic_sign(secshare: bytes, my_id: bytes, aggothernonce: bytes, ids:
     try:
         # use `None` as an identifier for the aggregator
         #TODO: will using None throw error? some sign_error test case seem to use `null` for signer_id incase of invalid aggnonce.
-        aggnonce = nonce_agg([pubnonce, aggothernonce], [my_id, None])
+        aggnonce = nonce_agg([pubnonce, aggothernonce], [my_id, AGGREGATOR_ID])
     except Exception:
         raise InvalidContributionError(None, "aggothernonce")
     session_ctx = SessionContext(aggnonce, ids, pubshares, tweaks, is_xonly, msg)
@@ -426,7 +429,7 @@ def partial_sig_verify(psig: bytes, ids: List[bytes], pubnonces: List[bytes], pu
     session_ctx = SessionContext(aggnonce, ids, pubshares, tweaks, is_xonly, msg)
     return partial_sig_verify_internal(psig, ids[i], pubnonces[i], pubshares[i], session_ctx)
 
-def partial_sig_verify_internal(psig: bytes, my_id: bytes, pubnonce: bytes, pubshare: bytes, session_ctx: SessionContext) -> bool:
+def partial_sig_verify_internal(psig: bytes, my_id: bytes, pubnonce: bytes, pubshare: PlainPk, session_ctx: SessionContext) -> bool:
     (Q, gacc, _, b, R, e) = get_session_values(session_ctx)
     s = int_from_bytes(psig)
     if s >= n:
@@ -449,6 +452,7 @@ def partial_sig_verify_internal(psig: bytes, my_id: bytes, pubnonce: bytes, pubs
     return point_mul(G, s) == point_add(Re_s, point_mul(P, e * a * g_ % n))
 
 def partial_sig_agg(psigs: List[bytes], ids: List[bytes], session_ctx: SessionContext) -> bytes:
+    assert AGGREGATOR_ID not in ids
     if len(psigs) != len(ids):
         raise ValueError('The psigs and ids arrays must have the same length.')
     (Q, _, tacc, _, R, e) = get_session_values(session_ctx)
