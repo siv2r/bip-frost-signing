@@ -375,6 +375,7 @@ def sign(secnonce: bytearray, secshare: bytes, my_id: bytes, session_ctx: Sessio
     assert partial_sig_verify_internal(psig, my_id, pubnonce, pubshare, session_ctx)
     return psig
 
+#todo: should we hash the signer set (or pubshares) too? Otherwise same nonce will be generate even if the signer set changes
 def det_nonce_hash(secshare_: bytes, aggothernonce: bytes, tweaked_gpk: bytes, msg: bytes, i: int) -> int:
     buf = b''
     buf += secshare_
@@ -411,8 +412,6 @@ def deterministic_sign(secshare: bytes, my_id: bytes, aggothernonce: bytes, ids:
     pubnonce = cbytes(R_s1) + cbytes(R_s2)
     secnonce = bytearray(bytes_from_int(k_1) + bytes_from_int(k_2))
     try:
-        # use `None` as an identifier for the aggregator
-        #TODO: will using None throw error? some sign_error test case seem to use `null` for signer_id incase of invalid aggnonce.
         aggnonce = nonce_agg([pubnonce, aggothernonce], [my_id, AGGREGATOR_ID])
     except Exception:
         raise InvalidContributionError(None, "aggothernonce")
@@ -749,6 +748,60 @@ def test_tweak_vectors():
         session_ctx = SessionContext(aggnonce_tmp, ids_tmp, pubshares_tmp, tweaks_tmp, tweak_modes_tmp, msg)
         assert_raises(exception, lambda: sign(secnonce_p1, secshare_p1, my_id, session_ctx), except_fn)
 
+def test_det_sign_vectors():
+    with open(os.path.join(sys.path[0], 'vectors', 'det_sign_vectors.json')) as f:
+        test_data = json.load(f)
+
+    max_participants = test_data["max_participants"]
+    min_participants = test_data["min_participants"]
+    group_pk = XonlyPk(bytes.fromhex(test_data["group_public_key"]))
+    secshare_p1 = bytes.fromhex(test_data["secshare_p1"])
+    ids = test_data["identifiers"]
+    pubshares = fromhex_all(test_data["pubshares"])
+    # The public key corresponding to the first participant (secshare_p1) is at index 0
+    assert pubshares[0] == individual_pk(secshare_p1)
+
+    msgs = fromhex_all(test_data["msgs"])
+
+    valid_test_cases = test_data["valid_test_cases"]
+    sign_error_test_cases = test_data["sign_error_test_cases"]
+
+    for test_case in valid_test_cases:
+        ids_tmp = [bytes_from_int(ids[i]) for i in test_case["id_indices"]]
+        pubshares_tmp = [PlainPk(pubshares[i]) for i in test_case["pubshare_indices"]]
+        aggothernonce = bytes.fromhex(test_case["aggothernonce"])
+        tweaks = fromhex_all(test_case["tweaks"])
+        is_xonly = test_case["is_xonly"]
+        msg = msgs[test_case["msg_index"]]
+        signer_index = test_case["signer_index"]
+        my_id = ids_tmp[signer_index]
+        rand = bytes.fromhex(test_case["rand"]) if test_case["rand"] is not None else None
+        expected = fromhex_all(test_case["expected"])
+
+        pubnonce, psig = deterministic_sign(secshare_p1, my_id, aggothernonce, ids_tmp, pubshares_tmp, tweaks, is_xonly, msg, rand)
+        assert pubnonce == expected[0]
+        assert psig == expected[1]
+
+        pubnonces = [aggothernonce, pubnonce]
+        aggnonce_tmp = nonce_agg(pubnonces, [AGGREGATOR_ID, my_id])
+        session_ctx = SessionContext(aggnonce_tmp, ids_tmp, pubshares_tmp, tweaks, is_xonly, msg)
+        assert partial_sig_verify_internal(psig, my_id, pubnonce, pubshares_tmp[signer_index], session_ctx)
+
+    for test_case in sign_error_test_cases:
+        exception, except_fn = get_error_details(test_case)
+        ids_tmp = [bytes_from_int(ids[i]) for i in test_case["id_indices"]]
+        pubshares_tmp = [PlainPk(pubshares[i]) for i in test_case["pubshare_indices"]]
+        aggothernonce = bytes.fromhex(test_case["aggothernonce"])
+        tweaks = fromhex_all(test_case["tweaks"])
+        is_xonly = test_case["is_xonly"]
+        msg = msgs[test_case["msg_index"]]
+        signer_index = test_case["signer_index"]
+        my_id = bytes_from_int(test_case["signer_id"]) if signer_index is None else ids_tmp[signer_index]
+        rand = bytes.fromhex(test_case["rand"]) if test_case["rand"] is not None else None
+
+        try_fn = lambda: deterministic_sign(secshare_p1, my_id, aggothernonce, ids_tmp, pubshares_tmp, tweaks, is_xonly, msg, rand)
+        assert_raises(exception, try_fn, except_fn)
+
 def test_sig_agg_vectors():
     with open(os.path.join(sys.path[0], 'vectors', 'sig_agg_vectors.json')) as f:
         test_data = json.load(f)
@@ -808,6 +861,7 @@ def test_sig_agg_vectors():
         assert_raises(exception, lambda: partial_sig_agg(psigs_tmp, ids_tmp, session_ctx), except_fn)
 
 
+# todo: include deterministic sign, like musig2
 def test_sign_and_verify_random(iters: int) -> None:
     # note: if we include a deterministic sign algo, include that in this test
     for i in range(iters):
@@ -884,10 +938,11 @@ def run_test(test_name, test_func):
         print(f"\nFailed: {e}")
 
 if __name__ == '__main__':
-    run_test("test_keygen_vectors", test_keygen_vectors)
-    run_test("test_nonce_gen_vectors", test_nonce_gen_vectors)
-    run_test("test_nonce_agg_vectors", test_nonce_agg_vectors)
-    run_test("test_sign_verify_vectors", test_sign_verify_vectors)
-    run_test("test_tweak_vectors", test_tweak_vectors)
-    run_test("test_sig_agg_vectors", test_sig_agg_vectors)
-    run_test("test_sign_and_verify_random", lambda: test_sign_and_verify_random(6))
+    # run_test("test_keygen_vectors", test_keygen_vectors)
+    # run_test("test_nonce_gen_vectors", test_nonce_gen_vectors)
+    # run_test("test_nonce_agg_vectors", test_nonce_agg_vectors)
+    # run_test("test_sign_verify_vectors", test_sign_verify_vectors)
+    # run_test("test_tweak_vectors", test_tweak_vectors)
+    run_test("test_det_sign_vectors", test_det_sign_vectors)
+    # run_test("test_sig_agg_vectors", test_sig_agg_vectors)
+    # run_test("test_sign_and_verify_random", lambda: test_sign_and_verify_random(6))

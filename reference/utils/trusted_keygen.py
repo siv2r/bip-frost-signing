@@ -101,6 +101,7 @@ def trusted_dealer_keygen(secret_key: int, max_participants: int, min_participan
         pubshares.append(X)
     return (P, secshares, pubshares)
 
+#todo: fix the mypy error - return type & arg type mismatch
 def generate_frost_keys(max_participants: int, min_participants: int) -> Tuple[PlainPk, List[bytes], List[PlainPk]]:
     if not (2 <= min_participants <= max_participants):
         raise ValueError('values must satisfy: 2 <= min_participants <= max_participants')

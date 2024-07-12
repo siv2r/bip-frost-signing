@@ -28,8 +28,8 @@
             "msg_index": 0,
             "signer_index": 0,
             "expected": [
-                "",
-                ""
+                "038E14A90FB2C66535B42850F009E2F1857000433042EE647066034FDE7F5A3F3C026CD7BDD51BE1490486F1E905B90020CB8294AFE7B6A051069C07D3B2FD9DC12A",
+                "89FA301CA35D6BD839089D0EBA7EA16B2C90818103BAA85F92FE6C01F0E0FB61"
             ],
             "comment": "Signing with minimum number of participants"
         },
@@ -43,8 +43,8 @@
             "msg_index": 0,
             "signer_index": 1,
             "expected": [
-                "",
-                ""
+                "038E14A90FB2C66535B42850F009E2F1857000433042EE647066034FDE7F5A3F3C026CD7BDD51BE1490486F1E905B90020CB8294AFE7B6A051069C07D3B2FD9DC12A",
+                "89FA301CA35D6BD839089D0EBA7EA16B2C90818103BAA85F92FE6C01F0E0FB61"
             ],
             "comment": "Partial-signature shouldn't change if the order of signers set changes. Note: The deterministic sign will generate the same secnonces due to unchanged parameters"
         },
@@ -58,8 +58,8 @@
             "msg_index": 0,
             "signer_index": 2,
             "expected": [
-                "",
-                ""
+                "038E14A90FB2C66535B42850F009E2F1857000433042EE647066034FDE7F5A3F3C026CD7BDD51BE1490486F1E905B90020CB8294AFE7B6A051069C07D3B2FD9DC12A",
+                "89FA301CA35D6BD839089D0EBA7EA16B2C90818103BAA85F92FE6C01F0E0FB61"
             ],
             "comment": "Partial-signature shouldn't change if the order of signers set changes. Note: The deterministic sign will generate the same secnonces due to unchanged parameters"
         },
@@ -73,8 +73,8 @@
             "msg_index": 0,
             "signer_index": 0,
             "expected": [
-                "",
-                ""
+                "038E14A90FB2C66535B42850F009E2F1857000433042EE647066034FDE7F5A3F3C026CD7BDD51BE1490486F1E905B90020CB8294AFE7B6A051069C07D3B2FD9DC12A",
+                "E5C27E441A9D433CDC4A36F669967E4304435CE5E6E7722D871237C3B4A2EC99"
             ],
             "comment": "Partial-signature changes if the members of signers set changes"
         },
@@ -88,8 +88,8 @@
             "msg_index": 0,
             "signer_index": 0,
             "expected": [
-                "",
-                ""
+                "02EEE6300500FB508012424A0F47621F9A844A939020DD64C4254939D848B675A5037BDEA362CBE55D6D36A7635FC21ED8AC2FA05E9B63A8242E07969F6E2D4E36E5",
+                "97440C51FCB602911455E6147938F5B81C0C1AF32ADAFD98F5A66A4616289D5D"
             ],
             "comment": "Signing without auxiliary randomness"
         },
@@ -103,8 +103,8 @@
             "msg_index": 0,
             "signer_index": 0,
             "expected": [
-                "",
-                ""
+                "020EBAD8A2F6099A0A0A62439F0A2A0E7DF6918DDE55183AFFF112DF2940FF76DE026C4A1C132CF16CFCFC28FEB02651C44719C900DF6F16407711CA8DB31E2A46B8",
+                "83271933ECB71C566F3BA61A645B1396251CBF7EDA77B1D2AF5C689003AB631B"
             ],
             "comment": "Signing with maximum number of participants and maximum auxiliary randomness value"
         },
@@ -118,8 +118,8 @@
             "msg_index": 1,
             "signer_index": 0,
             "expected": [
-                "",
-                ""
+                "0203375B47194F99B8B682B9DCDFB972A066C243BC7AA951A792FF02A707A3C7870367C40EE43583D0FC0F44696BED09D9B89652FC45B738FF03AF8ECA854A5424B1",
+                "2D2F6A697B0632291E3240D9E48F82A454EEB9F566987CB5E7612C0B75D41208"
             ],
             "comment": "Empty message"
         },
@@ -133,14 +133,14 @@
             "msg_index": 2,
             "signer_index": 0,
             "expected": [
-                "",
-                ""
+                "0256B5FD4623C09A0E073CE04FF488DA0C4319A528CBA3FC26307682AD2CAD069003F8E94981F0D4A0A879CFAEEE0A060DF1E12889FB7C3CEAC498310827F63CBDE2",
+                "347C67E959FCA9460F907C0D2CAF5DD427E5CFD7E15330BA38DA6E986ED91B0E"
             ],
             "comment": "Message longer than 32 bytes (38-byte msg)"
         },
         {
             "rand": "0000000000000000000000000000000000000000000000000000000000000000",
-            "aggothernonce": "036409E6BA4A00E148E9BE2D3B4217A74B3A65F0D75489176EF8A7D2BD699B949002B1E9FA2A8AE80CD7CE1593B51402B980B56896DB5B5C2B07EDA2C0CFEB08AD93",
+            "aggothernonce": "02FCDBEE416E4426FB4004BAB2B416164845DEC27337AD2B96184236D715965AB2039F71F389F6808DC6176F062F80531E13EA5BC2612B690FC284AE66C2CD859CE9",
             "id_indices": [0, 1, 2],
             "pubshare_indices": [0, 1, 2],
             "tweaks": ["E8F791FF9225A2AF0102AFFF4A9A723D9612A682A25EBE79802B263CDFCD83BB"],
@@ -148,8 +148,8 @@
             "msg_index": 0,
             "signer_index": 0,
             "expected": [
-                "",
-                ""
+                "0341E28C13AB55A689C4698F31AD68250636B9E41FACCB0D358B4BD9A3DF09B1920311E0CED48F4B3B51E010159D3657FD8EC9DFF1FD30AD28FC126F62AA1C53C451",
+                "817169757CF62879BCB2F1DFE895E6781664CA0D18534290C22EC0E40187B7FC"
             ],
             "comment": "Tweaked group public key"
         }
