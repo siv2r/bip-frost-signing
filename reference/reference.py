@@ -860,11 +860,8 @@ def test_sig_agg_vectors():
         session_ctx = SessionContext(aggnonce_tmp, ids_tmp, pubshares_tmp, tweaks_tmp, tweak_modes_tmp, msg)
         assert_raises(exception, lambda: partial_sig_agg(psigs_tmp, ids_tmp, session_ctx), except_fn)
 
-
-# todo: include deterministic sign, like musig2
-def test_sign_and_verify_random(iters: int) -> None:
-    # note: if we include a deterministic sign algo, include that in this test
-    for i in range(iters):
+def test_sign_and_verify_random(iterations: int) -> None:
+    for itr in range(iterations):
         secure_rng = secrets.SystemRandom()
         # randomly choose a number: 2 <= number <= 10
         max_participants = secure_rng.randrange(2, 11)
@@ -875,6 +872,18 @@ def test_sign_and_verify_random(iters: int) -> None:
         assert len(ids) == len(secshares) == len(pubshares) == max_participants
         assert check_pubshares_correctness(secshares, pubshares)
         assert check_group_pubkey_correctness(max_participants, min_participants, group_pk, ids, secshares, pubshares)
+
+        # randomly choose the signer set, with len: min_participants <= len <= max_participants
+        signer_count = secure_rng.randrange(min_participants, max_participants + 1)
+        signer_indices = secure_rng.sample(range(max_participants), signer_count)
+        assert len(set(signer_indices)) == signer_count # signer set must not contain duplicate ids
+
+        signer_ids = [ids[i] for i in signer_indices]
+        signer_pubshares = [pubshares[i] for i in signer_indices]
+        # NOTE: secret values MUST NEVER BE COPIED!!!
+        # we do it here to improve the code readability
+        signer_secshares = [secshares[i] for i in signer_indices]
+
 
         # In this example, the message and group pubkey are known
         # before nonce generation, so they can be passed into the nonce
@@ -888,36 +897,43 @@ def test_sign_and_verify_random(iters: int) -> None:
         v = secrets.randbelow(4)
         tweaks = [secrets.token_bytes(32) for _ in range(v)]
         tweak_modes = [secrets.choice([False, True]) for _ in range(v)]
-        tweaked_group_pk = get_xonly_pk(group_pubkey_and_tweak(pubshares, ids, tweaks, tweak_modes))
+        tweaked_group_pk = get_xonly_pk(group_pubkey_and_tweak(signer_pubshares, signer_ids, tweaks, tweak_modes))
 
-        secnonces = []
-        pubnonces = []
-        for i in range(max_participants):
+        signer_secnonces = []
+        signer_pubnonces = []
+        for i in range(signer_count - 1):
             # Use a clock for extra_in
             t = time.clock_gettime_ns(time.CLOCK_MONOTONIC)
-            secnonce_i, pubnonce_i = nonce_gen(secshares[i], pubshares[i], tweaked_group_pk, msg, t.to_bytes(8, 'big'))
-            secnonces.append(secnonce_i)
-            pubnonces.append(pubnonce_i)
+            secnonce_i, pubnonce_i = nonce_gen(signer_secshares[i], signer_pubshares[i], tweaked_group_pk, msg, t.to_bytes(8, 'big'))
+            signer_secnonces.append(secnonce_i)
+            signer_pubnonces.append(pubnonce_i)
 
-        # randomly choose a signer set with length: min_participants <= len <= max_participants
-        signers_count = secure_rng.randrange(min_participants, max_participants + 1)
-        signer_indices = secure_rng.sample(range(max_participants), signers_count)
-        assert len(set(signer_indices)) == signers_count
+        # On even iterations use regular signing algorithm for the final signer,
+        # otherwise use deterministic signing algorithm
+        if itr % 2 == 0:
+            t = time.clock_gettime_ns(time.CLOCK_MONOTONIC)
+            secnonce_final, pubnonce_final = nonce_gen(signer_secshares[-1], signer_pubshares[-1], tweaked_group_pk, msg, t.to_bytes(8, 'big'))
+            signer_secnonces.append(secnonce_final)
+        else:
+            aggothernonce = nonce_agg(signer_pubnonces, signer_ids[:-1])
+            rand = secrets.token_bytes(32)
+            pubnonce_final, psig_final = deterministic_sign(signer_secshares[-1], signer_ids[-1], aggothernonce, signer_ids, signer_pubshares, tweaks, tweak_modes, msg, rand)
 
-        signer_ids = [ids[i] for i in signer_indices]
-        signer_pubshares = [pubshares[i] for i in signer_indices]
-        signer_pubnonces = [pubnonces[i] for i in signer_indices]
-
+        signer_pubnonces.append(pubnonce_final)
         aggnonce = nonce_agg(signer_pubnonces, signer_ids)
         session_ctx = SessionContext(aggnonce, signer_ids, signer_pubshares, tweaks, tweak_modes, msg)
 
         signer_psigs = []
-        for i, signer_index in enumerate(signer_indices):
-            psig_i = sign(secnonces[signer_index], secshares[signer_index], ids[signer_index], session_ctx)
+        for i in range(signer_count):
+            if itr % 2 != 0 and i == signer_count - 1:
+                psig_i = psig_final # last signer would have already deterministically signed
+            else:
+                psig_i = sign(signer_secnonces[i], signer_secshares[i], signer_ids[i], session_ctx)
             assert partial_sig_verify(psig_i, signer_ids, signer_pubnonces, signer_pubshares, tweaks, tweak_modes, msg, i)
             signer_psigs.append(psig_i)
-            # An exception is thrown if secnonce is accidentally reused
-            assert_raises(ValueError, lambda: sign(secnonces[signer_index], secshares[signer_index], ids[signer_index], session_ctx), lambda e: True)
+
+        # An exception is thrown if secnonce is accidentally reused
+        assert_raises(ValueError, lambda: sign(signer_secnonces[0], signer_secshares[0], signer_ids[0], session_ctx), lambda e: True)
 
         # Wrong (signer_ids, signer_pubnonces, signer_pubshares) index
         assert not partial_sig_verify(signer_psigs[0], signer_ids, signer_pubnonces, signer_pubshares, tweaks, tweak_modes, msg, 1)
@@ -935,14 +951,14 @@ def run_test(test_name, test_func):
         test_func()
         print("Passed!")
     except Exception as e:
-        print(f"\nFailed: {e}")
+        print(f"Failed :'(\nError: {e}")
 
 if __name__ == '__main__':
-    # run_test("test_keygen_vectors", test_keygen_vectors)
-    # run_test("test_nonce_gen_vectors", test_nonce_gen_vectors)
-    # run_test("test_nonce_agg_vectors", test_nonce_agg_vectors)
-    # run_test("test_sign_verify_vectors", test_sign_verify_vectors)
-    # run_test("test_tweak_vectors", test_tweak_vectors)
+    run_test("test_keygen_vectors", test_keygen_vectors)
+    run_test("test_nonce_gen_vectors", test_nonce_gen_vectors)
+    run_test("test_nonce_agg_vectors", test_nonce_agg_vectors)
+    run_test("test_sign_verify_vectors", test_sign_verify_vectors)
+    run_test("test_tweak_vectors", test_tweak_vectors)
     run_test("test_det_sign_vectors", test_det_sign_vectors)
-    # run_test("test_sig_agg_vectors", test_sig_agg_vectors)
-    # run_test("test_sign_and_verify_random", lambda: test_sign_and_verify_random(6))
+    run_test("test_sig_agg_vectors", test_sig_agg_vectors)
+    run_test("test_sign_and_verify_random", lambda: test_sign_and_verify_random(6))
