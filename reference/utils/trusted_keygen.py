@@ -101,20 +101,6 @@ def trusted_dealer_keygen(secret_key: int, max_participants: int, min_participan
         pubshares.append(X)
     return (P, secshares, pubshares)
 
-#todo: fix the mypy error - return type & arg type mismatch
-def generate_frost_keys(max_participants: int, min_participants: int) -> Tuple[PlainPk, List[bytes], List[PlainPk]]:
-    if not (2 <= min_participants <= max_participants):
-        raise ValueError('values must satisfy: 2 <= min_participants <= max_participants')
-
-    secret = random.randint(1, curve_order - 1)
-    P, secshares, pubshares = trusted_dealer_keygen(secret, max_participants, min_participants)
-
-    group_pk = PlainPk(cbytes(P))
-    ser_identifiers = [bytes_from_int(secshare_i[0]) for secshare_i in secshares]
-    ser_secshares = [bytes_from_int(secshare_i[1]) for secshare_i in secshares]
-    ser_pubshares = [PlainPk(cbytes(pubshare_i)) for pubshare_i in pubshares]
-    return (group_pk, ser_identifiers, ser_secshares, ser_pubshares)
-
 # Test vector from RFC draft.
 # section F.5 of https://datatracker.ietf.org/doc/draft-irtf-cfrg-frost/15/
 class Tests(unittest.TestCase):

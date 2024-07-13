@@ -14,7 +14,7 @@ import secrets
 import time
 
 from utils.bip340 import *
-from utils.trusted_keygen import generate_frost_keys
+from utils.trusted_keygen import trusted_dealer_keygen
 
 PlainPk = NewType('PlainPk', bytes)
 XonlyPk = NewType('XonlyPk', bytes)
@@ -509,6 +509,19 @@ def get_error_details(test_case):
     else:
         raise RuntimeError(f"Invalid error type: {error['type']}")
     return exception, except_fn
+
+def generate_frost_keys(max_participants: int, min_participants: int) -> Tuple[PlainPk, List[bytes], List[bytes], List[PlainPk]]:
+    if not (2 <= min_participants <= max_participants):
+        raise ValueError('values must satisfy: 2 <= min_participants <= max_participants')
+
+    secret = secrets.randbelow(n - 1) + 1
+    P, secshares, pubshares = trusted_dealer_keygen(secret, max_participants, min_participants)
+
+    group_pk = PlainPk(cbytes(P))
+    ser_identifiers = [bytes_from_int(secshare_i[0]) for secshare_i in secshares]
+    ser_secshares = [bytes_from_int(secshare_i[1]) for secshare_i in secshares]
+    ser_pubshares = [PlainPk(cbytes(pubshare_i)) for pubshare_i in pubshares]
+    return (group_pk, ser_identifiers, ser_secshares, ser_pubshares)
 
 def test_keygen_vectors():
     with open(os.path.join(sys.path[0], 'vectors', 'keygen_vectors.json')) as f:
