@@ -492,10 +492,6 @@ def assert_raises(exception, try_fn, except_fn):
 
 def get_error_details(test_case):
     error = test_case["error"]
-    def except_fn1(e):
-        print(f"LHS: {str(e)}")
-        print(f"RHS: {error['message']}")
-        return str(e) == error["message"]
     if error["type"] == "invalid_contribution":
         exception = InvalidContributionError
         if "contrib" in error:
@@ -948,7 +944,7 @@ def test_sign_and_verify_random(iterations: int) -> None:
         # An exception is thrown if secnonce is accidentally reused
         assert_raises(ValueError, lambda: sign(signer_secnonces[0], signer_secshares[0], signer_ids[0], session_ctx), lambda e: True)
 
-        # Wrong (signer_ids, signer_pubnonces, signer_pubshares) index
+        # Wrong signer index
         assert not partial_sig_verify(signer_psigs[0], signer_ids, signer_pubnonces, signer_pubshares, tweaks, tweak_modes, msg, 1)
         # Wrong message
         assert not partial_sig_verify(signer_psigs[0], signer_ids, signer_pubnonces, signer_pubshares, tweaks, tweak_modes, secrets.token_bytes(32), 0)
