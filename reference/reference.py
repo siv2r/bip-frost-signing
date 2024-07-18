@@ -93,7 +93,6 @@ def int_ids(lst: List[bytes]) -> List[int]:
     return res
 
 # Return the plain public key corresponding to a given secret key
-# todo: remove if unused
 def individual_pk(seckey: bytes) -> PlainPk:
     d0 = int_from_bytes(seckey)
     if not (1 <= d0 <= n - 1):
@@ -102,7 +101,6 @@ def individual_pk(seckey: bytes) -> PlainPk:
     assert P is not None
     return PlainPk(cbytes(P))
 
-#todo: change inputs to bytes & add a check 1 <= ids[i] <= max_participants, when converting it to int
 # `derive_group_pubkey` and `sign` both would benefit from this change
 # maybe keep taking its as `derive_interpolating_value_internal`?
 def derive_interpolating_value_internal(L: List[int], x_i: int) -> int:
@@ -124,7 +122,8 @@ def derive_interpolating_value(ids: List[bytes], my_id: bytes) -> int:
     integer_ids = int_ids(ids)
     return derive_interpolating_value_internal(integer_ids, int_from_bytes(my_id))
 
-#todo: take ids as input? but we don't need to blame the malicious participant here
+#todo: do we want this to throw exception on invalid secshare/pubshares?
+# If yes, we need to take ids are inputs too.
 def check_pubshares_correctness(secshares: List[bytes], pubshares: List[PlainPk]) -> bool:
     if not len(secshares) == len(pubshares):
         raise ValueError('The secshares and pubshares arrays must have the same length.')
@@ -165,7 +164,6 @@ def get_xonly_pk(tweak_ctx: TweakContext) -> XonlyPk:
     Q, _, _ = tweak_ctx
     return XonlyPk(xbytes(Q))
 
-#todo: remove this func, if unused
 def get_plain_pk(tweak_ctx: TweakContext) -> PlainPk:
     Q, _, _ = tweak_ctx
     return PlainPk(cbytes(Q))
@@ -387,16 +385,11 @@ def det_nonce_hash(secshare_: bytes, aggothernonce: bytes, tweaked_gpk: bytes, m
     return int_from_bytes(tagged_hash('FROST/deterministic/nonce', buf))
 
 def deterministic_sign(secshare: bytes, my_id: bytes, aggothernonce: bytes, ids: List[bytes], pubshares: List[PlainPk], tweaks: List[bytes], is_xonly: List[bool], msg: bytes, rand: Optional[bytes]) -> Tuple[bytes, bytes]:
-    if not 0 < int_from_bytes(secshare) < n:
-        raise ValueError('The signer\'s secret share value is out of range.')
-    signer_pubshare = individual_pk(secshare)
-    if signer_pubshare not in pubshares:
-         raise ValueError('The signer\'s pubshare must be included in the list of pubshares.')
-
     if rand is not None:
         secshare_ = bytes_xor(secshare, tagged_hash('FROST/aux', rand))
     else:
         secshare_ = secshare
+
     tweaked_gpk = get_xonly_pk(group_pubkey_and_tweak(pubshares, ids, tweaks, is_xonly))
 
     k_1 = det_nonce_hash(secshare_, aggothernonce, tweaked_gpk, msg, 0) % n

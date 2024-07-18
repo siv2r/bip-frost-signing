@@ -169,7 +169,7 @@ More specifically, a malicious aggregator (whose existence violates the second c
 The only purpose of the algorithm _PartialSigVerify_ is to ensure identifiable aborts, and it is not necessary to use it when identifiable aborts are not desired.
 In particular, partial signatures are _not_ signatures.
 An adversary can forge a partial signature, i.e., create a partial signature without knowing the secret share for that particular participant public share.[^partialsig-forgery]
-However, if _PartialSigVerify_ succeeds for all partial signatures then _PartialSigAgg_ will return a valid Schnorr signature.[^pok-for-seckeys]
+However, if _PartialSigVerify_ succeeds for all partial signatures then _PartialSigAgg_ will return a valid Schnorr signature.
 
 
 ### Tweaking the Group Public Key
@@ -448,7 +448,6 @@ Algorithm _SessionHasSignerPubshare(session_ctx, signer_pubshare)_:
 
 ### Signing
 
-TODO: should we add 1 <= _my_id_ <= max_participants, check here?
 Algorithm _Sign(secnonce, secshare, my_id, session_ctx)_:
 - Inputs:
     - The secret nonce _secnonce_ that has never been used as input to _Sign_ before: a 64-byte array[^secnonce-ser]
@@ -710,11 +709,9 @@ Signers still need to ensure that they agree on a key pair. A detailed specifica
 Method 1 - use `itertools.combinations(zip(int_ids, pubshares), t)`  
 Method 2 - For _i = 1..t_ :  signer_pubshare<sub>i</sub> = pubshare<sub>signer_id<sub>i</sub></sub>
 
-[^arbitrary-tweaks]: It is an open question whether allowing arbitrary tweaks from an adversary affects the unforgeability of MuSig2. TODO: does this apply to frost as well?
+[^arbitrary-tweaks]: It is an open question whether allowing arbitrary tweaks from an adversary affects the unforgeability of FROST.
 
 [^partialsig-forgery]: Assume a malicious participant intends to forge a partial signature for the participant with public share _P_. It participates in the signing session pretending to be two distinct signers: one with the public share _P_ and the other with its own public share. The adversary then sets the nonce for the second signer in such a way that allows it to generate a partial signature for _P_. As a side effect, it cannot generate a valid partial signature for its own public share. An explanation of the steps required to create a partial signature forgery can be found in [this document](docs/partialsig_forgery.md).
-
-[^pok-for-seckeys]: Given a list of individual public keys, it is an open question whether a BIP-340 signature valid under the corresponding aggregate public key is a proof of knowledge of all secret keys of the individual public keys. todo: this doesn't apply to frost right? cause here the group pubkey can be from any set of secshares.
 
 [^liftx-soln]: Given a candidate X coordinate _x_ in the range _0..p-1_, there exist either exactly two or exactly zero valid Y coordinates. If no valid Y coordinate exists, then _x_ is not a valid X coordinate either, i.e., no point _P_ exists for which _x(P) = x_. The valid Y coordinates for a given candidate _x_ are the square roots of _c = x<sup>3</sup> + 7 mod p_ and they can be computed as _y = &plusmn;c<sup>(p+1)/4</sup> mod p_ (see [Quadratic residue](https://en.wikipedia.org/wiki/Quadratic_residue#Prime_or_prime_power_modulus)) if they exist, which can be checked by squaring and comparing with _c_.
 
