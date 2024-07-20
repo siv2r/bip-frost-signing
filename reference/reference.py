@@ -122,38 +122,37 @@ def derive_interpolating_value(ids: List[bytes], my_id: bytes) -> int:
     integer_ids = int_ids(ids)
     return derive_interpolating_value_internal(integer_ids, int_from_bytes(my_id))
 
-#todo: do we want this to throw exception on invalid secshare/pubshares?
-# If yes, we need to take ids are inputs too.
 def check_pubshares_correctness(secshares: List[bytes], pubshares: List[PlainPk]) -> bool:
-    if not len(secshares) == len(pubshares):
-        raise ValueError('The secshares and pubshares arrays must have the same length.')
+    assert len(secshares) == len(pubshares)
     for secshare, pubshare in zip(secshares, pubshares):
         if not individual_pk(secshare) == pubshare:
             return False
     return True
 
-#TODO: do this without reconstructing the group secret key
-def check_group_pubkey_correctness(max_participants: int, min_participants: int, group_pk: PlainPk, ids: List[bytes], secshares: List[bytes], pubshares: List[PlainPk]) -> bool:
-    if not max_participants >= min_participants > 1:
-        raise ValueError('The 2 <= min participants <= max participants condition was violated.')
-    #todo: add ids array too, in this check
-    if not len(secshares) == len(pubshares) == max_participants:
-        raise ValueError('The secshares and pubshares arrays length must be equal to max participants.')
-    integer_ids = int_ids(ids)
-    # loop through all possible signer sets
-    for num_signers in range(min_participants, max_participants + 1):
-        for signer_set in itertools.combinations(integer_ids, num_signers):
-            # compute the group secret key
-            group_sk_ = 0
-            for i in signer_set:
-                secshare_i = int_from_bytes(secshares[i-1])
-                lambda_i = derive_interpolating_value_internal(list(signer_set), i)
-                group_sk_ += lambda_i * secshare_i
-            group_sk = bytes_from_int(group_sk_ % n)
-            # reconstructed group_sk must correspond to group_pk
-            if not individual_pk(group_sk) == group_pk:
+def check_group_pubkey_correctness(min_participants: int, group_pk: PlainPk, ids: List[bytes], pubshares: List[PlainPk]) -> bool:
+    assert len(ids) == len(pubshares)
+    assert len(ids) >= min_participants
+
+    max_participants = len(ids)
+    # loop through all possible number of signers
+    for signer_count in range(min_participants, max_participants + 1):
+        # loop through all possible signer sets with length `signer_count`
+        for signer_set in itertools.combinations(zip(ids, pubshares), signer_count):
+            signer_ids = [pid for pid, pubshare in signer_set]
+            signer_pubshares = [pubshare for pid, pubshare in signer_set]
+            expected_pk = derive_group_pubkey(signer_pubshares, signer_ids)
+            if expected_pk != group_pk:
                 return False
     return True
+
+def check_frost_key_compatibility(max_participants: int, min_participants: int, group_pk: PlainPk, ids: List[bytes], secshares: List[bytes], pubshares: List[PlainPk]) -> bool:
+    if not max_participants >= min_participants > 1:
+        return False
+    if not len(ids) == len(secshares) == len(pubshares) == max_participants:
+        return False
+    pubshare_check = check_pubshares_correctness(secshares, pubshares)
+    group_pk_check = check_group_pubkey_correctness(min_participants, group_pk, ids, pubshares)
+    return pubshare_check and group_pk_check
 
 TweakContext = NamedTuple('TweakContext', [('Q', Point),
                                            ('gacc', int),
@@ -269,7 +268,6 @@ def nonce_agg(pubnonces: List[bytes], ids: List[bytes]) -> bytes:
         aggnonce += cbytes_ext(R_j)
     return aggnonce
 
-#think: should identifiers be list of ints or bytes?
 SessionContext = NamedTuple('SessionContext', [('aggnonce', bytes),
                                                ('identifiers', List[bytes]),
                                                ('pubshares', List[PlainPk]),
@@ -277,6 +275,7 @@ SessionContext = NamedTuple('SessionContext', [('aggnonce', bytes),
                                                ('is_xonly', List[bool]),
                                                ('msg', bytes)])
 
+#nit: switch the args ordering
 def derive_group_pubkey(pubshares: List[PlainPk], ids: List[bytes]) -> PlainPk:
     #think: needs check for min_participants <= len <= max_participants?
     assert len(pubshares) == len(ids)
@@ -421,16 +420,14 @@ def partial_sig_verify(psig: bytes, ids: List[bytes], pubnonces: List[bytes], pu
     session_ctx = SessionContext(aggnonce, ids, pubshares, tweaks, is_xonly, msg)
     return partial_sig_verify_internal(psig, ids[i], pubnonces[i], pubshares[i], session_ctx)
 
+#todo: catch `cpoint`` ValueError and return false
 def partial_sig_verify_internal(psig: bytes, my_id: bytes, pubnonce: bytes, pubshare: PlainPk, session_ctx: SessionContext) -> bool:
     (Q, gacc, _, b, R, e) = get_session_values(session_ctx)
     s = int_from_bytes(psig)
     if s >= n:
         return False
-    #it's impossible to perform this check during verify, because we don't have access to the secshare!
-    # we can only make sure the verification fails, when we have such a vector!
-    #todo: Remove this check, also modify the spec accordingly
     if not session_has_signer_pubshare(session_ctx, pubshare):
-        raise ValueError('The signer\'s pubshare must be included in the list of pubshares.')
+        return False
     R_s1 = cpoint(pubnonce[0:33])
     R_s2 = cpoint(pubnonce[33:66])
     Re_s_ = point_add(R_s1, point_mul(R_s2, b))
@@ -526,8 +523,7 @@ def test_keygen_vectors():
         pubshares = fromhex_all(test_case["participant_pubshares"])
         secshares = fromhex_all(test_case["participant_secshares"])
 
-        assert check_pubshares_correctness(secshares, pubshares) == True
-        assert check_group_pubkey_correctness(max_participants, min_participants, group_pk, ids, secshares, pubshares) == True
+        assert check_frost_key_compatibility(max_participants, min_participants, group_pk, ids, secshares, pubshares) == True
 
     pubshare_fail_test_cases = test_data["pubshare_correctness_fail_test_cases"]
     for test_case in pubshare_fail_test_cases:
@@ -545,7 +541,7 @@ def test_keygen_vectors():
         pubshares = fromhex_all(test_case["participant_pubshares"])
         secshares = fromhex_all(test_case["participant_secshares"])
 
-        assert check_group_pubkey_correctness(max_participants, min_participants, group_pk, ids, secshares, pubshares) == False
+        assert check_group_pubkey_correctness(min_participants, group_pk, ids, pubshares) == False
 
 def test_nonce_gen_vectors():
     with open(os.path.join(sys.path[0], 'vectors', 'nonce_gen_vectors.json')) as f:
@@ -872,8 +868,7 @@ def test_sign_and_verify_random(iterations: int) -> None:
 
         group_pk, ids, secshares, pubshares = generate_frost_keys(max_participants, min_participants)
         assert len(ids) == len(secshares) == len(pubshares) == max_participants
-        assert check_pubshares_correctness(secshares, pubshares)
-        assert check_group_pubkey_correctness(max_participants, min_participants, group_pk, ids, secshares, pubshares)
+        assert check_frost_key_compatibility(max_participants, min_participants, group_pk, ids, secshares, pubshares)
 
         # randomly choose the signer set, with len: min_participants <= len <= max_participants
         signer_count = secure_rng.randrange(min_participants, max_participants + 1)
