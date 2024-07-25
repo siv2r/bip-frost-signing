@@ -581,7 +581,7 @@ def test_nonce_agg_vectors():
         expected_aggnonce = bytes.fromhex(test_case["expected_aggnonce"])
         assert nonce_agg(pubnonces, ids) == expected_aggnonce
 
-    for i, test_case in enumerate(error_test_cases):
+    for test_case in error_test_cases:
         exception, except_fn = get_error_details(test_case)
         pubnonces = [pubnonces_list[i] for i in test_case["pubnonce_indices"]]
         ids = [bytes_from_int(i) for i in test_case["participant_identifiers"]]
