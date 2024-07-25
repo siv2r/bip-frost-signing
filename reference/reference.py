@@ -101,8 +101,6 @@ def individual_pk(seckey: bytes) -> PlainPk:
     assert P is not None
     return PlainPk(cbytes(P))
 
-# `derive_group_pubkey` and `sign` both would benefit from this change
-# maybe keep taking its as `derive_interpolating_value_internal`?
 def derive_interpolating_value_internal(L: List[int], x_i: int) -> int:
     num, deno = 1, 1
     for x_j in L:
@@ -252,7 +250,6 @@ def nonce_gen(secshare: Optional[bytes], pubshare: Optional[PlainPk], group_pk: 
     return nonce_gen_internal(rand_, secshare, pubshare, group_pk, msg, extra_in)
 
 def nonce_agg(pubnonces: List[bytes], ids: List[bytes]) -> bytes:
-    #think: needs check for min_participants <= len <= max_participants?
     if len(pubnonces) != len(ids):
         raise ValueError('The pubnonces and ids arrays must have the same length.')
     aggnonce = b''
@@ -277,7 +274,6 @@ SessionContext = NamedTuple('SessionContext', [('aggnonce', bytes),
 
 #nit: switch the args ordering
 def derive_group_pubkey(pubshares: List[PlainPk], ids: List[bytes]) -> PlainPk:
-    #think: needs check for min_participants <= len <= max_participants?
     assert len(pubshares) == len(ids)
     assert AGGREGATOR_ID not in ids
     Q = infinity
@@ -289,7 +285,7 @@ def derive_group_pubkey(pubshares: List[PlainPk], ids: List[bytes]) -> PlainPk:
         lam_i = derive_interpolating_value(ids, my_id)
         Q = point_add(Q, point_mul(X_i, lam_i))
     # Q is not the point at infinity except with negligible probability.
-    assert(Q is not None)
+    assert(Q is not infinity)
     return PlainPk(cbytes(Q))
 
 def group_pubkey_and_tweak(pubshares: List[PlainPk], ids: List[bytes], tweaks: List[bytes], is_xonly: List[bool]) -> TweakContext:
@@ -306,9 +302,8 @@ def group_pubkey_and_tweak(pubshares: List[PlainPk], ids: List[bytes], tweaks: L
 
 def get_session_values(session_ctx: SessionContext) -> Tuple[Point, int, int, int, Point, int]:
     (aggnonce, ids, pubshares, tweaks, is_xonly, msg) = session_ctx
-    #think: add check (or assert) min_participants <= len(ids, pubshares) <= max_participants?
     Q, gacc, tacc = group_pubkey_and_tweak(pubshares, ids, tweaks, is_xonly)
-    # sort before serializing because signers set in unordered
+    # sort the ids before serializing because ROAST paper considers them as a set
     concat_ids = b''.join(sorted(ids))
     b = int_from_bytes(tagged_hash('FROST/noncecoef', concat_ids + aggnonce + xbytes(Q) + msg)) % n
     try:
@@ -318,7 +313,6 @@ def get_session_values(session_ctx: SessionContext) -> Tuple[Point, int, int, in
         # Nonce aggregator sent invalid nonces
         raise InvalidContributionError(None, "aggnonce")
     R_ = point_add(R_1, point_mul(R_2, b))
-    #think: why replace it with G?
     R = R_ if not is_infinite(R_) else G
     assert R is not None
     e = int_from_bytes(tagged_hash('BIP0340/challenge', xbytes(R) + xbytes(Q) + msg)) % n
@@ -328,12 +322,11 @@ def get_session_interpolating_value(session_ctx: SessionContext, my_id: bytes) -
     (_, ids, _, _, _, _) = session_ctx
     return derive_interpolating_value(ids, my_id)
 
-def session_has_signer_pubshare(session_ctx: SessionContext, pubshare: PlainPk) -> bool:
+def session_has_signer_pubshare(session_ctx: SessionContext, pubshare: bytes) -> bool:
     (_, _, pubshares_list, _, _, _) = session_ctx
     return pubshare in pubshares_list
 
 def sign(secnonce: bytearray, secshare: bytes, my_id: bytes, session_ctx: SessionContext) -> bytes:
-    #think: add a check for 1 <= my_id <= max_participant here?
     # do we really need the below check?
     # add test vector for this check if confirmed
     if not 0 < int_from_bytes(my_id) < n:
@@ -355,7 +348,7 @@ def sign(secnonce: bytearray, secshare: bytes, my_id: bytes, session_ctx: Sessio
         raise ValueError('The signer\'s secret share value is out of range.')
     P = point_mul(G, d_)
     assert P is not None
-    pubshare = PlainPk(cbytes(P))
+    pubshare = cbytes(P)
     if not session_has_signer_pubshare(session_ctx, pubshare):
         raise ValueError('The signer\'s pubshare must be included in the list of pubshares.')
     a = get_session_interpolating_value(session_ctx, my_id)
@@ -421,7 +414,7 @@ def partial_sig_verify(psig: bytes, ids: List[bytes], pubnonces: List[bytes], pu
     return partial_sig_verify_internal(psig, ids[i], pubnonces[i], pubshares[i], session_ctx)
 
 #todo: catch `cpoint`` ValueError and return false
-def partial_sig_verify_internal(psig: bytes, my_id: bytes, pubnonce: bytes, pubshare: PlainPk, session_ctx: SessionContext) -> bool:
+def partial_sig_verify_internal(psig: bytes, my_id: bytes, pubnonce: bytes, pubshare: bytes, session_ctx: SessionContext) -> bool:
     (Q, gacc, _, b, R, e) = get_session_values(session_ctx)
     s = int_from_bytes(psig)
     if s >= n:
