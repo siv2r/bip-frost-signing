@@ -288,7 +288,7 @@ Algorithm _ValidateGroupPubkey(threshold, group_pk, id<sub>1..u</sub>, pubshare<
         - Fail if _group_pk_ ≠ _expected_pk_
 - Return success iff no failure occurred before reaching this point.
 
-### Tweaking Group Public Key
+### Key Derivation and Tweaking
 
 #### Tweak Context
 
@@ -299,14 +299,42 @@ The Tweak Context is a data structure consisting of the following elements:
 
 We write "Let _(Q, gacc, tacc) = tweak_ctx_" to assign names to the elements of a Tweak Context.
 
-Algorithm _TweakCtxInit(group_pk):_
+Algorithm _TweakCtxInit(id<sub>1..u</sub>, pubshare<sub>1..u</sub>):_
 - Input:
-    - The group public key _group_pk_: a 33-byte array
+    - The number _u_ of participants available in the signing session with _min_participants ≤ u ≤ max_participants_
+	- The participant identifiers of the signers _id<sub>1..u</sub>: _u_ 32-byte arrays with 1 _≤ int(id<sub>i</sub>) ≤ max_participants_ < n
+	- The individual public shares _pubshare<sub>1..u</sub>_: _u_ 33-byte arrays
+- Let _group_pk = DeriveGroupPubkey(id<sub>1..u</sub>, pubshare<sub>1..u</sub>)_; fail if that fails
 - Let _Q = cpoint(group_pk)_
 - Fail if _is_infinite(Q)_.
 - Let _gacc = 1_
 - Let _tacc = 0_
 - Return _tweak_ctx = (Q, gacc, tacc)_.
+
+Algorithm _DeriveGroupPubkey(id<sub>1..u</sub>, pubshare<sub>1..u</sub>)_
+- _inf_point = bytes(33, 0)_
+- _Q_ = _cpoint_ext(inf_point)_
+- For _i_ = _1..u_:
+    - _P_ = _cpoint(pubshare<sub>i</sub>)_; fail if that fails
+    - _lambda_ = _DeriveInterpolatingValue(id<sub>1..u</sub>, id<sub>i</sub>)_
+    - _Q_ = _Q_ + _lambda⋅P_
+- Return _cbytes(Q)_
+
+Internal Algorithm _DeriveInterpolatingValue(id<sub>1..u</sub>, my_id):_
+- Fail if _my_id_ not in _id<sub>1..u</sub>_
+- Fail if not _has_unique_elements(id<sub>1..u</sub>)
+- _int_id<sub>1..u</sub> = integer_ids(id<sub>1..u</sub>)_; Fail if that fails
+- Return _DeriveInterpolatingValueInternal(_int_id<sub>1..u</sub>_, int(my_id))_
+
+Internal Algorithm _DeriveInterpolatingValueInternal(id<sub>1..u</sub>, my_id):_
+- Let _num = 1_
+- Let _denom = 1_
+- For _i = 1..u_:
+    - If _id<sub>i</sub>_ ≠ _my_id_:
+	    - Let _num_ = _num⋅id<sub>i</sub>_
+	    - Let _denom_ = _denom⋅(id<sub>i</sub> - my_id)_
+- _lambda_ = _num⋅denom<sup>-1</sup> mod n_
+- Return _lambda_
 
 Algorithm _GetXonlyPubkey(tweak_ctx)_:
 - Let _(Q, _, _) = tweak_ctx_
@@ -395,8 +423,7 @@ We write "Let _(u, id<sub>1..u</sub>, pubshare<sub>1..u</sub>, aggnonce, v, twea
 
 Algorithm _GetSessionValues(session_ctx)_:
 - Let _(u, id<sub>1..u</sub>, pubshare<sub>1..u</sub>, aggnonce, v, tweak<sub>1..v</sub>, is_xonly_t<sub>1..v</sub>, m) = session_ctx_
-- _group_pk_ = _DeriveGroupPubkey(id<sub>1..u</sub>, pubshare<sub>1..u</sub>)_; fail if that fails
-- Let _tweak_ctx<sub>0</sub> = TweakCtxInit(group_pk)_; fail if that fails
+- Let _tweak_ctx<sub>0</sub> = TweakCtxInit(id<sub>1..u</sub>, pubshare<sub>1..u</sub>)_; fail if that fails
 - For _i = 1 .. v_:
     - Let _tweak_ctx<sub>i</sub> = ApplyTweak(tweak_ctx<sub>i-1</sub>, tweak<sub>i</sub>, is_xonly_t<sub>i</sub>)_; fail if that fails
 - Let _(Q, gacc, tacc) = tweak_ctx<sub>v</sub>_
@@ -414,31 +441,6 @@ Algorithm _GetSessionValues(session_ctx)_:
 Algorithm _GetSessionInterpolatingValue(session_ctx, my_id)_:
 - Let _(u, id<sub>1..u</sub>, _, _, _, _, _) = session_ctx_
 - Return _DeriveInterpolatingValue(id<sub>1..u</sub>, my_id)_; fail if that fails
-
-Internal Algorithm _DeriveInterpolatingValue(id<sub>1..u</sub>, my_id):_
-- Fail if _my_id_ not in _id<sub>1..u</sub>_
-- Fail if not _has_unique_elements(id<sub>1..u</sub>)
-- _int_id<sub>1..u</sub> = integer_ids(id<sub>1..u</sub>)_; Fail if that fails
-- Return _DeriveInterpolatingValueInternal(_int_id<sub>1..u</sub>_, int(my_id))_
-
-Internal Algorithm _DeriveInterpolatingValueInternal(id<sub>1..u</sub>, my_id):_
-- Let _num = 1_
-- Let _denom = 1_
-- For _i = 1..u_:
-    - If _id<sub>i</sub>_ ≠ _my_id_:
-	    - Let _num_ = _num⋅id<sub>i</sub>_
-	    - Let _denom_ = _denom⋅(id<sub>i</sub> - my_id)_
-- _lambda_ = _num⋅denom<sup>-1</sup> mod n_
-- Return _lambda_
-
-Algorithm _DeriveGroupPubkey(id<sub>1..u</sub>, pubshare<sub>1..u</sub>)_
-- _inf_point = bytes(33, 0)_
-- _Q_ = _cpoint_ext(inf_point)_
-- For _i_ = _1..u_:
-    - _P_ = _cpoint(pubshare<sub>i</sub>)_; fail if that fails
-    - _lambda_ = _DeriveInterpolatingValue(id<sub>1..u</sub>, id<sub>i</sub>)_
-    - _Q_ = _Q_ + _lambda⋅P_
-- Return _cbytes(Q)_
 
 Algorithm _SessionHasSignerPubshare(session_ctx, signer_pubshare)_:
 - Let _(u, _, pubshare<sub>1..u</sub>, _, _, _, _) = session_ctx_
@@ -572,8 +574,7 @@ Algorithm _DeterministicSign(secshare, my_id, aggothernonce, id<sub>1..u</sub>, 
     - Let _secshare'_ be the byte-wise xor of _secshare_ and _hash<sub>FROST/aux</sub>(rand)_
 - Else:
     - Let _secshare' = secshare_
-- _group_pk_ = _DeriveGroupPubkey(id<sub>1..u</sub>, pubshare<sub>1..u</sub>)_; fail if that fails
-- Let _tweak_ctx<sub>0</sub> = TweakCtxInit(group_pk)_; fail if that fails
+- Let _tweak_ctx<sub>0</sub> = TweakCtxInit(id<sub>1..u</sub>, pubshare<sub>1..u</sub>)_; fail if that fails
 - For _i = 1 .. v_:
     - Let _tweak_ctx<sub>i</sub> = ApplyTweak(tweak_ctx<sub>i-1</sub>, tweak<sub>i</sub>, is_xonly_t<sub>i</sub>)_; fail if that fails
 - Let _tweaked_gpk = GetXonlyPubkey(tweak_ctx<sub>v</sub>)_

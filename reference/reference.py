@@ -165,7 +165,24 @@ def get_plain_pk(tweak_ctx: TweakContext) -> PlainPk:
     Q, _, _ = tweak_ctx
     return PlainPk(cbytes(Q))
 
-def tweak_ctx_init(group_pk: PlainPk) -> TweakContext:
+#nit: switch the args ordering
+def derive_group_pubkey(pubshares: List[PlainPk], ids: List[bytes]) -> PlainPk:
+    assert len(pubshares) == len(ids)
+    assert AGGREGATOR_ID not in ids
+    Q = infinity
+    for my_id, pubshare in zip(ids, pubshares):
+        try:
+            X_i = cpoint(pubshare)
+        except ValueError:
+            raise InvalidContributionError(int_from_bytes(my_id), "pubshare")
+        lam_i = derive_interpolating_value(ids, my_id)
+        Q = point_add(Q, point_mul(X_i, lam_i))
+    # Q is not the point at infinity except with negligible probability.
+    assert(Q is not infinity)
+    return PlainPk(cbytes(Q))
+
+def tweak_ctx_init(pubshares: List[PlainPk], ids: List[bytes]) -> TweakContext:
+    group_pk = derive_group_pubkey(pubshares, ids)
     Q = cpoint(group_pk)
     gacc = 1
     tacc = 0
@@ -272,29 +289,12 @@ SessionContext = NamedTuple('SessionContext', [('aggnonce', bytes),
                                                ('is_xonly', List[bool]),
                                                ('msg', bytes)])
 
-#nit: switch the args ordering
-def derive_group_pubkey(pubshares: List[PlainPk], ids: List[bytes]) -> PlainPk:
-    assert len(pubshares) == len(ids)
-    assert AGGREGATOR_ID not in ids
-    Q = infinity
-    for my_id, pubshare in zip(ids, pubshares):
-        try:
-            X_i = cpoint(pubshare)
-        except ValueError:
-            raise InvalidContributionError(int_from_bytes(my_id), "pubshare")
-        lam_i = derive_interpolating_value(ids, my_id)
-        Q = point_add(Q, point_mul(X_i, lam_i))
-    # Q is not the point at infinity except with negligible probability.
-    assert(Q is not infinity)
-    return PlainPk(cbytes(Q))
-
 def group_pubkey_and_tweak(pubshares: List[PlainPk], ids: List[bytes], tweaks: List[bytes], is_xonly: List[bool]) -> TweakContext:
     if len(pubshares) != len(ids):
         raise ValueError('The pubshares and ids arrays must have the same length.')
     if len(tweaks) != len(is_xonly):
         raise ValueError('The tweaks and is_xonly arrays must have the same length.')
-    group_pk = derive_group_pubkey(pubshares, ids)
-    tweak_ctx = tweak_ctx_init(group_pk)
+    tweak_ctx = tweak_ctx_init(pubshares, ids)
     v = len(tweaks)
     for i in range(v):
         tweak_ctx = apply_tweak(tweak_ctx, tweaks[i], is_xonly[i])
