@@ -23,7 +23,7 @@ In FROST, the order of the public shares does not affect the group public key cr
 
 If a key generation method produces a group public key incompatible with BIP340 (i.e., a plain pubkey), it doesn't automatically render the method incompatible with our signing protocol. Hence, we allow the keygen to produce the group public key as `PlainPk` (33 bytes) instead of `XonlyPk` (32 bytes). For example, BIP-FROST-DKG outputs a `PlainPk` not `XonlyPk`.
 
-It is crucial to note that the signatures generated through our [signing protocol](README.md#signing) are only verifiable with a BIP340 compatible group pubkey. Therefore, if you are using a key generation method that outputs a `PlainPk` type group pubkey, you need to convert it to `XonlyPk` using the [`secp256k1_xonly_pubkey_from_pubkey`](https://github.com/bitcoin-core/secp256k1/blob/master/include/secp256k1_extrakeys.h#L93) API (TODO change this sentence, sign algo takes care of this).
+It is crucial to note that the signatures generated through our [signing protocol](../README.md#signing) are only verifiable with a BIP340 compatible group pubkey. Therefore, if you are using a key generation method that outputs a `PlainPk` type group pubkey, you need to convert it to `XonlyPk` using the [`secp256k1_xonly_pubkey_from_pubkey`](https://github.com/bitcoin-core/secp256k1/blob/master/include/secp256k1_extrakeys.h#L93) API (TODO change this sentence, sign algo takes care of this).
 
 ### Tweak Context
 
@@ -55,7 +55,7 @@ The FROST3 scheme computes the binding factor as
 ```math
 b = H_{non}(T, \text{group\_pk}, \text{aggnonce}, \text{msg})
 ```
-where $T$ represents the signer set. Since $T$ is a set, it must be independent of the order of signers, i.e., {1, 2, 3} = {2, 1, 3}. Therefore, we sort the IDs (see [_GetSessionValues_](README.md#session-context)) when computing the binding factor.
+where $T$ represents the signer set. Since $T$ is a set, it must be independent of the order of signers, i.e., {1, 2, 3} = {2, 1, 3}. Therefore, we sort the IDs (see [_GetSessionValues_](../README.md#session-context)) when computing the binding factor.
 
 ## Some Bike Shedding
 - how to write out inverse in lagrange coeff calc?
