@@ -2,7 +2,7 @@ This document provides reasoning behind the major design decisions in the BIP an
 
 ## General Signing Flow
 
-![General Signing Flow](docs/signing_flow.png)
+![General Signing Flow](./signing_flow.png)
 
 ## Current Design
 

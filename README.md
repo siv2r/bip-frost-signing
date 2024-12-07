@@ -1,4 +1,17 @@
-# FROST signing for BIP340-compatible Threshold Signatures (BIP draft)
+```
+BIP:
+Title: FROST Signing for BIP340-compatible Threshold Signatures
+Author: Sivaram Dhakshinamoorthy <siv2ram@gmail.com>
+Status: Draft
+License: CC0-1.0
+License-Code: MIT
+Type: Informational
+Created:
+Post-History:
+Comments-URI:
+```
+
+# FROST Signing for BIP340-compatible Threshold Signatures
 
 ### Abstract
 
@@ -302,7 +315,7 @@ We write "Let _(Q, gacc, tacc) = tweak_ctx_" to assign names to the elements of 
 Algorithm _TweakCtxInit(id<sub>1..u</sub>, pubshare<sub>1..u</sub>):_
 - Input:
     - The number _u_ of participants available in the signing session with _min_participants ≤ u ≤ max_participants_
-	- The participant identifiers of the signers _id<sub>1..u</sub>: _u_ 32-byte arrays with 1 _≤ int(id<sub>i</sub>) ≤ max_participants_ < n
+	- The participant identifiers of the signers _id<sub>1..u</sub>_: _u_ 32-byte arrays with 1 _≤ int(id<sub>i</sub>) ≤ max_participants_ < n
 	- The individual public shares _pubshare<sub>1..u</sub>_: _u_ 33-byte arrays
 - Let _group_pk = DeriveGroupPubkey(id<sub>1..u</sub>, pubshare<sub>1..u</sub>)_; fail if that fails
 - Let _Q = cpoint(group_pk)_
@@ -691,7 +704,19 @@ For any other _aggnonce'_, the reduction sets _aggnonce = aggnonce'_.
 
 This document proposes a standard for the FROST threshold signature scheme that is compatible with [BIP340](https://github.com/bitcoin/bips/blob/master/bip-0340.mediawiki). FROST is _not_ compatible with ECDSA signatures traditionally used in Bitcoin.
 
-<!-- ## Acknowledgments -->
+## Changelog
+
+To help the reader understand updates to this document, we attach a version number that resembles "semantic versioning" (`MAJOR.MINOR.PATCH`).
+The `MAJOR` version is incremented if changes to the BIP are introduced that are incompatible with prior versions.
+An exception to this rule is `MAJOR` version zero (0.y.z) which is for development and does not need to be incremented if backwards-incompatible changes are introduced.
+The `MINOR` version is incremented whenever the inputs or the output of an algorithm changes in a backward-compatible way or new backward-compatible functionality is added.
+The `PATCH` version is incremented for other noteworthy changes (bug fixes, test vectors, important clarifications, etc.).
+
+* *0.1.0* (2024-07-31): Publication of draft BIP on the bitcoin-dev mailing list
+
+## Acknowledgments
+<!-- Ordered alphabetically by last name -->
+We thank Jesse Posner, Tim Ruffing, and Jonas Nick for their contributions to this document.
 
 <!-- Footnotes -->
 
