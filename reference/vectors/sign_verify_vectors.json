@@ -3,7 +3,7 @@
     "min_participants": 3,
     "group_public_key": "037940B3ED1FDC360252A6F48058C7B94276DFB6AA2B7D51706FB48326B19E7AE1",
     "secshare_p1":"81D0D40CDF044588167A987C14552954DB187AC5AD3B1CA40D7B03DCA32AFDFB",
-    "identifiers": [1, 2, 3, 4, 5],
+    "identifiers": [0, 1, 2, 3, 4],
     "pubshares": [
         "02BB66437FCAA01292BFB4BB6F19D67818FE693215C36C4663857F1DC8AB8BF4FA",
         "02C3250013C86AA9C3011CD40B2658CBC5B950DD21FFAA4EDE1BB66E18A063CED5",
@@ -48,7 +48,7 @@
             "aggnonce_index": 0,
             "msg_index": 0,
             "signer_index": 0,
-            "expected": "DEDAA44E6DB7FF1B40D8CBAA44DF3F8C80BD7CEC6A21AE22F34ED7ABC59E2AEC",
+            "expected": "8096E146E58A9A6FFFD18529100225ACCF1BCAF118C08EFDF5CAFD5F56349891",
             "comment": "Signing with minimum number of participants"
         },
         {
@@ -58,7 +58,7 @@
             "aggnonce_index": 0,
             "msg_index": 0,
             "signer_index": 1,
-            "expected": "DEDAA44E6DB7FF1B40D8CBAA44DF3F8C80BD7CEC6A21AE22F34ED7ABC59E2AEC",
+            "expected": "8096E146E58A9A6FFFD18529100225ACCF1BCAF118C08EFDF5CAFD5F56349891",
             "comment": "Partial-signature shouldn't change if the order of signers set changes (without changing secnonces)"
         },
         {
@@ -68,7 +68,7 @@
             "aggnonce_index": 0,
             "msg_index": 0,
             "signer_index": 2,
-            "expected": "DEDAA44E6DB7FF1B40D8CBAA44DF3F8C80BD7CEC6A21AE22F34ED7ABC59E2AEC",
+            "expected": "8096E146E58A9A6FFFD18529100225ACCF1BCAF118C08EFDF5CAFD5F56349891",
             "comment": "Partial-signature shouldn't change if the order of signers set changes (without changing secnonces)"
         },
         {
@@ -78,7 +78,7 @@
             "aggnonce_index": 1,
             "msg_index": 0,
             "signer_index": 0,
-            "expected": "599723B8E16DA7D67A43EB09E6A990BF5BA7CD441657FE14D654E8C0523D0814",
+            "expected": "949888DBDD5F7743397B9DA57ED7C7330CF71433EF83727FBED937B30F6A16DF",
             "comment": "Partial-signature changes if the members of signers set changes"
         },
         {
@@ -88,7 +88,7 @@
             "aggnonce_index": 2,
             "msg_index": 0,
             "signer_index": 0,
-            "expected": "6762C37ABF433C029E6698B435D5F7BE634D7B64A8151ACB07402465DB7D4057"
+            "expected": "110B3E91CCCBE1BB9A7BE2F571E1066945FF88C647EE0BC4D70A1B9CF8B93D0D"
         },
         {
             "id_indices": [0, 1, 2, 3, 4],
@@ -97,7 +97,7 @@
             "aggnonce_index": 3,
             "msg_index": 0,
             "signer_index": 0,
-            "expected": "32D17330BF21D4D058E52A07E86F21D653ED697C1CCFE6F4D17084EF5C99FF18",
+            "expected": "164623723538CE8739E1B4EEB12FA63251FFBDBDFCFE321DEF5D6E2B592395A8",
             "comment": "Signing with maximum number of participants"
         },
         {
@@ -107,7 +107,7 @@
             "aggnonce_index": 4,
             "msg_index": 0,
             "signer_index": 0,
-            "expected": "16B1E11E2BB93911E0422715FD03C0C8F1B7845B6A69F8BB8AB90155D91C25B5",
+            "expected": "03043E1C8E020D3A5F3025EE9A5CE6EF9AC0E93F36BF91B17E291215C01D0616",
             "comment": "Both halves of aggregate nonce correspond to point at infinity"
         },
         {
@@ -117,7 +117,7 @@
             "aggnonce_index": 0,
             "msg_index": 1,
             "signer_index": 0,
-            "expected": "E1915436DC7D4BC162842A3C1BAA16E82A8D64056A02C5D2BD75784B604C23CD",
+            "expected": "786F5036BF58E1C153BE8D29F52C5288F15FF5EC406849CE33514DB2D2C3DBB4",
             "comment": "Empty message"
         },
         {
@@ -127,7 +127,7 @@
             "aggnonce_index": 0,
             "msg_index": 2,
             "signer_index": 0,
-            "expected": "78E04F68D813CBAF68CB5E19A835C69B833138ED18BDE63CB399F52F559EAA17",
+            "expected": "0FA84CCD9B5E523FAE7BECF4509BC6A7770793ADE7C79F52019210A30DC76A02",
             "comment": "Message longer than 32 bytes (38-byte msg)"
         }
     ],
@@ -138,7 +138,7 @@
             "aggnonce_index": 0,
             "msg_index": 0,
             "signer_index": null,
-            "signer_id": 1,
+            "signer_id": 0,
             "secnonce_index": 0,
             "error": {
                 "type": "value",
@@ -194,7 +194,7 @@
             "secnonce_index": 0,
             "error": {
                 "type": "invalid_contribution",
-                "signer_id": 3,
+                "signer_id": 2,
                 "contrib": "pubshare"
             },
             "comment": "Signer 3 provided an invalid participant public share"
@@ -257,7 +257,7 @@
     ],
     "verify_fail_test_cases": [
         {
-            "psig": "21255BB1924800E4BF273455BB20C07239F15FFA4526F218CC8386E10A981655",
+            "psig": "7F691EB91A756590002E7AD6EFFDDA51EB9311F59688113DCA07612D7A01A8B0",
             "id_indices": [0, 1, 2],
             "pubshare_indices": [0, 1, 2],
             "pubnonce_indices": [0, 1, 2],
@@ -266,7 +266,7 @@
             "comment": "Wrong signature (which is equal to the negation of valid signature)"
         },
         {
-            "psig": "DEDAA44E6DB7FF1B40D8CBAA44DF3F8C80BD7CEC6A21AE22F34ED7ABC59E2AEC",
+            "psig": "8096E146E58A9A6FFFD18529100225ACCF1BCAF118C08EFDF5CAFD5F56349891",
             "id_indices": [0, 1, 2],
             "pubshare_indices": [0, 1, 2],
             "pubnonce_indices": [0, 1, 2],
@@ -275,7 +275,7 @@
             "comment": "Wrong signer"
         },
         {
-            "psig": "DEDAA44E6DB7FF1B40D8CBAA44DF3F8C80BD7CEC6A21AE22F34ED7ABC59E2AEC",
+            "psig": "8096E146E58A9A6FFFD18529100225ACCF1BCAF118C08EFDF5CAFD5F56349891",
             "id_indices": [0, 1, 2],
             "pubshare_indices": [3, 1, 2],
             "pubnonce_indices": [0, 1, 2],
@@ -295,7 +295,7 @@
     ],
     "verify_error_test_cases": [
         {
-            "psig": "DEDAA44E6DB7FF1B40D8CBAA44DF3F8C80BD7CEC6A21AE22F34ED7ABC59E2AEC",
+            "psig": "8096E146E58A9A6FFFD18529100225ACCF1BCAF118C08EFDF5CAFD5F56349891",
             "id_indices": [0, 1, 2],
             "pubshare_indices": [0, 1, 2],
             "pubnonce_indices": [5, 1, 2],
@@ -303,13 +303,13 @@
             "signer_index": 0,
             "error": {
                 "type": "invalid_contribution",
-                "signer_id": 1,
+                "signer_id": 0,
                 "contrib": "pubnonce"
             },
             "comment": "Invalid pubnonce"
         },
         {
-            "psig": "DEDAA44E6DB7FF1B40D8CBAA44DF3F8C80BD7CEC6A21AE22F34ED7ABC59E2AEC",
+            "psig": "8096E146E58A9A6FFFD18529100225ACCF1BCAF118C08EFDF5CAFD5F56349891",
             "id_indices": [0, 1, 2],
             "pubshare_indices": [5, 1, 2],
             "pubnonce_indices": [0, 1, 2],
@@ -317,13 +317,13 @@
             "signer_index": 0,
             "error": {
                 "type": "invalid_contribution",
-                "signer_id": 1,
+                "signer_id": 0,
                 "contrib": "pubshare"
             },
             "comment": "Invalid pubshare"
         },
         {
-            "psig": "DEDAA44E6DB7FF1B40D8CBAA44DF3F8C80BD7CEC6A21AE22F34ED7ABC59E2AEC",
+            "psig": "8096E146E58A9A6FFFD18529100225ACCF1BCAF118C08EFDF5CAFD5F56349891",
             "id_indices": [0, 1, 2],
             "pubshare_indices": [0, 1, 2],
             "pubnonce_indices": [0, 1, 2, 3],

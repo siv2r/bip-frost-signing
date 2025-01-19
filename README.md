@@ -79,13 +79,15 @@ We distinguish between two public key types, namely _plain public keys_, the key
 Plain public keys are byte strings of length 33 (often called _compressed_ format).
 In contrast, X-only public keys are 32-byte strings defined in [BIP340](https://github.com/bitcoin/bips/blob/master/bip-0340.mediawiki).
 
-FROST generates signatures that are verifiable as if produced by a single signer using a secret key _s_ with the corresponding public key. As a threshold signing protocol, the group secret key _s_ is shared among all _MAX_PARTICIPANTS_ participants using Shamir's secret sharing, and at least _MIN_PARTICIPANTS_ participants must collaborate to issue a valid signature.  
-&emsp;&ensp;_MIN_PARTICIPANTS_ is a positive non-zero integer lesser than or equal to _MAX_PARTICIPANTS_  
-&emsp;&ensp;_MAX_PARTICIPANTS_ MUST be a positive integer lesser than the secp256k1 curve order.
+FROST generates signatures that are verifiable as if produced by a single signer using a secret key _s_ with the corresponding public key. As a threshold signing protocol, the group secret key _s_ is shared among all _MAX_PARTICIPANTS_ participants using Shamir's secret sharing, and at least _MIN_PARTICIPANTS_ participants must collaborate to issue a valid signature.
+<!-- REVIEW should we make MIN_PARTICIPANTS at least 2   -->
+&emsp;&ensp;_MIN_PARTICIPANTS_ is a positive non-zero integer lesser than or equal to _MAX_PARTICIPANTS_
+&emsp;&ensp;_MAX_PARTICIPANTS_ MUST be a positive integer lesser than the 2^32.
 
 In particular, FROST signing assumes each participant is configured with the following information:
-- An identifier _id_, which is a positive non-zero integer in the range _[1, MAX_PARTICIPANTS]_ and MUST be distinct from the identifier of every other participant.
-- A secret share _secshare<sub>id</sub>_, which is a positive non-zero integer lesser than the secp256k1 curve order. This value represents the _i_-th Shamir secret share of the group secret key _s_.  In particular, _secshare<sub>id</sub>_ is the value _f(id)_ on a secret polynomial _f_ of degree _(MIN_PARTICIPANTS - 1)_, where _s_ is _f(0)_.
+- An identifier _id_, which is an integer in the range _[0, MAX_PARTICIPANTS - 1]_ and MUST be distinct from the identifier of every other participant.
+<!-- REVIEW we haven't introduced participant identifier yet. So, don't use them here   -->
+- A secret share _secshare<sub>id</sub>_, which is a positive non-zero integer lesser than the secp256k1 curve order. This value represents the _i_-th Shamir secret share of the group secret key _s_.  In particular, _secshare<sub>id</sub>_ is the value _f(id + 1)_ on a secret polynomial _f_ of degree _(MIN_PARTICIPANTS - 1)_, where _s_ is _f(0)_.
 - A Group public key _group_pk_, which is point on the secp256k1 curve.
 - A public share _pubshare<sub>id</sub>_, which is point on the secp256k1 curve.
 
@@ -251,18 +253,7 @@ The following conventions are used, with constants as defined for [secp256k1](h
           - if _count(lst, x)_ > 1:
             - Return False
         - Return True
-    - The function _integer_ids(lst)_, where _lst_ is a list of 32-byte array, returns a list of integers. The function _integer_ids(lst)_ is equivalent to the following pseudocode:
-	    - _res_ = []
-	    - For _x_ in _lst_:
-		    - Fail if _int(x)_ ≥ n or _int(x)_ < 1
-		    - _res.append(int(x))_
-		- Return _res_
-    - The function _concat_bytearrays(lst)_, where _lst_ is a list of byte array elements, returns a single byte array. The function _concat_bytearrays(lst)_ is equivalent to the following pseudocode:
-	    - _res_ = _empty_bytestring_
-	    - For _x_ in _lst_:
-		    - _res = res || x_
-		- Return _res_
-    - The function _sorted(lst)_, where _lst_ is a list of byte array elements, returns a list of byte array sorted based on the numerical values of its elements in ascending order, preserving the relative order of equal elements.
+    - The function _sorted(lst)_, where _lst_ is a list of integers, returns a new list of integers in ascending order.
 - Other:
     - Tuples are written by listing the elements within parentheses and separated by commas. For example, _(2, 3, 1)_ is a tuple.
 
@@ -274,10 +265,10 @@ Internal Algorithm _PlainPubkeyGen(sk):_[^pubkey-gen-ecdsa]
 - Let _d' = int(sk)_.
 - Fail if _d' = 0_ or _d' &ge; n_.
 - Return _cbytes(d'⋅G)_.
-
+<!-- REVIEW maybe write scripts to automate these italics (math symbols)? -->
 Algorithm _ValidatePubshares(secshare<sub>1..u</sub>, pubshare<sub>1..u</sub>)_
 - Inputs:
-    - The number _u_ of participants involved in keygen: an integer equal to _max_participants_
+    - The number _u_ of participants involved in keygen with 0 < _u_ < 2^32
     - The participant secret shares _secshare<sub>1..u</sub>_: _u_ 32-byte arrays
     - The corresponding public shares _pubshare<sub>1..u</sub>_: _u_ 33-byte arrays
 - For _i = 1 .. u_:
@@ -286,15 +277,14 @@ Algorithm _ValidatePubshares(secshare<sub>1..u</sub>, pubshare<sub>1..u</sub>)_
 
 Algorithm _ValidateGroupPubkey(threshold, group_pk, id<sub>1..u</sub>, pubshare<sub>1..u</sub>)_:
 - Inputs:
-    - The number _u_ of participants involved in keygen: an integer equal to _max_participants_
+    - The number _u_ of participants involved in keygen with 0 < _u_ < 2^32
     - The number _threshold_ of participants required to issue a signature: an integer equal to _min_participants_
     - The group public key _group_pk_: a 33-byte array
-    - The participant identifiers _id<sub>1..u</sub>_: _u_ 32-byte arrays
+    - The participant identifiers _id<sub>1..u</sub>_: _u_ integers, each with 0 ≤ _id<sub>i</sub>_ < _max_participants_
     - The participant public shares _pubshares<sub>1..u</sub>_: _u_ 33-byte arrays
 - Fail if _threshold_ > _u_
-- _int_id<sub>1..u</sub> = integer_ids(id<sub>1..u</sub>)_; Fail if that fails
 - For _t_ = _threshold..u_:
-    - For each combination of _t_ elements from _int_id<sub>1..u</sub>_:[^itertools-combinations]
+    - For each combination of _t_ elements from _id<sub>1..u</sub>_:[^itertools-combinations]
         - Let _signer_id<sub>1..t</sub>_ be the current combination of participant identifiers
         - Let _signer_pubshare<sub>1..t</sub>_ be their corresponding participant pubshares[^calc-signer-pubshares]
         - _expected_pk_ = _DeriveGroupPubkey(signer_id<sub>1..t</sub>, signer_pubshare<sub>1..t</sub>)_
@@ -315,7 +305,7 @@ We write "Let _(Q, gacc, tacc) = tweak_ctx_" to assign names to the elements of 
 Algorithm _TweakCtxInit(id<sub>1..u</sub>, pubshare<sub>1..u</sub>):_
 - Input:
     - The number _u_ of participants available in the signing session with _min_participants ≤ u ≤ max_participants_
-	- The participant identifiers of the signers _id<sub>1..u</sub>_: _u_ 32-byte arrays with 1 _≤ int(id<sub>i</sub>) ≤ max_participants_ < n
+    - The participant identifiers of the signers _id<sub>1..u</sub>_: _u_ integers, each with 0 ≤ _id<sub>i</sub>_ < _max_participants_
 	- The individual public shares _pubshare<sub>1..u</sub>_: _u_ 33-byte arrays
 - Let _group_pk = DeriveGroupPubkey(id<sub>1..u</sub>, pubshare<sub>1..u</sub>)_; fail if that fails
 - Let _Q = cpoint(group_pk)_
@@ -324,7 +314,7 @@ Algorithm _TweakCtxInit(id<sub>1..u</sub>, pubshare<sub>1..u</sub>):_
 - Let _tacc = 0_
 - Return _tweak_ctx = (Q, gacc, tacc)_.
 
-Algorithm _DeriveGroupPubkey(id<sub>1..u</sub>, pubshare<sub>1..u</sub>)_
+Internal Algorithm _DeriveGroupPubkey(id<sub>1..u</sub>, pubshare<sub>1..u</sub>)_
 - _inf_point = bytes(33, 0)_
 - _Q_ = _cpoint_ext(inf_point)_
 - For _i_ = _1..u_:
@@ -335,16 +325,12 @@ Algorithm _DeriveGroupPubkey(id<sub>1..u</sub>, pubshare<sub>1..u</sub>)_
 
 Internal Algorithm _DeriveInterpolatingValue(id<sub>1..u</sub>, my_id):_
 - Fail if _my_id_ not in _id<sub>1..u</sub>_
-- Fail if not _has_unique_elements(id<sub>1..u</sub>)
-- _int_id<sub>1..u</sub> = integer_ids(id<sub>1..u</sub>)_; Fail if that fails
-- Return _DeriveInterpolatingValueInternal(_int_id<sub>1..u</sub>_, int(my_id))_
-
-Internal Algorithm _DeriveInterpolatingValueInternal(id<sub>1..u</sub>, my_id):_
+- Fail if not _has_unique_elements(id<sub>1..u</sub>)_
 - Let _num = 1_
 - Let _denom = 1_
 - For _i = 1..u_:
     - If _id<sub>i</sub>_ ≠ _my_id_:
-	    - Let _num_ = _num⋅id<sub>i</sub>_
+	    - Let _num_ = _num⋅(id<sub>i</sub>_ + 1)
 	    - Let _denom_ = _denom⋅(id<sub>i</sub> - my_id)_
 - _lambda_ = _num⋅denom<sup>-1</sup> mod n_
 - Return _lambda_
@@ -413,7 +399,7 @@ Algorithm _NonceAgg(pubnonce<sub>1..u</sub>, id<sub>1..u</sub>)_:
 - Inputs:
     - The number of signers _u_: an integer with _min_participants ≤ u ≤ max_participants_
     - The public nonces _pubnonce<sub>1..u</sub>_: _u_ 66-byte arrays
-    - The participant identifiers _id<sub>1..u</sub>_: _u_ 32-byte arrays with _1 ≤ int(id<sub>i</sub>) ≤ max_participants_
+    - The participant identifiers _id<sub>1..u</sub>_: _u_ integers, each with 0 ≤ _id<sub>i</sub>_ < _max_participants_
 - For _j = 1 .. 2_:
     - For _i = 1 .. u_:
         - Let _R<sub>i,j</sub> = cpoint(pubnonce<sub>i</sub>[(j-1)_33:j_33])_; fail if that fails and blame signer _id<sub>i</sub>_ for invalid _pubnonce_.
@@ -424,7 +410,7 @@ Algorithm _NonceAgg(pubnonce<sub>1..u</sub>, id<sub>1..u</sub>)_:
 
 The Session Context is a data structure consisting of the following elements:
 - The number _u_ of participants available in the signing session with _min_participants ≤ u ≤ max_participants_
-- The participant identifiers of the signers _id<sub>1..u</sub>: _u_ 32-byte arrays with 1 _≤ int(id<sub>i</sub>) ≤ max_participants_ < n
+- The participant identifiers of the signers _id<sub>1..u</sub>_: _u_ integers, each with 0 ≤ _id<sub>i</sub>_ < _max_participants_
 - The individual public shares _pubshare<sub>1..u</sub>_: _u_ 33-byte arrays
 - The aggregate public nonce of signers _aggnonce_: a 66-byte array
 - The number _v_ of tweaks with _0 ≤ v < 2^32_
@@ -440,7 +426,7 @@ Algorithm _GetSessionValues(session_ctx)_:
 - For _i = 1 .. v_:
     - Let _tweak_ctx<sub>i</sub> = ApplyTweak(tweak_ctx<sub>i-1</sub>, tweak<sub>i</sub>, is_xonly_t<sub>i</sub>)_; fail if that fails
 - Let _(Q, gacc, tacc) = tweak_ctx<sub>v</sub>_
-- Let _ser_ids_ = _concat_bytearrays(sorted(id<sub>1..u</sub>))_
+- Let _ser_ids_ = _SerializeIds(id<sub>1..u</sub>)_
 - Let b = _int(hash<sub>FROST/noncecoef</sub>(ser_ids || aggnonce || xbytes(Q) || m)) mod n_
 - Let _R<sub>1</sub> = cpoint_ext(aggnonce[0:33]), R<sub>2</sub> = cpoint_ext(aggnonce[33:66])_; fail if that fails and blame nonce aggregator for invalid _aggnonce_.
 - Let _R' = R<sub>1</sub> + b⋅R<sub>2</sub>_
@@ -450,6 +436,13 @@ Algorithm _GetSessionValues(session_ctx)_:
     - _Let final nonce_ R = R'
 - Let _e = int(hash<sub>BIP0340/challenge</sub>((xbytes(R) || xbytes(Q) || m))) mod n_
 - _Return_ (Q, gacc, tacc, b, R, e)
+
+Internal Algorithm _SerializeIds(id<sub>1..u</sub>)_:
+- _res = empty_bytestring_
+<!-- REVIEW should check for duplicates and id value range here? -->
+- For _id_ in _sorted(id<sub>1..u</sub>)_:
+  - _res = res || bytes(4, id)_
+- Return _res_
 
 Algorithm _GetSessionInterpolatingValue(session_ctx, my_id)_:
 - Let _(u, id<sub>1..u</sub>, _, _, _, _, _) = session_ctx_
@@ -467,7 +460,7 @@ Algorithm _Sign(secnonce, secshare, my_id, session_ctx)_:
 - Inputs:
     - The secret nonce _secnonce_ that has never been used as input to _Sign_ before: a 64-byte array[^secnonce-ser]
     - The secret signing key _secshare_: a 32-byte array
-    - The identifier of the signing participant _my_id_: a 32-byte array with 1 _≤ int(my_id) ≤ max_participants_
+    - The identifier of the signing participant _my_id_: an integer with 1 _≤ my_id < max_participants < 2^32_
     - The _session_ctx_: a [Session Context](./README.md#session-context) data structure
 - Let _(Q, gacc, _, b, R, e) = GetSessionValues(session_ctx)_; fail if that fails
 - Let _k<sub>1</sub>' = int(secnonce[0:32]), k<sub>2</sub>' = int(secnonce[32:64])_
@@ -493,7 +486,7 @@ Algorithm _PartialSigVerify(psig, id<sub>1..u</sub>, pubnonce<sub>1..u</sub>, pu
 - Inputs:
     - The partial signature _psig_: a 32-byte array
     - The number _u_ of identifiers, public nonces, and individual public shares with _min_participants ≤ u ≤ max_participants_
-    - The participant identifiers _id<sub>1..u</sub>_: _u_ 32-byte array with _1 ≤ int(id<sub>i</sub>) ≤ max_participants_
+    - The participant identifiers _id<sub>1..u</sub>_: _u_ integers, each with _0 ≤ id<sub>i</sub> < max_participants < 2^32_
     - The public nonces _pubnonce<sub>1..u</sub>_: _u_ 66-byte arrays
     - The individual public shares _pubshare<sub>1..u</sub>_: _u_ 33-byte arrays
     - The number _v_ of tweaks with _0 ≤ v < 2^32_
@@ -526,7 +519,7 @@ Algorithm _PartialSigAgg(psig<sub>1..u</sub>, id<sub>1..u</sub>, session_ctx)_:
 - Inputs:
     - The number _u_ of signatures with _min_participants ≤ u ≤ max_participants_
     - The partial signatures _psig<sub>1..u</sub>_: _u_ 32-byte arrays
-    - The participant identifiers _id<sub>1..u</sub>_: _u_ 32-byte arrays with _1 ≤ int(id<sub>i</sub>) ≤ max_participants_
+    - The participant identifiers _id<sub>1..u</sub>_: _u_ integers, each with _0 ≤ id<sub>i</sub> < max_participants < 2^32_
     - The _session_ctx_: a [Session Context](./README.md#session-context) data structure
 - Let _(Q, _, tacc, _, _, R, e) = GetSessionValues(session_ctx)_; fail if that fails
 - For _i = 1 .. u_:
@@ -567,16 +560,16 @@ Such a nonce generation algorithm _DeterministicSign_ is specified below.
 Note that the only optional argument is _rand_, which can be omitted if randomness is entirely unavailable.
 _DeterministicSign_ requires the argument _aggothernonce_ which should be set to the output of _NonceAgg_ run on the _pubnonce_ value of **all** other signers (but can be provided by an untrusted party).
 Hence, using _DeterministicSign_ is only possible for the last signer to generate a nonce and makes the signer stateless, similar to the stateless signer described in the [Nonce Generation](./README.md#nonce-generation) section.
-
+<!-- REVIEW just say max_participants is < 2^32 during intro, than mentioning it everywhere -->
 #### Deterministic and Stateless Signing for a Single Signer
 
 Algorithm _DeterministicSign(secshare, my_id, aggothernonce, id<sub>1..u</sub>, pubshare<sub>1..u</sub>, tweak<sub>1..v</sub>, is_xonly_t<sub>1..v</sub>, m, rand)_:
 - Inputs:
     - The secret share _secshare_: a 32-byte array
-    - The identifier of the signing participant _my_id_: a 32-byte array with 1 _≤ int(my_id) ≤ max_participants_
+    - The identifier of the signing participant _my_id_: an integer with 0 _≤ my_id < max_participants < 2^32_
     - The aggregate public nonce _aggothernonce_ (see [above](./README.md#modifications-to-nonce-generation)): a 66-byte array
     - The number _u_ of identifiers and participant public shares with _min_participants ≤ u ≤ max_participants_
-    - The participant identifiers _id<sub>1..u</sub>_: _u_ 32-byte arrays
+    - The participant identifiers _id<sub>1..u</sub>_: _u_ integers, each with _0 ≤ id<sub>i</sub> < max_participants < 2^32_
     - The individual public shares _pubshare<sub>1..u</sub>_: _u_ 33-byte arrays
     - The number _v_ of tweaks with _0 &le; v < 2^32_
     - The tweaks _tweak<sub>1..v</sub>_: _v_ 32-byte arrays

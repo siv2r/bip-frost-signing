@@ -11,12 +11,12 @@
     "valid_test_cases": [
         {
             "pubnonce_indices": [0, 1],
-            "participant_identifiers": [1, 2],
+            "participant_identifiers": [0, 1],
             "expected_aggnonce": "035FE1873B4F2967F52FEA4A06AD5A8ECCBE9D0FD73068012C894E2E87CCB5804B024725377345BDE0E9C33AF3C43C0A29A9249F2F2956FA8CFEB55C8573D0262DC8"
         },
         {
             "pubnonce_indices": [2, 3],
-            "participant_identifiers": [1, 2],
+            "participant_identifiers": [0, 1],
             "expected_aggnonce": "035FE1873B4F2967F52FEA4A06AD5A8ECCBE9D0FD73068012C894E2E87CCB5804B000000000000000000000000000000000000000000000000000000000000000000",
             "comment": "Sum of second points encoded in the nonces is point at infinity which is serialized as 33 zero bytes"
         }
@@ -24,7 +24,7 @@
     "error_test_cases": [
         {
             "pubnonce_indices": [0, 4],
-            "participant_identifiers": [1, 2],
+            "participant_identifiers": [0, 1],
             "error": {
                 "type": "invalid_contribution",
                 "signer_id": 2,
@@ -34,7 +34,7 @@
         },
         {
             "pubnonce_indices": [5, 1],
-            "participant_identifiers": [1, 2],
+            "participant_identifiers": [0, 1],
             "error": {
                 "type": "invalid_contribution",
                 "signer_id": 1,
@@ -44,7 +44,7 @@
         },
         {
             "pubnonce_indices": [6, 1],
-            "participant_identifiers": [1, 2],
+            "participant_identifiers": [0, 1],
             "error": {
                 "type": "invalid_contribution",
                 "signer_id": 1,

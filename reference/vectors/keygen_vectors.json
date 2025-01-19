@@ -4,7 +4,7 @@
             "max_participants": 3,
             "min_participants": 2,
             "group_public_key": "02F37C34B66CED1FB51C34A90BDAE006901F10625CC06C4F64663B0EAE87D87B4F",
-            "participant_identifiers": [1, 2, 3],
+            "participant_identifiers": [0, 1, 2],
             "participant_pubshares": [
                 "026BAEE4BF7D4B9C4567DFFF6F3C2C76DF5C082E9320CD8187D6AB5965BC5A119A",
                 "03DACC9463E5186F3C81AE1B314F7B09001A22B28BB56AD0ABD3F376818F9604AB",
@@ -21,7 +21,7 @@
             "max_participants": 5,
             "min_participants": 3,
             "group_public_key": "037940B3ED1FDC360252A6F48058C7B94276DFB6AA2B7D51706FB48326B19E7AE1",
-            "participant_identifiers": [1, 2, 3, 4, 5],
+            "participant_identifiers": [0, 1, 2, 3, 4],
             "participant_pubshares": [
                 "02BB66437FCAA01292BFB4BB6F19D67818FE693215C36C4663857F1DC8AB8BF4FA",
                 "02C3250013C86AA9C3011CD40B2658CBC5B950DD21FFAA4EDE1BB66E18A063CED5",
@@ -44,7 +44,7 @@
             "max_participants": 2,
             "min_participants": 2,
             "group_public_key": "0256C92CA18AD18E5E14075E4CDA4C9471E1F69EFF06DA31B9DB8C431697457C96",
-            "participant_identifiers": [1, 2],
+            "participant_identifiers": [0, 1],
             "participant_pubshares": [
                 "02EF27116868EEC72F1AEF13F0383A83479DB7DFBDE55B568ADC0ABC28B0C82AEB",
                 "0381EE46DB9582B6AA84AB1F39CAAD930899B44ACCB75EDFFBB29CDB8E2136F2A7"
@@ -61,7 +61,7 @@
             "max_participants": 3,
             "min_participants": 3,
             "group_public_key": "0354F1E67AAFFB49654AF3EE5B0C68D8CF24468D014453F1F13B5221512A0BCE78",
-            "participant_identifiers": [1, 2, 3],
+            "participant_identifiers": [0, 1, 2],
             "participant_pubshares": [
                 "037A01FF2705D679CDC34E04366CC3BA95BD9E883AC7E33B640D744BE6BCC2D140",
                 "039E2C0AE44EA1203606D04B711667C07D1695ADC36FBF07DD37B7ECA85490262C",

@@ -3,7 +3,7 @@
     "min_participants": 3,
     "group_public_key": "037940B3ED1FDC360252A6F48058C7B94276DFB6AA2B7D51706FB48326B19E7AE1",
     "secshare_p1":"81D0D40CDF044588167A987C14552954DB187AC5AD3B1CA40D7B03DCA32AFDFB",
-    "identifiers": [1, 2, 3, 4, 5],
+    "identifiers": [0, 1, 2, 3, 4],
     "pubshares": [
         "02BB66437FCAA01292BFB4BB6F19D67818FE693215C36C4663857F1DC8AB8BF4FA",
         "02C3250013C86AA9C3011CD40B2658CBC5B950DD21FFAA4EDE1BB66E18A063CED5",
@@ -29,7 +29,7 @@
             "signer_index": 0,
             "expected": [
                 "038E14A90FB2C66535B42850F009E2F1857000433042EE647066034FDE7F5A3F3C026CD7BDD51BE1490486F1E905B90020CB8294AFE7B6A051069C07D3B2FD9DC12A",
-                "89FA301CA35D6BD839089D0EBA7EA16B2C90818103BAA85F92FE6C01F0E0FB61"
+                "C9D6D0891AA3EB319ADDB286AEEBB4A05CF16DEE2296B8BA4181229F84FFB809"
             ],
             "comment": "Signing with minimum number of participants"
         },
@@ -44,9 +44,9 @@
             "signer_index": 1,
             "expected": [
                 "038E14A90FB2C66535B42850F009E2F1857000433042EE647066034FDE7F5A3F3C026CD7BDD51BE1490486F1E905B90020CB8294AFE7B6A051069C07D3B2FD9DC12A",
-                "89FA301CA35D6BD839089D0EBA7EA16B2C90818103BAA85F92FE6C01F0E0FB61"
+                "C9D6D0891AA3EB319ADDB286AEEBB4A05CF16DEE2296B8BA4181229F84FFB809"
             ],
-            "comment": "Partial-signature shouldn't change if the order of signers set changes. Note: The deterministic sign will generate the same secnonces due to unchanged parameters"
+            "comment": "Partial-signature shouldn't change if the order of signers set changes. Note: The deterministic sign will generate the same pubnonce due to unchanged parameters"
         },
         {
             "rand": "0000000000000000000000000000000000000000000000000000000000000000",
@@ -59,9 +59,9 @@
             "signer_index": 2,
             "expected": [
                 "038E14A90FB2C66535B42850F009E2F1857000433042EE647066034FDE7F5A3F3C026CD7BDD51BE1490486F1E905B90020CB8294AFE7B6A051069C07D3B2FD9DC12A",
-                "89FA301CA35D6BD839089D0EBA7EA16B2C90818103BAA85F92FE6C01F0E0FB61"
+                "C9D6D0891AA3EB319ADDB286AEEBB4A05CF16DEE2296B8BA4181229F84FFB809"
             ],
-            "comment": "Partial-signature shouldn't change if the order of signers set changes. Note: The deterministic sign will generate the same secnonces due to unchanged parameters"
+            "comment": "Partial-signature shouldn't change if the order of signers set changes. Note: The deterministic sign will generate the same pubnonce due to unchanged parameters"
         },
         {
             "rand": "0000000000000000000000000000000000000000000000000000000000000000",
@@ -74,7 +74,7 @@
             "signer_index": 0,
             "expected": [
                 "038E14A90FB2C66535B42850F009E2F1857000433042EE647066034FDE7F5A3F3C026CD7BDD51BE1490486F1E905B90020CB8294AFE7B6A051069C07D3B2FD9DC12A",
-                "E5C27E441A9D433CDC4A36F669967E4304435CE5E6E7722D871237C3B4A2EC99"
+                "4B434DC5E2EBE9E868B40759EC767A79A5C02FFEAC38E755AEA514571F4C7A60"
             ],
             "comment": "Partial-signature changes if the members of signers set changes"
         },
@@ -89,7 +89,7 @@
             "signer_index": 0,
             "expected": [
                 "02EEE6300500FB508012424A0F47621F9A844A939020DD64C4254939D848B675A5037BDEA362CBE55D6D36A7635FC21ED8AC2FA05E9B63A8242E07969F6E2D4E36E5",
-                "97440C51FCB602911455E6147938F5B81C0C1AF32ADAFD98F5A66A4616289D5D"
+                "D063AED22D0FDB34FEAD9A714501D6227858289F45A99BAF7160FCE1E1C669B7"
             ],
             "comment": "Signing without auxiliary randomness"
         },
@@ -104,7 +104,7 @@
             "signer_index": 0,
             "expected": [
                 "020EBAD8A2F6099A0A0A62439F0A2A0E7DF6918DDE55183AFFF112DF2940FF76DE026C4A1C132CF16CFCFC28FEB02651C44719C900DF6F16407711CA8DB31E2A46B8",
-                "83271933ECB71C566F3BA61A645B1396251CBF7EDA77B1D2AF5C689003AB631B"
+                "60B46F845E02169B7E6D470894514BA6378A12497A01A187AD4657C630E63133"
             ],
             "comment": "Signing with maximum number of participants and maximum auxiliary randomness value"
         },
@@ -119,7 +119,7 @@
             "signer_index": 0,
             "expected": [
                 "0203375B47194F99B8B682B9DCDFB972A066C243BC7AA951A792FF02A707A3C7870367C40EE43583D0FC0F44696BED09D9B89652FC45B738FF03AF8ECA854A5424B1",
-                "2D2F6A697B0632291E3240D9E48F82A454EEB9F566987CB5E7612C0B75D41208"
+                "85385A64464E557E155AB6FF105413AC893CF6D885023065CE43325EA2AE930E"
             ],
             "comment": "Empty message"
         },
@@ -134,7 +134,7 @@
             "signer_index": 0,
             "expected": [
                 "0256B5FD4623C09A0E073CE04FF488DA0C4319A528CBA3FC26307682AD2CAD069003F8E94981F0D4A0A879CFAEEE0A060DF1E12889FB7C3CEAC498310827F63CBDE2",
-                "347C67E959FCA9460F907C0D2CAF5DD427E5CFD7E15330BA38DA6E986ED91B0E"
+                "C5B1F2FEF249DA397995717F56302452F41E0CEAD306CADEE083F503B28BEAF8"
             ],
             "comment": "Message longer than 32 bytes (38-byte msg)"
         },
@@ -149,7 +149,7 @@
             "signer_index": 0,
             "expected": [
                 "0341E28C13AB55A689C4698F31AD68250636B9E41FACCB0D358B4BD9A3DF09B1920311E0CED48F4B3B51E010159D3657FD8EC9DFF1FD30AD28FC126F62AA1C53C451",
-                "817169757CF62879BCB2F1DFE895E6781664CA0D18534290C22EC0E40187B7FC"
+                "6AED0661630C2A5BCC245BD3C9050EE90CECAED49CC4BA94572292093B242AE1"
             ],
             "comment": "Tweaked group public key"
         }
@@ -164,7 +164,7 @@
             "is_xonly": [],
             "msg_index": 0,
             "signer_index": null,
-            "signer_id": 1,
+            "signer_id": 0,
             "error": {
                 "type": "value",
                 "message": "The signer's id must be present in the participant identifier list."
@@ -227,7 +227,7 @@
             "signer_index": 0,
             "error": {
                 "type": "invalid_contribution",
-                "signer_id": 3,
+                "signer_id": 2,
                 "contrib": "pubshare"
             },
             "comment": "Signer 3 provided an invalid participant public share"
