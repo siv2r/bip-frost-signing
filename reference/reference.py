@@ -255,6 +255,7 @@ def nonce_gen_internal(rand_: bytes, secshare: Optional[bytes], pubshare: Option
 
 #think: can msg & extra_in be of any length here?
 #think: why doesn't musig2 ref code check for `pk` length here?
+#REVIEW: Why should group_pk be XOnlyPk here? Shouldn't it be PlainPk?
 def nonce_gen(secshare: Optional[bytes], pubshare: Optional[PlainPk], group_pk: Optional[XonlyPk], msg: Optional[bytes], extra_in: Optional[bytes]) -> Tuple[bytearray, bytes]:
     if secshare is not None and len(secshare) != 32:
         raise ValueError('The optional byte array secshare must have length 32.')
@@ -475,13 +476,13 @@ def assert_raises(exception, try_fn, except_fn):
 
 def get_error_details(test_case):
     error = test_case["error"]
-    if error["type"] == "invalid_contribution":
+    if error["type"] == "InvalidContributionError":
         exception = InvalidContributionError
         if "contrib" in error:
-            except_fn = lambda e: e.id == error["signer_id"] and e.contrib == error["contrib"]
+            except_fn = lambda e: e.id == error["id"] and e.contrib == error["contrib"]
         else:
-            except_fn = lambda e: e.id == error["signer_id"]
-    elif error["type"] == "value":
+            except_fn = lambda e: e.id == error["id"]
+    elif error["type"] == "ValueError":
         exception = ValueError
         # except_fn = except_fn1
         except_fn = lambda e: str(e) == error["message"]
@@ -755,7 +756,7 @@ def test_det_sign_vectors():
     msgs = fromhex_all(test_data["msgs"])
 
     valid_test_cases = test_data["valid_test_cases"]
-    sign_error_test_cases = test_data["sign_error_test_cases"]
+    error_test_cases = test_data["error_test_cases"]
 
     for test_case in valid_test_cases:
         ids_tmp = [bytes_from_int(ids[i]) for i in test_case["id_indices"]]
@@ -778,7 +779,7 @@ def test_det_sign_vectors():
         session_ctx = SessionContext(aggnonce_tmp, ids_tmp, pubshares_tmp, tweaks, is_xonly, msg)
         assert partial_sig_verify_internal(psig, my_id, pubnonce, pubshares_tmp[signer_index], session_ctx)
 
-    for test_case in sign_error_test_cases:
+    for test_case in error_test_cases:
         exception, except_fn = get_error_details(test_case)
         ids_tmp = [bytes_from_int(ids[i]) for i in test_case["id_indices"]]
         pubshares_tmp = [PlainPk(pubshares[i]) for i in test_case["pubshare_indices"]]
@@ -807,7 +808,6 @@ def test_sig_agg_vectors():
     pubnonces = fromhex_all(test_data["pubnonces"])
 
     tweaks = fromhex_all(test_data["tweaks"])
-    psigs = fromhex_all(test_data["psigs"])
     msg = bytes.fromhex(test_data["msg"])
 
     valid_test_cases = test_data["valid_test_cases"]
@@ -823,7 +823,7 @@ def test_sig_agg_vectors():
 
         tweaks_tmp = [tweaks[i] for i in test_case["tweak_indices"]]
         tweak_modes_tmp = test_case["is_xonly"]
-        psigs_tmp = [psigs[i] for i in test_case["psig_indices"]]
+        psigs_tmp = fromhex_all(test_case["psigs"])
         expected = bytes.fromhex(test_case["expected"])
 
         session_ctx = SessionContext(aggnonce_tmp, ids_tmp, pubshares_tmp, tweaks_tmp, tweak_modes_tmp, msg)
@@ -846,7 +846,7 @@ def test_sig_agg_vectors():
 
         tweaks_tmp = [tweaks[i] for i in test_case["tweak_indices"]]
         tweak_modes_tmp = test_case["is_xonly"]
-        psigs_tmp = [psigs[i] for i in test_case["psig_indices"]]
+        psigs_tmp = fromhex_all(test_case["psigs"])
 
         session_ctx = SessionContext(aggnonce_tmp, ids_tmp, pubshares_tmp, tweaks_tmp, tweak_modes_tmp, msg)
         assert_raises(exception, lambda: partial_sig_agg(psigs_tmp, ids_tmp, session_ctx), except_fn)
