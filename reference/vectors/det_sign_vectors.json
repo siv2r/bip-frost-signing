@@ -1,15 +1,21 @@
 {
     "max_participants": 5,
     "min_participants": 3,
-    "group_public_key": "037940B3ED1FDC360252A6F48058C7B94276DFB6AA2B7D51706FB48326B19E7AE1",
-    "secshare_p1":"81D0D40CDF044588167A987C14552954DB187AC5AD3B1CA40D7B03DCA32AFDFB",
-    "identifiers": [1, 2, 3, 4, 5],
+    "group_public_key": "03F9186397E61022663935B3FDFF7880A9F0EC288D8B054DF6AC2BC5777B5FBBB1",
+    "secshare_p1": "6FF0F78C1F0E76C4AB67C1B32E0B4B1652120B794AC1AE7EC3992DE06092B566",
+    "identifiers": [
+        1,
+        2,
+        3,
+        4,
+        5
+    ],
     "pubshares": [
-        "02BB66437FCAA01292BFB4BB6F19D67818FE693215C36C4663857F1DC8AB8BF4FA",
-        "02C3250013C86AA9C3011CD40B2658CBC5B950DD21FFAA4EDE1BB66E18A063CED5",
-        "03259D7068335012C08C5D80E181969ED7FFA08F7973E3ED9C8C0BFF3EC03C223E",
-        "02A22971750242F6DA35B8DB0DFE74F38A3227118B296ADD2C65E324E2B7EB20AD",
-        "03541293535BB662F8294C4BEB7EA25F55FEAE86C6BAE0CEBD741EAAA28639A6E6",
+        "0260C5B10BAF5D471F0D09ED9BDED80B23CEFE0C9DC0F26AD1A0453A6FDFF663E2",
+        "028B96AE32F17C49C6111D6BF7D17E89428734D6DED0E31C480F2BABD263DDFA28",
+        "029456C5A981CF9DA72BF7AF0F82C44A343DC08419911286E975D16697D93B9A61",
+        "030CAA62081616E0B833FBD39A1058C1A11A23FB8307127D486914E8BF2E5935BB",
+        "03E483B7D41072D6E883447EB85617A086290EB67B40C89F3A787CF1B66005F488",
         "020000000000000000000000000000000000000000000000000000000000000007"
     ],
     "msgs": [
@@ -20,183 +26,314 @@
     "valid_test_cases": [
         {
             "rand": "0000000000000000000000000000000000000000000000000000000000000000",
-            "aggothernonce": "02FCDBEE416E4426FB4004BAB2B416164845DEC27337AD2B96184236D715965AB2039F71F389F6808DC6176F062F80531E13EA5BC2612B690FC284AE66C2CD859CE9",
-            "id_indices": [0, 1, 2],
-            "pubshare_indices": [0, 1, 2],
+            "aggothernonce": "0213D29E3E76BC742FD1229AAB5B723D5B6BF9F0C9A08E7FAED8389728EEE319720223AAACF1C1200E764BE964AB3A0D72EC2EDB68C0B750AAD6430D30DC3DB948FD",
+            "id_indices": [
+                0,
+                1,
+                2
+            ],
+            "pubshare_indices": [
+                0,
+                1,
+                2
+            ],
             "tweaks": [],
             "is_xonly": [],
             "msg_index": 0,
             "signer_index": 0,
             "expected": [
-                "038E14A90FB2C66535B42850F009E2F1857000433042EE647066034FDE7F5A3F3C026CD7BDD51BE1490486F1E905B90020CB8294AFE7B6A051069C07D3B2FD9DC12A",
-                "89FA301CA35D6BD839089D0EBA7EA16B2C90818103BAA85F92FE6C01F0E0FB61"
+                "02797030BB92CCC543328AE3694912E0C695B31434BED9B1F54179070F6A5CC23F02E0A46F1F31AAF21697649D9C610D5069183C97BF55BE5CD8205D95B97E29AD58",
+                "C2A1484B4C8518D1300B1177785D408364B19AE6C0FE570339506568599151A3"
             ],
             "comment": "Signing with minimum number of participants"
         },
         {
             "rand": "0000000000000000000000000000000000000000000000000000000000000000",
-            "aggothernonce": "02FCDBEE416E4426FB4004BAB2B416164845DEC27337AD2B96184236D715965AB2039F71F389F6808DC6176F062F80531E13EA5BC2612B690FC284AE66C2CD859CE9",
-            "id_indices": [1, 0, 2],
-            "pubshare_indices": [1, 0, 2],
+            "aggothernonce": "020E0F2E2DB618128F7FAEC01D8C861BB62DF24751AA4D4C72FD121B900B5228AD03CB1A8E5F9B695FA0D98BAC1D9D6A7EE841E578FDD2A92154F7E3868B7124DA1C",
+            "id_indices": [
+                1,
+                0,
+                2
+            ],
+            "pubshare_indices": [
+                1,
+                0,
+                2
+            ],
             "tweaks": [],
             "is_xonly": [],
             "msg_index": 0,
             "signer_index": 1,
             "expected": [
-                "038E14A90FB2C66535B42850F009E2F1857000433042EE647066034FDE7F5A3F3C026CD7BDD51BE1490486F1E905B90020CB8294AFE7B6A051069C07D3B2FD9DC12A",
-                "89FA301CA35D6BD839089D0EBA7EA16B2C90818103BAA85F92FE6C01F0E0FB61"
+                "0298181EF98F083A6532C9927D862E695988C32248803E0DF9E6EE928C414E72310227C3976F753B6E19ED05B626D175BBFBBDC50D2F3ECDF242ED0DE650190B6477",
+                "B8F51E2439193FC5B6E084724D806854D88C07F3CCAD5F12063A4DD83B6BEBD1"
             ],
             "comment": "Partial-signature shouldn't change if the order of signers set changes. Note: The deterministic sign will generate the same secnonces due to unchanged parameters"
         },
         {
             "rand": "0000000000000000000000000000000000000000000000000000000000000000",
-            "aggothernonce": "02FCDBEE416E4426FB4004BAB2B416164845DEC27337AD2B96184236D715965AB2039F71F389F6808DC6176F062F80531E13EA5BC2612B690FC284AE66C2CD859CE9",
-            "id_indices": [2, 1, 0],
-            "pubshare_indices": [2, 1, 0],
-            "tweaks": [],
-            "is_xonly": [],
-            "msg_index": 0,
-            "signer_index": 2,
-            "expected": [
-                "038E14A90FB2C66535B42850F009E2F1857000433042EE647066034FDE7F5A3F3C026CD7BDD51BE1490486F1E905B90020CB8294AFE7B6A051069C07D3B2FD9DC12A",
-                "89FA301CA35D6BD839089D0EBA7EA16B2C90818103BAA85F92FE6C01F0E0FB61"
+            "aggothernonce": "027BB05D8B1B72ADF014CA75FFD1DBC0751CF6F6701DCB8F00EE8D14819D36FA0103E43F43CD74416248AEE796A9E55EC5AC5F335B37AB9D9A2D8BC7B988719E577C",
+            "id_indices": [
+                0,
+                3,
+                4
             ],
-            "comment": "Partial-signature shouldn't change if the order of signers set changes. Note: The deterministic sign will generate the same secnonces due to unchanged parameters"
-        },
-        {
-            "rand": "0000000000000000000000000000000000000000000000000000000000000000",
-            "aggothernonce": "02FCDBEE416E4426FB4004BAB2B416164845DEC27337AD2B96184236D715965AB2039F71F389F6808DC6176F062F80531E13EA5BC2612B690FC284AE66C2CD859CE9",
-            "id_indices": [0, 3, 4],
-            "pubshare_indices": [0, 3, 4],
+            "pubshare_indices": [
+                0,
+                3,
+                4
+            ],
             "tweaks": [],
             "is_xonly": [],
             "msg_index": 0,
             "signer_index": 0,
             "expected": [
-                "038E14A90FB2C66535B42850F009E2F1857000433042EE647066034FDE7F5A3F3C026CD7BDD51BE1490486F1E905B90020CB8294AFE7B6A051069C07D3B2FD9DC12A",
-                "E5C27E441A9D433CDC4A36F669967E4304435CE5E6E7722D871237C3B4A2EC99"
+                "0302D3C4D08CC1CCA3D3247A0F9037DE6BBB4BBBAE103C1F07F3B19D0BD821288803B34C402DF30B8FF47652C4CF54C04416D7676F2AFBF12C1ED1DD2B31F4BA5229",
+                "24DD5CABB89D11BD23AEF6C6320028E6BF04D745E4AF41F4D7AE4662C3873EE9"
             ],
             "comment": "Partial-signature changes if the members of signers set changes"
         },
         {
             "rand": null,
-            "aggothernonce": "02D26EF7E09A4BC0A2CF295720C64BAD56A28EF50B6BECBD59AF6F3ADE6C2480C503D11B9993AE4C2D38EA2591287F7B744976F0F0B79104B96D6399507FC533E893",
-            "id_indices": [0, 1, 2, 3],
-            "pubshare_indices": [0, 1, 2, 3],
+            "aggothernonce": "028ECB34F618EDD8E01F9DDE4BC303D5C8C081C0AE7C5E2703A593DB8B410EC68602F5401EA7D2CEB7CEBA7DCD944427E8E7AB2CDB0893F54ACA8002D4F629B56B9F",
+            "id_indices": [
+                0,
+                1,
+                2
+            ],
+            "pubshare_indices": [
+                0,
+                1,
+                2
+            ],
             "tweaks": [],
             "is_xonly": [],
             "msg_index": 0,
             "signer_index": 0,
             "expected": [
-                "02EEE6300500FB508012424A0F47621F9A844A939020DD64C4254939D848B675A5037BDEA362CBE55D6D36A7635FC21ED8AC2FA05E9B63A8242E07969F6E2D4E36E5",
-                "97440C51FCB602911455E6147938F5B81C0C1AF32ADAFD98F5A66A4616289D5D"
+                "03ED0354DE40A57BF7DD8AE974DF7E924CCBE3E98635CEE0CEBF9122B0A87776E40230AC4F0B056F5C695BE64B7EB671C34046F1F6886B2CAD6E67DD525B9FFB2678",
+                "80C0EDA651663E2CB65EEE4307282D694F059484A8236D476BF141CB9719EEE7"
             ],
             "comment": "Signing without auxiliary randomness"
         },
         {
             "rand": "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF",
-            "aggothernonce": "03C7E3D6456228347B658911BF612967F36C7791C24F9607ADB34E09F8CC1126D803D2C9C6E3D1A11463F8C2D57B145A814F5D44FD1A42F7A024140AC30D48EE0BEE",
-            "id_indices": [0, 1, 2, 3, 4],
-            "pubshare_indices": [0, 1, 2, 3, 4],
+            "aggothernonce": "02AEB6CB8631282E221B7688E3147BB544A1038AF0D09B81769E4656D3CF8C5AD202A5AC7DDF391347D3520C5B45BEAEC5D4A3C3971DD36961D3D5F51BFD39DEDD38",
+            "id_indices": [
+                0,
+                1,
+                2
+            ],
+            "pubshare_indices": [
+                0,
+                1,
+                2
+            ],
             "tweaks": [],
             "is_xonly": [],
             "msg_index": 0,
             "signer_index": 0,
             "expected": [
-                "020EBAD8A2F6099A0A0A62439F0A2A0E7DF6918DDE55183AFFF112DF2940FF76DE026C4A1C132CF16CFCFC28FEB02651C44719C900DF6F16407711CA8DB31E2A46B8",
-                "83271933ECB71C566F3BA61A645B1396251CBF7EDA77B1D2AF5C689003AB631B"
+                "031E9E4C323358CA94230A58BB2106FF1E7DB61D39140A72C5977B99F4DBC55CAA02FE99098A3A88283143F01F603387F164E3CC239AB9F3947A5695054CCA7AB1E2",
+                "8071DC07ABFC4C86462635CC65BAE75AF0799D7BCCB084BC3E75539C61DACC82"
             ],
-            "comment": "Signing with maximum number of participants and maximum auxiliary randomness value"
+            "comment": "Signing with max auxiliary randomness"
         },
         {
             "rand": "0000000000000000000000000000000000000000000000000000000000000000",
-            "aggothernonce": "02FCDBEE416E4426FB4004BAB2B416164845DEC27337AD2B96184236D715965AB2039F71F389F6808DC6176F062F80531E13EA5BC2612B690FC284AE66C2CD859CE9",
-            "id_indices": [0, 1, 2],
-            "pubshare_indices": [0, 1, 2],
+            "aggothernonce": "0285527346501F0CF58180DDACEC0303C440A5F1979E1D5DDC095BC69E90C890AE02D83EAF404F8334B3718E93B4A6D400116A3BE5650060E259FD3F9583238FE719",
+            "id_indices": [
+                0,
+                1,
+                2,
+                3
+            ],
+            "pubshare_indices": [
+                0,
+                1,
+                2,
+                3
+            ],
+            "tweaks": [],
+            "is_xonly": [],
+            "msg_index": 0,
+            "signer_index": 0,
+            "expected": [
+                "02D33E23B5027B30C2728D2A2C5517C64113B99CB730ED6EE2D6C3ED870D6C27460318EFCB7B6D506C64DB2AD4139576096E77594840C8ED759E3E12AC084EA605C1",
+                "D5E8C5EF5387B831F1225CDB17EFB14496957769DDDE71C6247F2A2723EA912F"
+            ],
+            "comment": "Signing with t < no of participants < n"
+        },
+        {
+            "rand": "0000000000000000000000000000000000000000000000000000000000000000",
+            "aggothernonce": "033106B0B7046D4268BE15D33BFF0FA6BEB7AC6C63E1A7CA076CB2299F9C7F4F5403AD2DFC59616CC47CBB6EAE1D0F80ABEB29558A47CC3096153B3F89B95681790E",
+            "id_indices": [
+                0,
+                1,
+                2,
+                3,
+                4
+            ],
+            "pubshare_indices": [
+                0,
+                1,
+                2,
+                3,
+                4
+            ],
+            "tweaks": [],
+            "is_xonly": [],
+            "msg_index": 0,
+            "signer_index": 0,
+            "expected": [
+                "02353FEFB48A09807D37D6040CB6CB9335D4A0F870A01C7399C4CCDD3E154E5802028E4150FD0C02FD4CC2BF63A428D1BD8CCC9A582B198C0EC767A66B6DB0E853BB",
+                "647C343F066ABD6F0E72E2C788E6937994CE77BEDC77DA85D50EBF34E7A51149"
+            ],
+            "comment": "Signing with maximum number of participants"
+        },
+        {
+            "rand": "0000000000000000000000000000000000000000000000000000000000000000",
+            "aggothernonce": "0366A9BBD0FC622AB6FE672AAF557253B53F907A830DBE1772738510A0DA2EDEC1037F2ED964BE01FDC02D095C5BBFC25CCD6378FE1EF43DFC5225CA17D088C3190D",
+            "id_indices": [
+                0,
+                1,
+                2
+            ],
+            "pubshare_indices": [
+                0,
+                1,
+                2
+            ],
             "tweaks": [],
             "is_xonly": [],
             "msg_index": 1,
             "signer_index": 0,
             "expected": [
-                "0203375B47194F99B8B682B9DCDFB972A066C243BC7AA951A792FF02A707A3C7870367C40EE43583D0FC0F44696BED09D9B89652FC45B738FF03AF8ECA854A5424B1",
-                "2D2F6A697B0632291E3240D9E48F82A454EEB9F566987CB5E7612C0B75D41208"
+                "025DE0E382D19FBA9B6184B53E677DF2ABE80BEFB6673973EDEB0353010FA3052002F798E4794B686B9F8F4A0B7AC785345FC46C7B1E196643152814B8FF93A4B636",
+                "08CC0CA176647F31A6BFB06FE6958BF1CDEF7C0920E47FF029BE0D1443325CE3"
             ],
             "comment": "Empty message"
         },
         {
             "rand": "0000000000000000000000000000000000000000000000000000000000000000",
-            "aggothernonce": "02FCDBEE416E4426FB4004BAB2B416164845DEC27337AD2B96184236D715965AB2039F71F389F6808DC6176F062F80531E13EA5BC2612B690FC284AE66C2CD859CE9",
-            "id_indices": [0, 1, 2],
-            "pubshare_indices": [0, 1, 2],
+            "aggothernonce": "031111FEA894361402C6BCAA1A62116041E1188BB6D1736A77830EF08F377FBAB003C2B19EB56ABBD76B037A4274E7A33C276A8467297575E7CF577385253252EC92",
+            "id_indices": [
+                0,
+                1,
+                2
+            ],
+            "pubshare_indices": [
+                0,
+                1,
+                2
+            ],
             "tweaks": [],
             "is_xonly": [],
             "msg_index": 2,
             "signer_index": 0,
             "expected": [
-                "0256B5FD4623C09A0E073CE04FF488DA0C4319A528CBA3FC26307682AD2CAD069003F8E94981F0D4A0A879CFAEEE0A060DF1E12889FB7C3CEAC498310827F63CBDE2",
-                "347C67E959FCA9460F907C0D2CAF5DD427E5CFD7E15330BA38DA6E986ED91B0E"
+                "031E524A3AB3A4AB6DCA2D3CF299D9D713A0F0F361AF3946314B2520981885EBBD03040C42A117CDA8A27A2E276EDE3F2BE89381AC67D69A5F746143257D6C9DE305",
+                "C0CB13E21496F72D90FBC44E2E3C5A5E5E4482E6FA546EE6420ACE429E520F3B"
             ],
             "comment": "Message longer than 32 bytes (38-byte msg)"
         },
         {
             "rand": "0000000000000000000000000000000000000000000000000000000000000000",
-            "aggothernonce": "02FCDBEE416E4426FB4004BAB2B416164845DEC27337AD2B96184236D715965AB2039F71F389F6808DC6176F062F80531E13EA5BC2612B690FC284AE66C2CD859CE9",
-            "id_indices": [0, 1, 2],
-            "pubshare_indices": [0, 1, 2],
-            "tweaks": ["E8F791FF9225A2AF0102AFFF4A9A723D9612A682A25EBE79802B263CDFCD83BB"],
-            "is_xonly": [true],
+            "aggothernonce": "0213D29E3E76BC742FD1229AAB5B723D5B6BF9F0C9A08E7FAED8389728EEE319720223AAACF1C1200E764BE964AB3A0D72EC2EDB68C0B750AAD6430D30DC3DB948FD",
+            "id_indices": [
+                0,
+                1,
+                2
+            ],
+            "pubshare_indices": [
+                0,
+                1,
+                2
+            ],
+            "tweaks": [
+                "E8F791FF9225A2AF0102AFFF4A9A723D9612A682A25EBE79802B263CDFCD83BB"
+            ],
+            "is_xonly": [
+                true
+            ],
             "msg_index": 0,
             "signer_index": 0,
             "expected": [
-                "0341E28C13AB55A689C4698F31AD68250636B9E41FACCB0D358B4BD9A3DF09B1920311E0CED48F4B3B51E010159D3657FD8EC9DFF1FD30AD28FC126F62AA1C53C451",
-                "817169757CF62879BCB2F1DFE895E6781664CA0D18534290C22EC0E40187B7FC"
+                "0344F294A4446CCCF497F28A3B7CE0AC31EC138E701121C933E73272B95786B28502CB2AF7D73448FB2DD11ED0856F6707164F89A3C417B8B15FC3E7B88DA21A7E49",
+                "AC161B40380FC36E064BC5E5A99ADF2D0D54E82BD588E565718D495445138BAC"
             ],
-            "comment": "Tweaked group public key"
+            "comment": "Signing with tweaks"
         }
     ],
-    "sign_error_test_cases": [
+    "error_test_cases": [
         {
             "rand": "0000000000000000000000000000000000000000000000000000000000000000",
             "aggothernonce": "02FCDBEE416E4426FB4004BAB2B416164845DEC27337AD2B96184236D715965AB2039F71F389F6808DC6176F062F80531E13EA5BC2612B690FC284AE66C2CD859CE9",
-            "id_indices": [3, 1, 2],
-            "pubshare_indices": [0, 1, 2],
+            "id_indices": [
+                3,
+                1,
+                2
+            ],
+            "pubshare_indices": [
+                0,
+                1,
+                2
+            ],
             "tweaks": [],
             "is_xonly": [],
             "msg_index": 0,
             "signer_index": null,
             "signer_id": 1,
             "error": {
-                "type": "value",
+                "type": "ValueError",
                 "message": "The signer's id must be present in the participant identifier list."
             },
-            "comment": "The signer's id is not in the participant identifier list."
+            "comment": "The signer's id is not in the participant identifier list"
         },
         {
             "rand": "0000000000000000000000000000000000000000000000000000000000000000",
-            "aggothernonce": "02FCDBEE416E4426FB4004BAB2B416164845DEC27337AD2B96184236D715965AB2039F71F389F6808DC6176F062F80531E13EA5BC2612B690FC284AE66C2CD859CE9",
-            "id_indices": [0, 1, 2, 1],
-            "pubshare_indices": [0, 1, 2, 1],
+            "aggothernonce": "02AC09CB4AFB2C0E17E511E328C2F554CEC4EBF351A3E5A0DAB9411C338900A04E02282EFBABFAA97CD281FBB1D8DFD1AF839FBC28129DB52E09BEF43C3657BD729D",
+            "id_indices": [
+                0,
+                1,
+                2,
+                1
+            ],
+            "pubshare_indices": [
+                0,
+                1,
+                2,
+                1
+            ],
             "tweaks": [],
             "is_xonly": [],
             "msg_index": 0,
             "signer_index": 0,
             "error": {
-                "type": "value",
+                "type": "ValueError",
                 "message": "The participant identifier list must contain unique elements."
             },
-            "comment": "The participant identifier list contains duplicate elements."
+            "comment": "The participant identifier list contains duplicate elements"
         },
         {
             "rand": "0000000000000000000000000000000000000000000000000000000000000000",
-            "aggothernonce": "02FCDBEE416E4426FB4004BAB2B416164845DEC27337AD2B96184236D715965AB2039F71F389F6808DC6176F062F80531E13EA5BC2612B690FC284AE66C2CD859CE9",
-            "id_indices": [0, 1, 2],
-            "pubshare_indices": [3, 1, 2],
+            "aggothernonce": "0213D29E3E76BC742FD1229AAB5B723D5B6BF9F0C9A08E7FAED8389728EEE319720223AAACF1C1200E764BE964AB3A0D72EC2EDB68C0B750AAD6430D30DC3DB948FD",
+            "id_indices": [
+                0,
+                1,
+                2
+            ],
+            "pubshare_indices": [
+                3,
+                1,
+                2
+            ],
             "tweaks": [],
             "is_xonly": [],
             "msg_index": 0,
             "signer_index": 0,
             "error": {
-                "type": "value",
+                "type": "ValueError",
                 "message": "The signer's pubshare must be included in the list of pubshares."
             },
             "comment": "The signer's pubshare is not in the list of pubshares. This test case is optional: it can be skipped by implementations that do not check that the signer's pubshare is included in the list of pubshares."
@@ -204,30 +341,45 @@
         {
             "rand": "0000000000000000000000000000000000000000000000000000000000000000",
             "aggothernonce": "02FCDBEE416E4426FB4004BAB2B416164845DEC27337AD2B96184236D715965AB2039F71F389F6808DC6176F062F80531E13EA5BC2612B690FC284AE66C2CD859CE9",
-            "id_indices": [0, 1, 2],
-            "pubshare_indices": [0, 1],
+            "id_indices": [
+                0,
+                1,
+                2
+            ],
+            "pubshare_indices": [
+                0,
+                1
+            ],
             "tweaks": [],
             "is_xonly": [],
             "msg_index": 0,
             "signer_index": 0,
             "error": {
-                "type": "value",
+                "type": "ValueError",
                 "message": "The pubshares and ids arrays must have the same length."
             },
             "comment": "The participant identifiers count exceed the participant public shares count"
         },
         {
             "rand": "0000000000000000000000000000000000000000000000000000000000000000",
-            "aggothernonce": "02FCDBEE416E4426FB4004BAB2B416164845DEC27337AD2B96184236D715965AB2039F71F389F6808DC6176F062F80531E13EA5BC2612B690FC284AE66C2CD859CE9",
-            "id_indices": [0, 1, 2],
-            "pubshare_indices": [0, 1, 5],
+            "aggothernonce": "0213D29E3E76BC742FD1229AAB5B723D5B6BF9F0C9A08E7FAED8389728EEE319720223AAACF1C1200E764BE964AB3A0D72EC2EDB68C0B750AAD6430D30DC3DB948FD",
+            "id_indices": [
+                0,
+                1,
+                2
+            ],
+            "pubshare_indices": [
+                0,
+                1,
+                5
+            ],
             "tweaks": [],
             "is_xonly": [],
             "msg_index": 0,
             "signer_index": 0,
             "error": {
-                "type": "invalid_contribution",
-                "signer_id": 3,
+                "type": "InvalidContributionError",
+                "id": 3,
                 "contrib": "pubshare"
             },
             "comment": "Signer 3 provided an invalid participant public share"
@@ -235,15 +387,23 @@
         {
             "rand": "0000000000000000000000000000000000000000000000000000000000000000",
             "aggothernonce": "048465FCF0BBDBCF443AABCCE533D42B4B5A10966AC09A49655E8C42DAAB8FCD61037496A3CC86926D452CAFCFD55D25972CA1675D549310DE296BFF42F72EEEA8C9",
-            "id_indices": [0, 1, 2],
-            "pubshare_indices": [0, 1, 2],
+            "id_indices": [
+                0,
+                1,
+                2
+            ],
+            "pubshare_indices": [
+                0,
+                1,
+                2
+            ],
             "tweaks": [],
             "is_xonly": [],
             "msg_index": 0,
             "signer_index": 0,
             "error": {
-                "type": "invalid_contribution",
-                "signer_id": null,
+                "type": "InvalidContributionError",
+                "id": null,
                 "contrib": "aggothernonce"
             },
             "comment": "aggothernonce is invalid due wrong tag, 0x04, in the first half"
@@ -251,30 +411,50 @@
         {
             "rand": "0000000000000000000000000000000000000000000000000000000000000000",
             "aggothernonce": "0000000000000000000000000000000000000000000000000000000000000000000287BF891D2A6DEAEBADC909352AA9405D1428C15F4B75F04DAE642A95C2548480",
-            "id_indices": [0, 1, 2],
-            "pubshare_indices": [0, 1, 2],
+            "id_indices": [
+                0,
+                1,
+                2
+            ],
+            "pubshare_indices": [
+                0,
+                1,
+                2
+            ],
             "tweaks": [],
             "is_xonly": [],
             "msg_index": 0,
             "signer_index": 0,
             "error": {
-                "type": "invalid_contribution",
-                "signer_id": null,
+                "type": "InvalidContributionError",
+                "id": null,
                 "contrib": "aggothernonce"
             },
             "comment": "aggothernonce is invalid because first half corresponds to point at infinity"
         },
         {
             "rand": "0000000000000000000000000000000000000000000000000000000000000000",
-            "aggothernonce": "02FCDBEE416E4426FB4004BAB2B416164845DEC27337AD2B96184236D715965AB2039F71F389F6808DC6176F062F80531E13EA5BC2612B690FC284AE66C2CD859CE9",
-            "id_indices": [0, 1, 2],
-            "pubshare_indices": [0, 1, 2],
-            "tweaks": ["FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141"],
-            "is_xonly": [false],
+            "aggothernonce": "0213D29E3E76BC742FD1229AAB5B723D5B6BF9F0C9A08E7FAED8389728EEE319720223AAACF1C1200E764BE964AB3A0D72EC2EDB68C0B750AAD6430D30DC3DB948FD",
+            "id_indices": [
+                0,
+                1,
+                2
+            ],
+            "pubshare_indices": [
+                0,
+                1,
+                2
+            ],
+            "tweaks": [
+                "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141"
+            ],
+            "is_xonly": [
+                false
+            ],
             "msg_index": 0,
             "signer_index": 0,
             "error": {
-                "type": "value",
+                "type": "ValueError",
                 "message": "The tweak must be less than n."
             },
             "comment": "Tweak is invalid because it exceeds group size"
