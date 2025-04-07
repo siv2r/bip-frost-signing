@@ -5,11 +5,11 @@
             "min_participants": 3,
             "group_public_key": "03F9186397E61022663935B3FDFF7880A9F0EC288D8B054DF6AC2BC5777B5FBBB1",
             "participant_identifiers": [
+                0,
                 1,
                 2,
                 3,
-                4,
-                5
+                4
             ],
             "participant_pubshares": [
                 "0260C5B10BAF5D471F0D09ED9BDED80B23CEFE0C9DC0F26AD1A0453A6FDFF663E2",
@@ -33,11 +33,11 @@
             "min_participants": 3,
             "group_public_key": "03F9186397E61022663935B3FDFF7880A9F0EC288D8B054DF6AC2BC5777B5FBBB1",
             "participant_identifiers": [
+                0,
                 1,
                 2,
                 3,
-                4,
-                5
+                4
             ],
             "participant_pubshares": [
                 "0360C5B10BAF5D471F0D09ED9BDED80B23CEFE0C9DC0F26AD1A0453A6FDFF663E2",
@@ -61,11 +61,11 @@
             "min_participants": 3,
             "group_public_key": "02F9186397E61022663935B3FDFF7880A9F0EC288D8B054DF6AC2BC5777B5FBBB1",
             "participant_identifiers": [
+                0,
                 1,
                 2,
                 3,
-                4,
-                5
+                4
             ],
             "participant_pubshares": [
                 "0260C5B10BAF5D471F0D09ED9BDED80B23CEFE0C9DC0F26AD1A0453A6FDFF663E2",

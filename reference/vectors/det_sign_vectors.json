@@ -4,11 +4,11 @@
     "group_public_key": "03F9186397E61022663935B3FDFF7880A9F0EC288D8B054DF6AC2BC5777B5FBBB1",
     "secshare_p1": "6FF0F78C1F0E76C4AB67C1B32E0B4B1652120B794AC1AE7EC3992DE06092B566",
     "identifiers": [
+        0,
         1,
         2,
         3,
-        4,
-        5
+        4
     ],
     "pubshares": [
         "0260C5B10BAF5D471F0D09ED9BDED80B23CEFE0C9DC0F26AD1A0453A6FDFF663E2",
@@ -43,7 +43,7 @@
             "signer_index": 0,
             "expected": [
                 "02797030BB92CCC543328AE3694912E0C695B31434BED9B1F54179070F6A5CC23F02E0A46F1F31AAF21697649D9C610D5069183C97BF55BE5CD8205D95B97E29AD58",
-                "C2A1484B4C8518D1300B1177785D408364B19AE6C0FE570339506568599151A3"
+                "41A225B68A2E3DE5001D580F178216009ED30039AB1D1F44EDE6E1BEAE67C167"
             ],
             "comment": "Signing with minimum number of participants"
         },
@@ -66,7 +66,7 @@
             "signer_index": 1,
             "expected": [
                 "0298181EF98F083A6532C9927D862E695988C32248803E0DF9E6EE928C414E72310227C3976F753B6E19ED05B626D175BBFBBDC50D2F3ECDF242ED0DE650190B6477",
-                "B8F51E2439193FC5B6E084724D806854D88C07F3CCAD5F12063A4DD83B6BEBD1"
+                "0301992329720756528A28275620472B25A9CC9C0B742E607051319C07593505"
             ],
             "comment": "Partial-signature shouldn't change if the order of signers set changes. Note: The deterministic sign will generate the same secnonces due to unchanged parameters"
         },
@@ -89,7 +89,7 @@
             "signer_index": 0,
             "expected": [
                 "0302D3C4D08CC1CCA3D3247A0F9037DE6BBB4BBBAE103C1F07F3B19D0BD821288803B34C402DF30B8FF47652C4CF54C04416D7676F2AFBF12C1ED1DD2B31F4BA5229",
-                "24DD5CABB89D11BD23AEF6C6320028E6BF04D745E4AF41F4D7AE4662C3873EE9"
+                "24F39311027EE1579E1E08FE3C34393475766CAC1D23789CB8A71C29537A436E"
             ],
             "comment": "Partial-signature changes if the members of signers set changes"
         },
@@ -112,7 +112,7 @@
             "signer_index": 0,
             "expected": [
                 "03ED0354DE40A57BF7DD8AE974DF7E924CCBE3E98635CEE0CEBF9122B0A87776E40230AC4F0B056F5C695BE64B7EB671C34046F1F6886B2CAD6E67DD525B9FFB2678",
-                "80C0EDA651663E2CB65EEE4307282D694F059484A8236D476BF141CB9719EEE7"
+                "C46C61A6C37136C91A906417321FAFD9ECE23E376706AC1ED266999C63475D35"
             ],
             "comment": "Signing without auxiliary randomness"
         },
@@ -135,7 +135,7 @@
             "signer_index": 0,
             "expected": [
                 "031E9E4C323358CA94230A58BB2106FF1E7DB61D39140A72C5977B99F4DBC55CAA02FE99098A3A88283143F01F603387F164E3CC239AB9F3947A5695054CCA7AB1E2",
-                "8071DC07ABFC4C86462635CC65BAE75AF0799D7BCCB084BC3E75539C61DACC82"
+                "AE6B3D7B276A534B083089B5447F739495E29E7D82EAB8F826B7EBA15AC352B6"
             ],
             "comment": "Signing with max auxiliary randomness"
         },
@@ -160,7 +160,7 @@
             "signer_index": 0,
             "expected": [
                 "02D33E23B5027B30C2728D2A2C5517C64113B99CB730ED6EE2D6C3ED870D6C27460318EFCB7B6D506C64DB2AD4139576096E77594840C8ED759E3E12AC084EA605C1",
-                "D5E8C5EF5387B831F1225CDB17EFB14496957769DDDE71C6247F2A2723EA912F"
+                "A37FB870C75150EE624C756883F717D3D71D449BD9D2A93127C65BEA02EBC316"
             ],
             "comment": "Signing with t < no of participants < n"
         },
@@ -187,7 +187,7 @@
             "signer_index": 0,
             "expected": [
                 "02353FEFB48A09807D37D6040CB6CB9335D4A0F870A01C7399C4CCDD3E154E5802028E4150FD0C02FD4CC2BF63A428D1BD8CCC9A582B198C0EC767A66B6DB0E853BB",
-                "647C343F066ABD6F0E72E2C788E6937994CE77BEDC77DA85D50EBF34E7A51149"
+                "E3A1005520BE1A090843D2DEBB0ED58763B9BAC68BDD022BB9C4BF7AAF2B12FF"
             ],
             "comment": "Signing with maximum number of participants"
         },
@@ -210,7 +210,7 @@
             "signer_index": 0,
             "expected": [
                 "025DE0E382D19FBA9B6184B53E677DF2ABE80BEFB6673973EDEB0353010FA3052002F798E4794B686B9F8F4A0B7AC785345FC46C7B1E196643152814B8FF93A4B636",
-                "08CC0CA176647F31A6BFB06FE6958BF1CDEF7C0920E47FF029BE0D1443325CE3"
+                "5D5F50CDF275E8FC0C0C30244858FB0A053924E76C0468176418528A514E280B"
             ],
             "comment": "Empty message"
         },
@@ -233,7 +233,7 @@
             "signer_index": 0,
             "expected": [
                 "031E524A3AB3A4AB6DCA2D3CF299D9D713A0F0F361AF3946314B2520981885EBBD03040C42A117CDA8A27A2E276EDE3F2BE89381AC67D69A5F746143257D6C9DE305",
-                "C0CB13E21496F72D90FBC44E2E3C5A5E5E4482E6FA546EE6420ACE429E520F3B"
+                "0BC055DE21CE6D55994E46C14E7B9DB20D2C6E4517DFCC3395A108A6C0F6680E"
             ],
             "comment": "Message longer than 32 bytes (38-byte msg)"
         },
@@ -260,7 +260,7 @@
             "signer_index": 0,
             "expected": [
                 "0344F294A4446CCCF497F28A3B7CE0AC31EC138E701121C933E73272B95786B28502CB2AF7D73448FB2DD11ED0856F6707164F89A3C417B8B15FC3E7B88DA21A7E49",
-                "AC161B40380FC36E064BC5E5A99ADF2D0D54E82BD588E565718D495445138BAC"
+                "8F4E139B534E8F38ED20BF5DDAF63272EE22CA294A3C8287C150BD9DD38748D5"
             ],
             "comment": "Signing with tweaks"
         }
@@ -283,7 +283,7 @@
             "is_xonly": [],
             "msg_index": 0,
             "signer_index": null,
-            "signer_id": 1,
+            "signer_id": 0,
             "error": {
                 "type": "ValueError",
                 "message": "The signer's id must be present in the participant identifier list."
@@ -379,7 +379,7 @@
             "signer_index": 0,
             "error": {
                 "type": "InvalidContributionError",
-                "id": 3,
+                "id": 2,
                 "contrib": "pubshare"
             },
             "comment": "Signer 3 provided an invalid participant public share"

@@ -4,11 +4,11 @@
     "group_public_key": "03F9186397E61022663935B3FDFF7880A9F0EC288D8B054DF6AC2BC5777B5FBBB1",
     "secshare_p1": "6FF0F78C1F0E76C4AB67C1B32E0B4B1652120B794AC1AE7EC3992DE06092B566",
     "identifiers": [
+        0,
         1,
         2,
         3,
-        4,
-        5
+        4
     ],
     "pubshares": [
         "0260C5B10BAF5D471F0D09ED9BDED80B23CEFE0C9DC0F26AD1A0453A6FDFF663E2",
@@ -66,7 +66,7 @@
             "aggnonce_index": 0,
             "msg_index": 0,
             "signer_index": 0,
-            "expected": "A26B90932361F701258E5DC49134CF88EBC46DC4244D02683FCE5F3FA0BB66BA",
+            "expected": "B45B8C1195CBFC1904D09BE6E58DDB9A7DFC4100A8DEC40F9E5B80347FA6E1F3",
             "comment": "Signing with minimum number of participants"
         },
         {
@@ -88,7 +88,7 @@
             "aggnonce_index": 0,
             "msg_index": 0,
             "signer_index": 1,
-            "expected": "A26B90932361F701258E5DC49134CF88EBC46DC4244D02683FCE5F3FA0BB66BA",
+            "expected": "B45B8C1195CBFC1904D09BE6E58DDB9A7DFC4100A8DEC40F9E5B80347FA6E1F3",
             "comment": "Partial-signature doesn't change if the order of signers set changes (without changing secnonces)"
         },
         {
@@ -110,7 +110,7 @@
             "aggnonce_index": 1,
             "msg_index": 0,
             "signer_index": 0,
-            "expected": "25BE82BB4E9E1653E278D8C2302D50F9B522A958D157D972DB20D65989ACBE1F",
+            "expected": "3411850FF9714CA76FB447F8A1AC65AB629CEFF559A37316925A3C2FE2E159CA",
             "comment": "Partial-signature changes if the members of signers set changes"
         },
         {
@@ -135,7 +135,7 @@
             "aggnonce_index": 2,
             "msg_index": 0,
             "signer_index": 0,
-            "expected": "7BB4C5DAC7357C5BD9C11C86AC124BF4F4B85123EB1F79E453FB6D728D12803B",
+            "expected": "C4CD316B07118DC18F82D251F0055643A938AF61325DE8CC1BD2093DE8083365",
             "comment": "Signing with t < number of participants < n"
         },
         {
@@ -163,7 +163,7 @@
             "aggnonce_index": 3,
             "msg_index": 0,
             "signer_index": 0,
-            "expected": "220C57F6ACA16A7DCCCFFBEF9FB901F4E16459D69D2CB5880837C3A2224883E0",
+            "expected": "4B0BBE3946CEB999546213FA4CEBF328C48265822C45A11A84E0C9BB15990292",
             "comment": "Signing with max number of participants"
         },
         {
@@ -185,7 +185,7 @@
             "aggnonce_index": 4,
             "msg_index": 0,
             "signer_index": 0,
-            "expected": "9563C60CF3DFCDACB495F45E3815E40564AF3F00E7B0BFA65B95A44EF2FBD890",
+            "expected": "06512BBB8AA35AA2916D3A181562FB1876BF21A3B32E81A7C208DEBAAB61D0A8",
             "comment": "Both halves of aggregate nonce correspond to point at infinity"
         },
         {
@@ -207,7 +207,7 @@
             "aggnonce_index": 0,
             "msg_index": 1,
             "signer_index": 0,
-            "expected": "0FEED91753AAE0D58003AD33F02AE172DD1172CA432EB8F832C8090D68CDA0F3",
+            "expected": "583031C55BA1A0FB625DA9D6081AC88FB03EF181C43025AE6975F48825E73559",
             "comment": "Empty message"
         },
         {
@@ -229,7 +229,7 @@
             "aggnonce_index": 0,
             "msg_index": 2,
             "signer_index": 0,
-            "expected": "DCA61872042A32D3FB27C30DC68442B536478DDF2F6CCAB3D4DCA7B7D9A77606",
+            "expected": "195084A23012D70E44D20169B5ED8694B9DEC24B1E4AF1178F814D1FE3C76E91",
             "comment": "Message longer than 32 bytes (38-byte msg)"
         }
     ],
@@ -248,7 +248,7 @@
             "aggnonce_index": 0,
             "msg_index": 0,
             "signer_index": null,
-            "signer_id": 1,
+            "signer_id": 0,
             "secnonce_index": 0,
             "error": {
                 "type": "ValueError",
@@ -337,7 +337,7 @@
             "secnonce_index": 0,
             "error": {
                 "type": "InvalidContributionError",
-                "id": 3,
+                "id": 2,
                 "contrib": "pubshare"
             },
             "comment": "Signer 3 provided an invalid participant public share"
@@ -432,7 +432,7 @@
     ],
     "verify_fail_test_cases": [
         {
-            "psig": "5D946F6CDC9E08FEDA71A23B6ECB3075CEEA6F228AFB9DD38003FF4D2F7ADA87",
+            "psig": "4BA473EE6A3403E6FB2F64191A7224643CB29BE60669DC2C2176DE58508F5F4E",
             "id_indices": [
                 0,
                 1,
@@ -453,7 +453,7 @@
             "comment": "Wrong signature (which is equal to the negation of valid signature)"
         },
         {
-            "psig": "A26B90932361F701258E5DC49134CF88EBC46DC4244D02683FCE5F3FA0BB66BA",
+            "psig": "B45B8C1195CBFC1904D09BE6E58DDB9A7DFC4100A8DEC40F9E5B80347FA6E1F3",
             "id_indices": [
                 0,
                 1,
@@ -474,7 +474,7 @@
             "comment": "Wrong signer index"
         },
         {
-            "psig": "A26B90932361F701258E5DC49134CF88EBC46DC4244D02683FCE5F3FA0BB66BA",
+            "psig": "B45B8C1195CBFC1904D09BE6E58DDB9A7DFC4100A8DEC40F9E5B80347FA6E1F3",
             "id_indices": [
                 0,
                 1,
@@ -518,7 +518,7 @@
     ],
     "verify_error_test_cases": [
         {
-            "psig": "A26B90932361F701258E5DC49134CF88EBC46DC4244D02683FCE5F3FA0BB66BA",
+            "psig": "B45B8C1195CBFC1904D09BE6E58DDB9A7DFC4100A8DEC40F9E5B80347FA6E1F3",
             "id_indices": [
                 0,
                 1,
@@ -538,13 +538,13 @@
             "signer_index": 0,
             "error": {
                 "type": "InvalidContributionError",
-                "id": 1,
+                "id": 0,
                 "contrib": "pubnonce"
             },
             "comment": "Invalid pubnonce"
         },
         {
-            "psig": "A26B90932361F701258E5DC49134CF88EBC46DC4244D02683FCE5F3FA0BB66BA",
+            "psig": "B45B8C1195CBFC1904D09BE6E58DDB9A7DFC4100A8DEC40F9E5B80347FA6E1F3",
             "id_indices": [
                 0,
                 1,
@@ -564,13 +564,13 @@
             "signer_index": 0,
             "error": {
                 "type": "InvalidContributionError",
-                "id": 1,
+                "id": 0,
                 "contrib": "pubshare"
             },
             "comment": "Invalid pubshare"
         },
         {
-            "psig": "A26B90932361F701258E5DC49134CF88EBC46DC4244D02683FCE5F3FA0BB66BA",
+            "psig": "B45B8C1195CBFC1904D09BE6E58DDB9A7DFC4100A8DEC40F9E5B80347FA6E1F3",
             "id_indices": [
                 0,
                 1,
