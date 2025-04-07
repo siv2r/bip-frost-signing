@@ -4,11 +4,11 @@
     "group_public_key": "03F9186397E61022663935B3FDFF7880A9F0EC288D8B054DF6AC2BC5777B5FBBB1",
     "secshare_p1": "6FF0F78C1F0E76C4AB67C1B32E0B4B1652120B794AC1AE7EC3992DE06092B566",
     "identifiers": [
+        0,
         1,
         2,
         3,
-        4,
-        5
+        4
     ],
     "pubshares": [
         "0260C5B10BAF5D471F0D09ED9BDED80B23CEFE0C9DC0F26AD1A0453A6FDFF663E2",
@@ -61,7 +61,7 @@
             "aggnonce_index": 0,
             "is_xonly": [],
             "signer_index": 0,
-            "expected": "A26B90932361F701258E5DC49134CF88EBC46DC4244D02683FCE5F3FA0BB66BA",
+            "expected": "B45B8C1195CBFC1904D09BE6E58DDB9A7DFC4100A8DEC40F9E5B80347FA6E1F3",
             "comment": "No tweak"
         },
         {
@@ -88,7 +88,7 @@
                 true
             ],
             "signer_index": 0,
-            "expected": "795A83857EDEE590D7F6B480BC0358D30777C789D989CA0A798CA70ED4E9FFC0",
+            "expected": "58FB09FCC09794ED1566B0101F169D82CB2E2FF08070F18ECBFC7351276B68E3",
             "comment": "A single x-only tweak"
         },
         {
@@ -115,7 +115,7 @@
                 false
             ],
             "signer_index": 0,
-            "expected": "0ECBFFC07530897C05884078B1839237E15804A987016C3B258F16C167A9B723",
+            "expected": "830863630570E8EA492FE715ABD1C987DDAB7E2D4E6D05EBB902B5CEAF5A61F5",
             "comment": "A single plain tweak"
         },
         {
@@ -144,7 +144,7 @@
                 true
             ],
             "signer_index": 0,
-            "expected": "1271EF608827FFCC0CD84E43E17A47E7D8CD2500AB0611384FC63CD47DA1563F",
+            "expected": "BD60D37B029E5F40DF8901E2D82CD555A72F01FC9FADEFDB77CAF260C07E5D03",
             "comment": "A plain tweak followed by an x-only tweak"
         },
         {
@@ -177,7 +177,7 @@
                 false
             ],
             "signer_index": 0,
-            "expected": "9EBE0F2EBE6E79576EA26E2A3A4028B719B8FB01CA2BEADC7C3A8DEB17505F0B",
+            "expected": "0F4BC5D13A3BB11C038388699484B931C0205AFD1A23E8FEEC6D5D972F913F41",
             "comment": "Four tweaks: x-only, plain, x-only, plain. If an implementation prohibits applying plain tweaks after x-only tweaks, it can skip this test vector or return an error"
         },
         {
@@ -210,7 +210,7 @@
                 true
             ],
             "signer_index": 0,
-            "expected": "632366977A1F45D9C2A638F2D5FCB018CCDE558B1A1177173004E3E13B299C92",
+            "expected": "7CBAFEF4D47C29C6A4228F23F95A056ADE5BDA7AA1BAE31E81BF63866BDCDBE8",
             "comment": "Four tweaks: plain, plain, x-only, x-only"
         },
         {
@@ -246,7 +246,7 @@
                 true
             ],
             "signer_index": 0,
-            "expected": "C8F99DD8AC79E7242CCC87C3D705F61BAD985116A494BC2450F0C70DC6CBEAD3",
+            "expected": "B753D6F8BC25E2D5F3252975CB8FCDE5D02778B31B20EE824CB3924A9C90857B",
             "comment": "Tweaking with t < number of signers < n. The expected value (partial sig) must match the previous test vector"
         },
         {
@@ -285,7 +285,7 @@
                 true
             ],
             "signer_index": 0,
-            "expected": "C99ADFAA7983E1699850483051F9C18F89A2E3A319AF6B4F9692A1FF88DFD2E9",
+            "expected": "2B029B494C0DBEC46CD0F68D6B0679E87D532AD05488B63267F1DF3A1D117880",
             "comment": "Tweaking with maximum possible signers"
         }
     ],

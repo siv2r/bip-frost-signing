@@ -120,7 +120,7 @@ def generate_keygen_vectors():
         "max_participants": n,
         "min_participants": t,
         "group_public_key": bytes_to_hex(group_pk),
-        "participant_identifiers": list(range(1, n + 1)),
+        "participant_identifiers": list(range(n)),
         "participant_pubshares": bytes_list_to_hex(pubshares),
         "participant_secshares": bytes_list_to_hex(secshares)
     })
@@ -134,7 +134,7 @@ def generate_keygen_vectors():
         "max_participants": n,
         "min_participants": t,
         "group_public_key": bytes_to_hex(group_pk),
-        "participant_identifiers": list(range(1, n + 1)),
+        "participant_identifiers": list(range(n)),
         "participant_pubshares": bytes_list_to_hex(invalid_pubshares),
         "participant_secshares": bytes_list_to_hex(secshares)
     })
@@ -146,7 +146,7 @@ def generate_keygen_vectors():
         "max_participants": n,
         "min_participants": t,
         "group_public_key": bytes_to_hex(invalid_group_pk),
-        "participant_identifiers": list(range(1, n + 1)),
+        "participant_identifiers": list(range(n)),
         "participant_pubshares": bytes_list_to_hex(pubshares),
         "participant_secshares": bytes_list_to_hex(secshares)
     })
@@ -244,9 +244,8 @@ def generate_nonce_agg_vectors():
     # --- Valid Test Case 1 ---
     pubnonce_indices = [0, 1]
     curr_pubnonces = [pubnonces[i] for i in pubnonce_indices]
-    pids = [1, 2]
-    pids_bytes = int_list_to_bytes(pids)
-    aggnonce = nonce_agg(curr_pubnonces, pids_bytes)
+    pids = [0, 1]
+    aggnonce = nonce_agg(curr_pubnonces, pids)
     vectors["valid_test_cases"].append({
         "pubnonce_indices": pubnonce_indices,
         "participant_identifiers": pids,
@@ -255,9 +254,8 @@ def generate_nonce_agg_vectors():
     # --- Valid Test Case 2 ---
     pubnonce_indices = [2, 3]
     curr_pubnonces = [pubnonces[i] for i in pubnonce_indices]
-    pids = [1, 2]
-    pids_bytes = int_list_to_bytes(pids)
-    aggnonce = nonce_agg(curr_pubnonces, pids_bytes)
+    pids = [0, 1]
+    aggnonce = nonce_agg(curr_pubnonces, pids)
     vectors["valid_test_cases"].append({
         "pubnonce_indices": pubnonce_indices,
         "participant_identifiers": pids,
@@ -269,10 +267,9 @@ def generate_nonce_agg_vectors():
     # --- Error Test Case 1 ---
     pubnonce_indices = [0, 4]
     curr_pubnonces = [pubnonces[i] for i in pubnonce_indices]
-    pids = [1, 2]
-    pids_bytes = int_list_to_bytes(pids)
+    pids = [0, 1]
     error = expect_exception(
-        lambda: nonce_agg(curr_pubnonces, pids_bytes),
+        lambda: nonce_agg(curr_pubnonces, pids),
         InvalidContributionError
     )
     vectors["error_test_cases"].append({
@@ -284,10 +281,9 @@ def generate_nonce_agg_vectors():
     # --- Error Test Case 2 ---
     pubnonce_indices = [5, 1]
     curr_pubnonces = [pubnonces[i] for i in pubnonce_indices]
-    pids = [1, 2]
-    pids_bytes = int_list_to_bytes(pids)
+    pids = [0, 1]
     error = expect_exception(
-        lambda: nonce_agg(curr_pubnonces, pids_bytes),
+        lambda: nonce_agg(curr_pubnonces, pids),
         InvalidContributionError
     )
     vectors["error_test_cases"].append({
@@ -299,10 +295,9 @@ def generate_nonce_agg_vectors():
     # --- Error Test Case 3 ---
     pubnonce_indices = [6, 1]
     curr_pubnonces = [pubnonces[i] for i in pubnonce_indices]
-    pids = [1, 2]
-    pids_bytes = int_list_to_bytes(pids)
+    pids = [0, 1]
     error = expect_exception(
-        lambda: nonce_agg(curr_pubnonces, pids_bytes),
+        lambda: nonce_agg(curr_pubnonces, pids),
         InvalidContributionError
     )
     vectors["error_test_cases"].append({
@@ -324,7 +319,7 @@ def generate_sign_verify_vectors():
     n = len(pubshares)
     xonly_group_pk = group_pk[1:]
     secshare_p1 = secshares[0]
-    ids = list(range(1, n + 1))
+    ids = list(range(n))
     assert len(pubshares) == len(secshares)
 
     vectors["max_participants"] = n
@@ -361,7 +356,6 @@ def generate_sign_verify_vectors():
     pubnonces += [invalid_pubnonce, inv_pubnonce]
     vectors["pubnonces"] = bytes_list_to_hex(pubnonces)
 
-    ids_bytes = int_list_to_bytes(ids)
     # create valid aggnonces
     indices_grp = [
         [0, 1, 2],
@@ -372,7 +366,7 @@ def generate_sign_verify_vectors():
     aggnonces = [
         nonce_agg(
             [pubnonces[i] for i in indices],
-            [ids_bytes[i] for i in indices]
+            [ids[i] for i in indices]
         )
         for indices in indices_grp
     ]
@@ -380,7 +374,7 @@ def generate_sign_verify_vectors():
     aggnonces.append(
         nonce_agg(
             [pubnonces[0], pubnonces[1], pubnonces[-1]],
-            [ids_bytes[0], ids_bytes[1], ids_bytes[2]],
+            [ids[0], ids[1], ids[2]],
         )
     )
     # invalid aggnonces
@@ -413,7 +407,7 @@ def generate_sign_verify_vectors():
         {"ids": [0, 1, 2], "pubshares": [0, 1, 2], "pubnonces": [0, 1, 2], "aggnonce": 0, "msg": 2, "signer": 0, "comment": "Message longer than 32 bytes (38-byte msg)"},
     ]
     for case in valid_cases:
-        curr_ids = [ids_bytes[i] for i in case["ids"]]
+        curr_ids = [ids[i] for i in case["ids"]]
         curr_pubshares = [pubshares[i] for i in case["pubshares"]]
         curr_pubnonces = [pubnonces[i] for i in case["pubnonces"]]
         curr_aggnonce = aggnonces[case["aggnonce"]]
@@ -436,7 +430,7 @@ def generate_sign_verify_vectors():
     vectors["sign_error_test_cases"] = []
     # --- Sign Error Test Cases ---
     error_cases = [
-        {"ids": [3, 1, 2], "pubshares": [0, 1, 2], "aggnonce": 0, "msg": 0, "signer_idx": None, "signer_id": 1, "secnonce": 0, "error": "value", "comment": "The signer's id is not in the participant identifier list"},
+        {"ids": [3, 1, 2], "pubshares": [0, 1, 2], "aggnonce": 0, "msg": 0, "signer_idx": None, "signer_id": 0, "secnonce": 0, "error": "value", "comment": "The signer's id is not in the participant identifier list"},
         {"ids": [0, 1, 2, 1], "pubshares": [0, 1, 2, 1], "aggnonce": 0, "msg": 0, "signer_idx": 0, "secnonce": 0, "error": "value", "comment": "The participant identifier list contains duplicate elements"},
         {"ids": [0, 1, 2], "pubshares": [3, 1, 2], "aggnonce": 0, "msg": 0, "signer_idx": 0, "secnonce": 0, "error": "value", "comment": "The signer's pubshare is not in the list of pubshares. This test case is optional: it can be skipped by implementations that do not check that the signer's pubshare is included in the list of pubshares."},
         {"ids": [0, 1, 2], "pubshares": [0, 1], "aggnonce": 0, "msg": 0, "signer_idx": 0, "secnonce": 0, "error": "value", "comment": "The participant identifiers count exceed the participant public shares count"},
@@ -447,12 +441,12 @@ def generate_sign_verify_vectors():
         {"ids": [0, 1, 2], "pubshares": [0, 1, 2], "aggnonce": 0, "msg": 0, "signer_idx": 0, "secnonce": 1, "error": "value", "comment": "Secnonce is invalid which may indicate nonce reuse"},
     ]
     for case in error_cases:
-        curr_ids = [ids_bytes[i] for i in case["ids"]]
+        curr_ids = [ids[i] for i in case["ids"]]
         curr_pubshares = [pubshares[i] for i in case["pubshares"]]
         curr_aggnonce = aggnonces[case["aggnonce"]]
         curr_msg = msgs[case["msg"]]
         if case["signer_idx"] == None:
-            my_id = bytes_from_int(case["signer_id"])
+            my_id = case["signer_id"]
         else:
             my_id = curr_ids[case["signer_idx"]]
         session_ctx = SessionContext(curr_aggnonce, curr_ids, curr_pubshares, [], [], curr_msg)
@@ -486,7 +480,7 @@ def generate_sign_verify_vectors():
     msg_idx = 0
     signer_idx = 0
 
-    curr_ids = [ids_bytes[i] for i in id_indices]
+    curr_ids = [ids[i] for i in id_indices]
     curr_pubshares = [pubshares[i] for i in pubnonce_indices]
     curr_aggnonce = aggnonces[aggnonce_idx]
     curr_msg = msgs[msg_idx]
@@ -546,7 +540,7 @@ def generate_sign_verify_vectors():
         {"ids": [0, 1, 2], "pubshares": [0, 1, 2], "pubnonces": [0, 1, 2, 3], "msg": 0, "signer": 0, "error": "value", "comment": "public nonces count is greater than ids and pubshares"},
     ]
     for case in verify_error_cases:
-        curr_ids = [ids_bytes[i] for i in case["ids"]]
+        curr_ids = [ids[i] for i in case["ids"]]
         curr_pubshares = [pubshares[i] for i in case["pubshares"]]
         curr_pubnonces = [pubnonces[i] for i in case["pubnonces"]]
         msg = case["msg"]
@@ -579,7 +573,7 @@ def generate_tweak_vectors():
     n = len(pubshares)
     xonly_group_pk = group_pk[1:]
     secshare_p1 = secshares[0]
-    ids = list(range(1, n + 1))
+    ids = list(range(n))
     assert len(pubshares) == len(secshares)
 
     vectors["max_participants"] = n
@@ -603,7 +597,6 @@ def generate_tweak_vectors():
     vectors["secnonce_p1"] = bytes_to_hex(secnonce_p1)
     vectors["pubnonces"] = bytes_list_to_hex(pubnonces)
 
-    ids_bytes = int_list_to_bytes(ids)
     # create valid aggnonces
     indices_grp = [
         [0, 1, 2],
@@ -613,7 +606,7 @@ def generate_tweak_vectors():
     aggnonces = [
         nonce_agg(
             [pubnonces[i] for i in indices],
-            [ids_bytes[i] for i in indices]
+            [ids[i] for i in indices]
         )
         for indices in indices_grp
     ]
@@ -621,7 +614,7 @@ def generate_tweak_vectors():
     aggnonces.append(
         nonce_agg(
             [pubnonces[0], pubnonces[1], pubnonces[-1]],
-            [ids_bytes[0], ids_bytes[1], ids_bytes[2]],
+            [ids[0], ids[1], ids[2]],
         )
     )
     vectors["aggnonces"] = bytes_list_to_hex(aggnonces)
@@ -652,7 +645,7 @@ def generate_tweak_vectors():
     ]
     for case in valid_cases:
         indices = case.get("indices", [0, 1, 2])
-        curr_ids = [ids_bytes[i] for i in indices]
+        curr_ids = [ids[i] for i in indices]
         curr_pubshares = [pubshares[i] for i in indices]
         curr_pubnonces = [pubnonces[i] for i in indices]
         aggnonce_idx = case.get("aggnonce_idx", 0)
@@ -685,7 +678,7 @@ def generate_tweak_vectors():
     ]
     for case in error_cases:
         indices = [0, 1, 2]
-        curr_ids = [ids_bytes[i] for i in indices]
+        curr_ids = [ids[i] for i in indices]
         curr_pubshares = [pubshares[i] for i in indices]
         curr_pubnonces = [pubnonces[i] for i in indices]
         aggnonce_idx = 0
@@ -722,8 +715,7 @@ def generate_det_sign_vectors():
     n = len(pubshares)
     xonly_group_pk = group_pk[1:]
     secshare_p1 = secshares[0]
-    ids = list(range(1, n + 1))
-    ids_bytes = int_list_to_bytes(ids)
+    ids = list(range(n))
     assert len(pubshares) == len(secshares)
 
     vectors["max_participants"] = n
@@ -770,7 +762,7 @@ def generate_det_sign_vectors():
         {"indices": [0, 1, 2], "signer": 0, "msg": 0, "rand": 0, "tweaks": 0, "is_xonly": [True], "comment": "Signing with tweaks"}
     ]
     for case in valid_cases:
-        curr_ids = [ids_bytes[i] for i in case["indices"]]
+        curr_ids = [ids[i] for i in case["indices"]]
         curr_pubshares = [pubshares[i] for i in case["indices"]]
         curr_msg = msgs[case["msg"]]
         curr_rand = rands[case["rand"]]
@@ -809,7 +801,7 @@ def generate_det_sign_vectors():
     vectors["error_test_cases"] = []
     # --- Error Test Cases ---
     error_cases = [
-        {"ids": [3, 1, 2], "pubshares": [0, 1, 2], "signer_idx": None, "signer_id": 1, "msg": 0, "rand": 0, "aggothernonce": "02FCDBEE416E4426FB4004BAB2B416164845DEC27337AD2B96184236D715965AB2039F71F389F6808DC6176F062F80531E13EA5BC2612B690FC284AE66C2CD859CE9", "error": "value", "comment": "The signer's id is not in the participant identifier list"},
+        {"ids": [3, 1, 2], "pubshares": [0, 1, 2], "signer_idx": None, "signer_id": 0, "msg": 0, "rand": 0, "aggothernonce": "02FCDBEE416E4426FB4004BAB2B416164845DEC27337AD2B96184236D715965AB2039F71F389F6808DC6176F062F80531E13EA5BC2612B690FC284AE66C2CD859CE9", "error": "value", "comment": "The signer's id is not in the participant identifier list"},
         {"ids": [0, 1, 2, 1], "pubshares": [0, 1, 2, 1], "signer_idx": 0, "msg": 0, "rand": 0, "error": "value", "comment": "The participant identifier list contains duplicate elements"},
         {"ids": [0, 1, 2], "pubshares": [3, 1, 2], "signer_idx": 0, "msg": 0, "rand": 0, "error": "value", "comment": "The signer's pubshare is not in the list of pubshares. This test case is optional: it can be skipped by implementations that do not check that the signer's pubshare is included in the list of pubshares."},
         {"ids": [0, 1, 2], "pubshares": [0, 1], "signer_idx": 0, "msg": 0, "rand": 0, "aggothernonce": "02FCDBEE416E4426FB4004BAB2B416164845DEC27337AD2B96184236D715965AB2039F71F389F6808DC6176F062F80531E13EA5BC2612B690FC284AE66C2CD859CE9", "error": "value", "comment": "The participant identifiers count exceed the participant public shares count"},
@@ -819,13 +811,13 @@ def generate_det_sign_vectors():
         {"ids": [0, 1, 2], "pubshares": [0, 1, 2], "signer_idx": 0, "msg": 0, "rand": 0, "tweaks": 1, "is_xonly": [False], "error": "value", "comment": "Tweak is invalid because it exceeds group size"},
     ]
     for case in error_cases:
-        curr_ids = [ids_bytes[i] for i in case["ids"]]
+        curr_ids = [ids[i] for i in case["ids"]]
         curr_pubshares = [pubshares[i] for i in case["pubshares"]]
         curr_msg = msgs[case["msg"]]
         curr_rand = rands[case["rand"]]
         signer_index = case["signer_idx"]
         if case["signer_idx"] == None:
-            my_id = bytes_from_int(case["signer_id"])
+            my_id = case["signer_id"]
         else:
             my_id = curr_ids[case["signer_idx"]]
         tweaks_idx = case.get("tweaks", None)
@@ -880,8 +872,7 @@ def generate_sig_agg_vectors():
     t, group_pk, secshares, pubshares = get_frost_keys()
     n = len(pubshares)
     xonly_group_pk = group_pk[1:]
-    ids = list(range(1, n + 1))
-    ids_bytes = int_list_to_bytes(ids)
+    ids = list(range(n))
     assert len(pubshares) == len(secshares)
 
     vectors["max_participants"] = n
@@ -919,7 +910,7 @@ def generate_sig_agg_vectors():
         {"indices": [0, 1, 2, 3, 4], "comment": "Signing with max number of participants and tweaked group public key"},
     ]
     for case in valid_cases:
-        curr_ids = [ids_bytes[i] for i in case["indices"]]
+        curr_ids = [ids[i] for i in case["indices"]]
         curr_pubshares = [pubshares[i] for i in case["indices"]]
         curr_pubnonces = [pubnonces[i] for i in case["indices"]]
         curr_aggnonce = nonce_agg(curr_pubnonces, curr_ids)
@@ -930,7 +921,7 @@ def generate_sig_agg_vectors():
         psigs = []
         session_ctx = SessionContext(curr_aggnonce, curr_ids, curr_pubshares, curr_tweaks, curr_tweak_modes, curr_msg)
         for i in case["indices"]:
-            my_id = ids_bytes[i]
+            my_id = ids[i]
             sig = sign(bytearray(secnonces[i]), secshares[i], my_id, session_ctx)
             psigs.append(sig)
             #TODO: verify the signatures here
@@ -954,7 +945,7 @@ def generate_sig_agg_vectors():
         {"indices": [0, 1, 2], "error": "value", "comment": "Partial signature count doesn't match the signer set count"},
     ]
     for j, case in enumerate(error_cases):
-        curr_ids = [ids_bytes[i] for i in case["indices"]]
+        curr_ids = [ids[i] for i in case["indices"]]
         curr_pubshares = [pubshares[i] for i in case["indices"]]
         curr_pubnonces = [pubnonces[i] for i in case["indices"]]
         curr_aggnonce = nonce_agg(curr_pubnonces, curr_ids)
@@ -962,7 +953,7 @@ def generate_sig_agg_vectors():
         psigs = []
         session_ctx = SessionContext(curr_aggnonce, curr_ids, curr_pubshares, [], [], curr_msg)
         for i in case["indices"]:
-            my_id = ids_bytes[i]
+            my_id = ids[i]
             sig = sign(bytearray(secnonces[i]), secshares[i], my_id, session_ctx)
             psigs.append(sig)
             #TODO: verify the signatures here

@@ -15,8 +15,8 @@
                 1
             ],
             "participant_identifiers": [
-                1,
-                2
+                0,
+                1
             ],
             "expected_aggnonce": "035FE1873B4F2967F52FEA4A06AD5A8ECCBE9D0FD73068012C894E2E87CCB5804B024725377345BDE0E9C33AF3C43C0A29A9249F2F2956FA8CFEB55C8573D0262DC8"
         },
@@ -26,8 +26,8 @@
                 3
             ],
             "participant_identifiers": [
-                1,
-                2
+                0,
+                1
             ],
             "expected_aggnonce": "035FE1873B4F2967F52FEA4A06AD5A8ECCBE9D0FD73068012C894E2E87CCB5804B000000000000000000000000000000000000000000000000000000000000000000",
             "comment": "Sum of second points encoded in the nonces is point at infinity which is serialized as 33 zero bytes"
@@ -40,12 +40,12 @@
                 4
             ],
             "participant_identifiers": [
-                1,
-                2
+                0,
+                1
             ],
             "error": {
                 "type": "InvalidContributionError",
-                "id": 2,
+                "id": 1,
                 "contrib": "pubnonce"
             },
             "comment": "Public nonce from signer 2 is invalid due wrong tag, 0x04, in the first half"
@@ -56,12 +56,12 @@
                 1
             ],
             "participant_identifiers": [
-                1,
-                2
+                0,
+                1
             ],
             "error": {
                 "type": "InvalidContributionError",
-                "id": 1,
+                "id": 0,
                 "contrib": "pubnonce"
             },
             "comment": "Public nonce from signer 1 is invalid because the second half does not correspond to an X coordinate"
@@ -72,12 +72,12 @@
                 1
             ],
             "participant_identifiers": [
-                1,
-                2
+                0,
+                1
             ],
             "error": {
                 "type": "InvalidContributionError",
-                "id": 1,
+                "id": 0,
                 "contrib": "pubnonce"
             },
             "comment": "Public nonce from signer 1 is invalid because second half exceeds field size"
