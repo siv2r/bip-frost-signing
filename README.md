@@ -705,6 +705,10 @@ An exception to this rule is `MAJOR` version zero (0.y.z) which is for developme
 The `MINOR` version is incremented whenever the inputs or the output of an algorithm changes in a backward-compatible way or new backward-compatible functionality is added.
 The `PATCH` version is incremented for other noteworthy changes (bug fixes, test vectors, important clarifications, etc.).
 
+* *0.2.0* (2025-04-11): Includes minor fixes and the following major changes:
+  - Initialize `TweakCtxInit` using individual `pubshares` instead of the group public key.
+  - Add Python script to automate generation of test vectors.
+  - Represent participant identifiers as 4-byte integers in the range `0..MAX_PARTICIPANTS - 1` (inclusive).
 * *0.1.0* (2024-07-31): Publication of draft BIP on the bitcoin-dev mailing list
 
 ## Acknowledgments
