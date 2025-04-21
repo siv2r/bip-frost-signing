@@ -13,8 +13,11 @@ import itertools
 import secrets
 import time
 
-from utils.bip340 import *
 from utils.trusted_keygen import trusted_dealer_keygen
+from secp256k1lab.bip340 import schnorr_sign, schnorr_verify
+from secp256k1lab.keys import pubkey_gen_plain
+from secp256k1lab.secp256k1 import G, GE, Scalar
+from secp256k1lab.util import bytes_from_int, int_from_bytes, tagged_hash
 
 PlainPk = NewType('PlainPk', bytes)
 XonlyPk = NewType('XonlyPk', bytes)
@@ -41,58 +44,32 @@ class InvalidContributionError(Exception):
         # contrib is one of "pubkey", "pubnonce", "aggnonce", or "psig".
         self.contrib = contrib
 
-infinity = None
+def xbytes(P: GE) -> bytes:
+    return P.to_bytes_xonly()
 
-def xbytes(P: Point) -> bytes:
-    return bytes_from_int(x(P))
+def cbytes(P: GE) -> bytes:
+    return P.to_bytes_compressed()
 
-def cbytes(P: Point) -> bytes:
-    a = b'\x02' if has_even_y(P) else b'\x03'
-    return a + xbytes(P)
-
-def cbytes_ext(P: Optional[Point]) -> bytes:
-    if is_infinite(P):
+def cbytes_ext(P: GE) -> bytes:
+    if P.infinity:
         return (0).to_bytes(33, byteorder='big')
-    assert P is not None
     return cbytes(P)
 
-def point_negate(P: Optional[Point]) -> Optional[Point]:
-    if P is None:
-        return P
-    return (x(P), p - y(P))
+def cpoint(x: bytes) -> GE:
+    return GE.from_bytes_compressed(x)
 
-def cpoint(x: bytes) -> Point:
-    if len(x) != 33:
-        raise ValueError('x is not a valid compressed point.')
-    P = lift_x(x[1:33])
-    if P is None:
-        raise ValueError('x is not a valid compressed point.')
-    if x[0] == 2:
-        return P
-    elif x[0] == 3:
-        P = point_negate(P)
-        assert P is not None
-        return P
-    else:
-        raise ValueError('x is not a valid compressed point.')
-
-def cpoint_ext(x: bytes) -> Optional[Point]:
+def cpoint_ext(x: bytes) -> GE:
     if x == (0).to_bytes(33, 'big'):
-        return None
+        return GE()
     else:
         return cpoint(x)
 
 # Return the plain public key corresponding to a given secret key
 def individual_pk(seckey: bytes) -> PlainPk:
-    d0 = int_from_bytes(seckey)
-    if not (1 <= d0 <= n - 1):
-        raise ValueError('The secret key must be an integer in the range 1..n-1.')
-    P = point_mul(G, d0)
-    assert P is not None
-    return PlainPk(cbytes(P))
+    return PlainPk(pubkey_gen_plain(seckey))
 
 # TODO: add my_id < max_participants check
-def derive_interpolating_value(ids: List[int], my_id: int) -> int:
+def derive_interpolating_value(ids: List[int], my_id: int) -> Scalar:
     if not my_id in ids:
         raise ValueError('The signer\'s id must be present in the participant identifier list.')
     if not all(ids.count(my_id) <= 1 for my_id in ids):
@@ -105,7 +82,7 @@ def derive_interpolating_value(ids: List[int], my_id: int) -> int:
             continue
         num *= curr_id + 1
         deno *= (curr_id - my_id)
-    return num * pow(deno, n - 2, n) % n
+    return Scalar.from_int_wrapping(num * pow(deno, GE.ORDER - 2, GE.ORDER))
 
 def check_pubshares_correctness(secshares: List[bytes], pubshares: List[PlainPk]) -> bool:
     assert len(secshares) == len(pubshares)
@@ -139,7 +116,7 @@ def check_frost_key_compatibility(max_participants: int, min_participants: int, 
     group_pk_check = check_group_pubkey_correctness(min_participants, group_pk, ids, pubshares)
     return pubshare_check and group_pk_check
 
-TweakContext = NamedTuple('TweakContext', [('Q', Point),
+TweakContext = NamedTuple('TweakContext', [('Q', GE),
                                            ('gacc', int),
                                            ('tacc', int)])
 AGGREGATOR_ID = None
@@ -156,16 +133,16 @@ def get_plain_pk(tweak_ctx: TweakContext) -> PlainPk:
 def derive_group_pubkey(pubshares: List[PlainPk], ids: List[int]) -> PlainPk:
     assert len(pubshares) == len(ids)
     # assert AGGREGATOR_ID not in ids
-    Q = infinity
+    Q = GE()
     for my_id, pubshare in zip(ids, pubshares):
         try:
             X_i = cpoint(pubshare)
         except ValueError:
             raise InvalidContributionError(my_id, "pubshare")
         lam_i = derive_interpolating_value(ids, my_id)
-        Q = point_add(Q, point_mul(X_i, lam_i))
+        Q = Q + lam_i * X_i
     # Q is not the point at infinity except with negligible probability.
-    assert(Q is not infinity)
+    assert not Q.infinity
     return PlainPk(cbytes(Q))
 
 def tweak_ctx_init(pubshares: List[PlainPk], ids: List[int]) -> TweakContext:
@@ -179,18 +156,19 @@ def apply_tweak(tweak_ctx: TweakContext, tweak: bytes, is_xonly: bool) -> TweakC
     if len(tweak) != 32:
         raise ValueError('The tweak must be a 32-byte array.')
     Q, gacc, tacc = tweak_ctx
-    if is_xonly and not has_even_y(Q):
-        g = n - 1
+    if is_xonly and not Q.has_even_y():
+        g = Scalar(-1)
     else:
-        g = 1
-    t = int_from_bytes(tweak)
-    if t >= n:
+        g = Scalar(1)
+    try:
+        t = Scalar.from_bytes_checked(tweak)
+    except ValueError:
         raise ValueError('The tweak must be less than n.')
-    Q_ = point_add(point_mul(Q, g), point_mul(G, t))
-    if Q_ is None:
+    Q_ = g * Q + t * G
+    if Q_.infinity:
         raise ValueError('The result of tweaking cannot be infinity.')
-    gacc_ = g * gacc % n
-    tacc_ = (t + g * tacc) % n
+    gacc_ = g * gacc
+    tacc_ = t + g * tacc
     return TweakContext(Q_, gacc_, tacc_)
 
 def bytes_xor(a: bytes, b: bytes) -> bytes:
@@ -226,18 +204,18 @@ def nonce_gen_internal(rand_: bytes, secshare: Optional[bytes], pubshare: Option
         msg_prefixed += msg
     if extra_in is None:
         extra_in = b''
-    k_1 = nonce_hash(rand, pubshare, group_pk, 0, msg_prefixed, extra_in) % n
-    k_2 = nonce_hash(rand, pubshare, group_pk, 1, msg_prefixed, extra_in) % n
+    k_1 = Scalar.from_int_wrapping(nonce_hash(rand, pubshare, group_pk, 0, msg_prefixed, extra_in))
+    k_2 = Scalar.from_int_wrapping(nonce_hash(rand, pubshare, group_pk, 1, msg_prefixed, extra_in))
     # k_1 == 0 or k_2 == 0 cannot occur except with negligible probability.
     assert k_1 != 0
     assert k_2 != 0
-    R_s1 = point_mul(G, k_1)
-    R_s2 = point_mul(G, k_2)
-    assert R_s1 is not None
-    assert R_s2 is not None
+    R_s1 = k_1 * G
+    R_s2 = k_2 * G
+    assert not R_s1.infinity
+    assert not R_s2.infinity
     pubnonce = cbytes(R_s1) + cbytes(R_s2)
     # use mutable `bytearray` since secnonce need to be replaced with zeros during signing.
-    secnonce = bytearray(bytes_from_int(k_1) + bytes_from_int(k_2))
+    secnonce = bytearray(k_1.to_bytes() + k_2.to_bytes())
     return secnonce, pubnonce
 
 #think: can msg & extra_in be of any length here?
@@ -267,13 +245,13 @@ def nonce_agg(pubnonces: List[bytes], ids: Sequence[Optional[int]]) -> bytes:
         raise ValueError('The pubnonces and ids arrays must have the same length.')
     aggnonce = b''
     for j in (1, 2):
-        R_j = infinity
+        R_j = GE()
         for my_id, pubnonce in zip(ids, pubnonces):
             try:
                 R_ij = cpoint(pubnonce[(j-1)*33:j*33])
             except ValueError:
                 raise InvalidContributionError(my_id, "pubnonce")
-            R_j = point_add(R_j, R_ij)
+            R_j = R_j + R_ij
         aggnonce += cbytes_ext(R_j)
     return aggnonce
 
@@ -295,22 +273,22 @@ def group_pubkey_and_tweak(pubshares: List[PlainPk], ids: List[int], tweaks: Lis
         tweak_ctx = apply_tweak(tweak_ctx, tweaks[i], is_xonly[i])
     return tweak_ctx
 
-def get_session_values(session_ctx: SessionContext) -> Tuple[Point, int, int, int, Point, int]:
+def get_session_values(session_ctx: SessionContext) -> Tuple[GE, int, int, Scalar, GE, Scalar]:
     (aggnonce, ids, pubshares, tweaks, is_xonly, msg) = session_ctx
     Q, gacc, tacc = group_pubkey_and_tweak(pubshares, ids, tweaks, is_xonly)
     # sort the ids before serializing because ROAST paper considers them as a set
     ser_ids = serialize_ids(ids)
-    b = int_from_bytes(tagged_hash('FROST/noncecoef', ser_ids + aggnonce + xbytes(Q) + msg)) % n
+    b = Scalar.from_bytes_wrapping(tagged_hash('FROST/noncecoef', ser_ids + aggnonce + xbytes(Q) + msg))
     try:
         R_1 = cpoint_ext(aggnonce[0:33])
         R_2 = cpoint_ext(aggnonce[33:66])
     except ValueError:
         # Nonce aggregator sent invalid nonces
         raise InvalidContributionError(None, "aggnonce")
-    R_ = point_add(R_1, point_mul(R_2, b))
-    R = R_ if not is_infinite(R_) else G
-    assert R is not None
-    e = int_from_bytes(tagged_hash('BIP0340/challenge', xbytes(R) + xbytes(Q) + msg)) % n
+    R_ = R_1 + b * R_2
+    R = R_ if not R_.infinity else G
+    assert not R.infinity
+    e = Scalar.from_bytes_wrapping(tagged_hash('BIP0340/challenge', xbytes(R) + xbytes(Q) + msg))
     return (Q, gacc, tacc, b, R, e)
 
 def serialize_ids(ids: List[int]) -> bytes:
@@ -335,34 +313,34 @@ def sign(secnonce: bytearray, secshare: bytes, my_id: int, session_ctx: SessionC
     if not 0 <= my_id < 2**32:
         raise ValueError('The signer\'s participant identifier is out of range')
     (Q, gacc, _, b, R, e) = get_session_values(session_ctx)
-    k_1_ = int_from_bytes(secnonce[0:32])
-    k_2_ = int_from_bytes(secnonce[32:64])
+    k_1_ = Scalar.from_bytes_checked(secnonce[0:32])
+    k_2_ = Scalar.from_bytes_checked(secnonce[32:64])
     # Overwrite the secnonce argument with zeros such that subsequent calls of
     # sign with the same secnonce raise a ValueError.
     secnonce[:] = bytearray(b'\x00'*64)
-    if not 0 < k_1_ < n:
+    if k_1_ == 0:
         raise ValueError('first secnonce value is out of range.')
-    if not 0 < k_2_ < n:
+    if k_2_ == 0:
         raise ValueError('second secnonce value is out of range.')
-    k_1 = k_1_ if has_even_y(R) else n - k_1_
-    k_2 = k_2_ if has_even_y(R) else n - k_2_
+    k_1 = k_1_ if R.has_even_y() else -k_1_
+    k_2 = k_2_ if R.has_even_y() else -k_2_
     d_ = int_from_bytes(secshare)
-    if not 0 < d_ < n:
+    if not 0 < d_ < GE.ORDER:
         raise ValueError('The signer\'s secret share value is out of range.')
-    P = point_mul(G, d_)
-    assert P is not None
+    P = d_ * G
+    assert not P.infinity
     pubshare = cbytes(P)
     if not session_has_signer_pubshare(session_ctx, pubshare):
         raise ValueError('The signer\'s pubshare must be included in the list of pubshares.')
     a = get_session_interpolating_value(session_ctx, my_id)
-    g = 1 if has_even_y(Q) else n - 1
-    d = g * gacc * d_ % n
-    s = (k_1 + b * k_2 + e * a * d) % n
-    psig = bytes_from_int(s)
-    R_s1 = point_mul(G, k_1_)
-    R_s2 = point_mul(G, k_2_)
-    assert R_s1 is not None
-    assert R_s2 is not None
+    g = Scalar(1) if Q.has_even_y() else Scalar(-1)
+    d = g * gacc * d_
+    s = k_1 + b * k_2 + e * a * d
+    psig = s.to_bytes()
+    R_s1 = k_1_ * G
+    R_s2 = k_2_ * G
+    assert not R_s1.infinity
+    assert not R_s2.infinity
     pubnonce = cbytes(R_s1) + cbytes(R_s2)
     # Optional correctness check. The result of signing should pass signature verification.
     assert partial_sig_verify_internal(psig, my_id, pubnonce, pubshare, session_ctx)
@@ -387,18 +365,18 @@ def deterministic_sign(secshare: bytes, my_id: int, aggothernonce: bytes, ids: L
 
     tweaked_gpk = get_xonly_pk(group_pubkey_and_tweak(pubshares, ids, tweaks, is_xonly))
 
-    k_1 = det_nonce_hash(secshare_, aggothernonce, tweaked_gpk, msg, 0) % n
-    k_2 = det_nonce_hash(secshare_, aggothernonce, tweaked_gpk, msg, 1) % n
+    k_1 = Scalar.from_int_wrapping(det_nonce_hash(secshare_, aggothernonce, tweaked_gpk, msg, 0))
+    k_2 = Scalar.from_int_wrapping(det_nonce_hash(secshare_, aggothernonce, tweaked_gpk, msg, 1))
     # k_1 == 0 or k_2 == 0 cannot occur except with negligible probability.
     assert k_1 != 0
     assert k_2 != 0
 
-    R_s1 = point_mul(G, k_1)
-    R_s2 = point_mul(G, k_2)
-    assert R_s1 is not None
-    assert R_s2 is not None
+    R_s1 = k_1 * G
+    R_s2 = k_2 * G
+    assert not R_s1.infinity
+    assert not R_s2.infinity
     pubnonce = cbytes(R_s1) + cbytes(R_s2)
-    secnonce = bytearray(bytes_from_int(k_1) + bytes_from_int(k_2))
+    secnonce = bytearray(k_1.to_bytes() + k_2.to_bytes())
     try:
         aggnonce = nonce_agg([pubnonce, aggothernonce], [my_id, AGGREGATOR_ID])
     except Exception:
@@ -421,37 +399,40 @@ def partial_sig_verify(psig: bytes, ids: List[int], pubnonces: List[bytes], pubs
 #todo: catch `cpoint`` ValueError and return false
 def partial_sig_verify_internal(psig: bytes, my_id: int, pubnonce: bytes, pubshare: bytes, session_ctx: SessionContext) -> bool:
     (Q, gacc, _, b, R, e) = get_session_values(session_ctx)
-    s = int_from_bytes(psig)
-    if s >= n:
+    try:
+        s = Scalar.from_bytes_checked(psig)
+    except ValueError:
         return False
     if not session_has_signer_pubshare(session_ctx, pubshare):
         return False
     R_s1 = cpoint(pubnonce[0:33])
     R_s2 = cpoint(pubnonce[33:66])
-    Re_s_ = point_add(R_s1, point_mul(R_s2, b))
-    Re_s = Re_s_ if has_even_y(R) else point_negate(Re_s_)
+    Re_s_ = R_s1 + b * R_s2
+    Re_s = Re_s_ if R.has_even_y() else -Re_s_
     P = cpoint(pubshare)
     if P is None:
         return False
     a = get_session_interpolating_value(session_ctx, my_id)
-    g = 1 if has_even_y(Q) else n - 1
-    g_ = g * gacc % n
-    return point_mul(G, s) == point_add(Re_s, point_mul(P, e * a * g_ % n))
+    g = Scalar(1) if Q.has_even_y() else Scalar(-1)
+    g_ = g * gacc
+    return s * G == Re_s + (e * a * g_) * P
 
 def partial_sig_agg(psigs: List[bytes], ids: List[int], session_ctx: SessionContext) -> bytes:
     assert AGGREGATOR_ID not in ids
     if len(psigs) != len(ids):
         raise ValueError('The psigs and ids arrays must have the same length.')
     (Q, _, tacc, _, R, e) = get_session_values(session_ctx)
-    s = 0
+    s = Scalar(0)
     for my_id, psig in zip(ids, psigs):
         s_i = int_from_bytes(psig)
-        if s_i >= n:
+        try:
+            s_i = Scalar.from_bytes_checked(psig)
+        except ValueError:
             raise InvalidContributionError(my_id, "psig")
-        s = (s + s_i) % n
-    g = 1 if has_even_y(Q) else n - 1
-    s = (s + e * g * tacc) % n
-    return xbytes(R) + bytes_from_int(s)
+        s = s + s_i
+    g = Scalar(1) if Q.has_even_y() else Scalar(-1)
+    s = s + e * g * tacc
+    return xbytes(R) + s.to_bytes()
 
 #
 # The following code is only used for testing.
@@ -497,12 +478,12 @@ def generate_frost_keys(max_participants: int, min_participants: int) -> Tuple[P
     if not (2 <= min_participants <= max_participants):
         raise ValueError('values must satisfy: 2 <= min_participants <= max_participants')
 
-    secret = secrets.randbelow(n - 1) + 1
+    secret = Scalar.from_bytes_wrapping(secrets.token_bytes(32))
     P, secshares, pubshares = trusted_dealer_keygen(secret, max_participants, min_participants)
 
     group_pk = PlainPk(cbytes(P))
     # we need decrement by one, since our identifiers represent integer indices
-    identifiers = [(secshare_i[0] - 1) for secshare_i in secshares]
+    identifiers = [int(secshare_i[0] - 1) for secshare_i in secshares]
     ser_secshares = [bytes_from_int(secshare_i[1]) for secshare_i in secshares]
     ser_pubshares = [PlainPk(cbytes(pubshare_i)) for pubshare_i in pubshares]
     return (group_pk, identifiers, ser_secshares, ser_pubshares)
@@ -614,9 +595,9 @@ def test_sign_verify_vectors():
     # The public nonce corresponding to first participant (secnonce_p1[0]) is at index 0
     k_1 = int_from_bytes(secnonces_p1[0][0:32])
     k_2 = int_from_bytes(secnonces_p1[0][32:64])
-    R_s1 = point_mul(G, k_1)
-    R_s2 = point_mul(G, k_2)
-    assert R_s1 is not None and R_s2 is not None
+    R_s1 = k_1 * G
+    R_s2 = k_2 * G
+    assert not R_s1.infinity and not R_s2.infinity
     assert pubnonces[0] == cbytes(R_s1) + cbytes(R_s2)
 
     aggnonces = fromhex_all(test_data["aggnonces"])
@@ -697,11 +678,11 @@ def test_tweak_vectors():
     secnonce_p1 = bytearray(bytes.fromhex(test_data["secnonce_p1"]))
     pubnonces = fromhex_all(test_data["pubnonces"])
     # The public nonce corresponding to first participant (secnonce_p1[0]) is at index 0
-    k_1 = int_from_bytes(secnonce_p1[0:32])
-    k_2 = int_from_bytes(secnonce_p1[32:64])
-    R_s1 = point_mul(G, k_1)
-    R_s2 = point_mul(G, k_2)
-    assert R_s1 is not None and R_s2 is not None
+    k_1 = Scalar.from_bytes_checked(secnonce_p1[0:32])
+    k_2 = Scalar.from_bytes_checked(secnonce_p1[32:64])
+    R_s1 = k_1 * G
+    R_s2 = k_2 * G
+    assert not R_s1.infinity and not R_s2.infinity
     assert pubnonces[0] == cbytes(R_s1) + cbytes(R_s2)
 
     aggnonces = fromhex_all(test_data["aggnonces"])
