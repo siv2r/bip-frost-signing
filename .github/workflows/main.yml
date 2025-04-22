@@ -1,0 +1,23 @@
+name: Tests
+on: [push, pull_request]
+jobs:
+  reference_implementation_tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: 3.11
+      - name: Run reference implementation tests
+        run: python3 reference/reference.py
+  trusted_dealer_unit_tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: 3.11
+      - name: Run Trusted Dealer unit tests
+        run: python3 -m unittest reference/utils/trusted_keygen.py
