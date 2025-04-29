@@ -84,9 +84,9 @@ FROST generates signatures that are verifiable as if produced by a single signer
 &emsp;&ensp;_MAX_PARTICIPANTS_ MUST be a positive integer less than 2^32.
 
 In particular, FROST signing assumes each participant is configured with the following information:
-- An identifier _id_, which is a positive non-zero integer in the range _[1, MAX_PARTICIPANTS]_ and MUST be distinct from the identifier of every other participant.
+- An identifier _id_, which is an integer in the range _[0, MAX_PARTICIPANTS-1]_ and MUST be distinct from the identifier of every other participant.
 <!-- REVIEW we haven't introduced participant identifier yet. So, don't use them here -->
-- A secret share _secshare<sub>id</sub>_, which is a positive non-zero integer less than the secp256k1 curve order. This value represents the _i_-th Shamir secret share of the group secret key _s_.  In particular, _secshare<sub>id</sub>_ is the value _f(id)_ on a secret polynomial _f_ of degree _(MIN_PARTICIPANTS - 1)_, where _s_ is _f(0)_.
+- A secret share _secshare<sub>id</sub>_, which is a positive non-zero integer less than the secp256k1 curve order. This value represents the _i_-th Shamir secret share of the group secret key _s_.  In particular, _secshare<sub>id</sub>_ is the value _f(id+1)_ on a secret polynomial _f_ of degree _(MIN_PARTICIPANTS - 1)_, where _s_ is _f(0)_.
 - A Group public key _group_pk_, which is point on the secp256k1 curve.
 - A public share _pubshare<sub>id</sub>_, which is point on the secp256k1 curve.
 
