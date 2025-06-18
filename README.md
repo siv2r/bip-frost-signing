@@ -712,8 +712,8 @@ The `PATCH` version is incremented for other noteworthy changes (bug fixes, test
 * *0.1.0* (2024-07-31): Publication of draft BIP on the bitcoin-dev mailing list
 
 ## Acknowledgments
-<!-- Ordered alphabetically by last name -->
-We thank Jesse Posner, Tim Ruffing, and Jonas Nick for their contributions to this document.
+
+We thank Jonas Nick, Tim Ruffing, Jesse Posner, and Sebastian Falbesoner for their contributions to this document.
 
 <!-- Footnotes -->
 
