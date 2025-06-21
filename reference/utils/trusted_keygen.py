@@ -12,42 +12,40 @@ from typing import Tuple, List, NewType
 import unittest
 # todo: replace random module with secrets
 import random
+import secrets
 # for [1] import functions from reference
 #     [2] specify path for bip340 when running reference.py
 # import sys, os
 # script_dir = os.path.dirname(os.path.abspath(__file__))
 # parent_dir = os.path.abspath(os.path.join(script_dir, '..'))
 # sys.path.append(parent_dir)
-from .bip340 import (
-    Point, n as curve_order, bytes_from_int,
-    point_mul, G, has_even_y, x
-)
+from secp256k1lab.secp256k1 import G, GE, Scalar
 
+curve_order = GE.ORDER
 # point on the secret polynomial, represents a signer's secret share
 PolyPoint = Tuple[int, int]
 # point on the secp256k1 curve, represents a signer's public share
-ECPoint = Point
+ECPoint = GE
 
 #
 # The following helper functions and types were copied from reference.py
 #
 PlainPk = NewType('PlainPk', bytes)
 
-def xbytes(P: Point) -> bytes:
-    return bytes_from_int(x(P))
+def xbytes(P: GE) -> bytes:
+    return P.to_bytes_xonly()
 
-def cbytes(P: Point) -> bytes:
-    a = b'\x02' if has_even_y(P) else b'\x03'
-    return a + xbytes(P)
+def cbytes(P: GE) -> bytes:
+    return P.to_bytes_compressed()
 
-def derive_interpolating_value_internal(L: List[int], x_i: int) -> int:
+def derive_interpolating_value_internal(L: List[int], x_i: int) -> Scalar:
     num, deno = 1, 1
     for x_j in L:
         if x_j == x_i:
             continue
         num *= x_j
         deno *= (x_j - x_i)
-    return num * pow(deno, curve_order - 2, curve_order) % curve_order
+    return Scalar.from_int_wrapping(num * pow(deno, curve_order - 2, curve_order))
 #
 # End of helper functions and types copied from reference.py.
 #
@@ -61,16 +59,16 @@ def polynomial_evaluate(coeffs: List[int], x: int) -> int:
     return res % curve_order
 
 
-def secret_share_combine(shares: List[PolyPoint]) -> int:
+def secret_share_combine(shares: List[PolyPoint]) -> Scalar:
     x_coords = []
     for (x, y) in shares:
         x_coords.append(x)
 
-    secret = 0
+    secret = Scalar(0)
     for (x, y) in shares:
         delta = y * derive_interpolating_value_internal(x_coords, x)
         secret += delta
-    return secret % curve_order
+    return secret
 
 # coeffs shouldn't include the const term (i.e. secret)
 def secret_share_shard(secret: int, coeffs: List[int], max_participants: int) -> List[PolyPoint]:
@@ -83,21 +81,21 @@ def secret_share_shard(secret: int, coeffs: List[int], max_participants: int) ->
         secshares.append(secshare_i)
     return secshares
 
-def trusted_dealer_keygen(secret_key: int, max_participants: int, min_participants: int) -> Tuple[ECPoint, List[PolyPoint], List[ECPoint]]:
-    assert (1 <= secret_key <= curve_order - 1)
+def trusted_dealer_keygen(secret_key: Scalar, max_participants: int, min_participants: int) -> Tuple[ECPoint, List[PolyPoint], List[ECPoint]]:
+    assert secret_key != 0
     assert (2 <= min_participants <= max_participants)
     # we don't force BIP340 compatibility of group pubkey in keygen
-    P = point_mul(G, secret_key)
-    assert P is not None
+    P = secret_key * G
+    assert not P.infinity
 
     coeffs = []
     for i in range(min_participants - 1):
         coeffs.append(random.randint(1, curve_order - 1))
-    secshares = secret_share_shard(secret_key, coeffs, max_participants)
+    secshares = secret_share_shard(int(secret_key), coeffs, max_participants)
     pubshares = []
     for secshare in secshares:
-        X = point_mul(G, secshare[1])
-        assert X is not None
+        X = secshare[1] * G
+        assert not X.infinity
         pubshares.append(X)
     return (P, secshares, pubshares)
 
@@ -134,19 +132,19 @@ class Tests(unittest.TestCase):
         self.assertEqual(secret_share_combine(shares), expected_secret)
 
     def test_trusted_dealer_keygen(self) -> None:
-        secret_key = random.randint(1, curve_order - 1)
+        secret_key = Scalar.from_bytes_wrapping(secrets.token_bytes(32))
         max_participants = 5
         min_participants = 3
         group_pk, secshares, pubshares = trusted_dealer_keygen(secret_key, max_participants, min_participants)
 
         # group_pk need not be xonly (i.e., have even y always)
-        self.assertEqual(group_pk, point_mul(G, secret_key))
+        self.assertEqual(group_pk, secret_key * G)
         self.assertEqual(secret_share_combine(secshares), secret_key)
         self.assertEqual(len(secshares), max_participants)
         self.assertEqual(len(pubshares), max_participants)
         for i in range(len(pubshares)):
             with self.subTest(i=i):
-                self.assertEqual(pubshares[i], point_mul(G, secshares[i][1]))
+                self.assertEqual(pubshares[i], secshares[i][1] * G)
 
 if __name__=='__main__':
     unittest.main()

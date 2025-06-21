@@ -9,7 +9,10 @@ from copy import deepcopy
 
 from reference import *
 from utils.trusted_keygen import trusted_dealer_keygen
-from utils.bip340 import n as scalar_size, bytes_from_int, int_from_bytes
+from secp256k1lab.secp256k1 import GE
+from secp256k1lab.util import bytes_from_int, int_from_bytes
+
+scalar_size = GE.ORDER
 
 def bytes_to_hex(data: bytes) -> str:
     return data.hex().upper()
