@@ -313,18 +313,12 @@ def sign(secnonce: bytearray, secshare: bytes, my_id: int, session_ctx: SessionC
     if not 0 <= my_id < 2**32:
         raise ValueError('The signer\'s participant identifier is out of range')
     (Q, gacc, _, b, R, e) = get_session_values(session_ctx)
-    # TODO: use `Scalar.from_bytes_nonzero_checked` for deserializing k1 and k2, once available
-    # in a secp256k1lab release (see https://github.com/secp256k1lab/secp256k1lab/pull/8)
     try:
-        k_1_ = Scalar.from_bytes_checked(secnonce[0:32])
-        if k_1_ == 0:  # treat zero exactly like any other bad input
-            raise ValueError
+        k_1_ = Scalar.from_bytes_nonzero_checked(secnonce[0:32])
     except ValueError:
         raise ValueError('first secnonce value is out of range.')
     try:
-        k_2_ = Scalar.from_bytes_checked(secnonce[32:64])
-        if k_2_ == 0:  # treat zero exactly like any other bad input
-            raise ValueError
+        k_2_ = Scalar.from_bytes_nonzero_checked(secnonce[32:64])
     except ValueError:
         raise ValueError('second secnonce value is out of range.')
     # Overwrite the secnonce argument with zeros such that subsequent calls of
