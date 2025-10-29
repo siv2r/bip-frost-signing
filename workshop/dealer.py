@@ -35,7 +35,7 @@ def print_key_material(group_pk, identifiers, secshares, pubshares):
     group_pk_xonly = group_point.to_bytes_xonly()
 
     print("=== Group Parameters ===")
-    print(f"group_public_key (plain/compressed): {group_pk.hex()}")
+    print(f"group_public_key (plain/compressed): {group_pk.hex()}\n")
     # print(f"group_public_key (x-only): {group_pk_xonly.hex()}")
     # print()
 

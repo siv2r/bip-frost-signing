@@ -68,11 +68,11 @@ import reference as frost
 
 # TODO 1.1: Paste the FROST keys & message you received from the trusted dealer
 # Replace the placeholder strings with the actual hex values and integers.
-MY_IDENTIFIER = 0  # change this to 1 if you are participant 1
+MY_IDENTIFIER = 0  # change this to 1 if you are signer 1
 MY_SECSHARE_HEX = ""  # 32-byte secret share in hex (KEEP PRIVATE)
 MY_PUBSHARE_HEX = ""  # 33-byte public share in hex
 GROUP_PUBKEY_HEX = ""  # 33-byte group public key (compressed) from dealer
-MESSAGE_BYTES = b""  # Shared message, e.g., b"workshop message"
+MESSAGE_BYTES = b"workshop message"  # Message being signed
 
 def round1_generate_nonce():
     ensure_step0_complete()
@@ -85,7 +85,6 @@ def round1_generate_nonce():
 
     # TODO 1.2: Call the appropriate nonce generation FROST API on the above inputs
     secnonce, pubnonce = ()
-
     # secnonce, pubnonce = frost.nonce_gen(
     #     secshare=secshare,
     #     pubshare=pubshare,
@@ -100,7 +99,6 @@ def round1_generate_nonce():
     print("SHARE ONLY the `pubnonce_hex` value with your aggregator")
     print("=================================")
 
-# ---------------------------------------------------------------------------
 #################################################################
 # ROUND 2: Generate partial (digital) signature                 #
 #################################################################
@@ -110,9 +108,9 @@ def round1_generate_nonce():
 # All lists must be ordered consistently (same order as the aggregator used)
 MY_SECNONCE_HEX = ""  # Paste your own secnonce_hex from round 1 (KEEP PRIVATE)
 AGGREGATED_NONCE_HEX = ""  # Aggregated nonce received from the aggregator
-PARTICIPANT_IDS = [0, 1]  # e.g., [0, 1]
-PARTICIPANT_PUBSHARES_HEX = []  # Received from the trusted dealer. e.g., ["03...", "02..."]
-PARTICIPANT_PUBNONCES_HEX = []  # Received from aggregator e.g., ["03...", "02..."]
+PARTICIPANT_IDS = [0, 1]  # Don't change this
+PARTICIPANT_PUBSHARES_HEX = ["", ""]  # Received from the trusted dealer. e.g., ["03...", "02..."]
+PARTICIPANT_PUBNONCES_HEX = ["", ""]  # Received from aggregator e.g., ["03...", "02..."]
 
 def round2_sign():
     ensure_step0_complete()

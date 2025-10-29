@@ -61,7 +61,7 @@ def ensure_step2_complete():
 # IGNORE EVERYTHING ABOVE THIS LINE #
 #####################################
 
-import reference as frost 
+import reference as frost
 from secp256k1lab.bip340 import schnorr_verify
 
 #####################################################################
@@ -72,12 +72,12 @@ from secp256k1lab.bip340 import schnorr_verify
 # ---------------------------------------------------------------------------
 # TODO 1.1: Paste the FROST keys & message you received from the trusted dealer
 GROUP_PUBKEY_HEX = ""  # 33-byte compressed group public key
-MESSAGE_BYTES = b""  # Shared message, e.g., b"workshop message"
+MESSAGE_BYTES = b"workshop message"  # Message being signed
 
 # TODO 1.2: Fill these with the pubnonces you received from signer 0 and signer 1.
 # Ensure the order matches PARTICIPANT_IDS.
-PARTICIPANT_IDS = [0, 1]
-PARTICIPANT_PUBNONCES_HEX = []
+PARTICIPANT_IDS = [0, 1] # Don't change this
+PARTICIPANT_PUBNONCES_HEX = ["", ""]  # e.g., ["03...", "02..."]
 
 def round1_aggregate_nonces():
     ensure_step0_complete()
@@ -103,8 +103,8 @@ def round1_aggregate_nonces():
 # TODO 2.1: after signers share their partial signatures, paste them here.
 # Use the same order as PARTICIPANT_IDS.
 AGGREGATED_NONCE_HEX = ""
-PARTICIPANT_PUBSHARES_HEX = [] # Received from the trusted dealer. e.g., ["03...", "02..."]
-PARTIAL_SIGNATURES_HEX = [] # Received from signer 0 and signer 1
+PARTICIPANT_PUBSHARES_HEX = ["", ""] # Received from the trusted dealer. e.g., ["03...", "02..."]
+PARTIAL_SIGNATURES_HEX = ["", ""] # Received from signer 0 and signer 1
 
 
 def round2_aggregate_partialsigs():
@@ -151,6 +151,7 @@ def round2_aggregate_partialsigs():
 
     print("=== STEP 2: Final Signature ===")
     print("final_signature_hex:", aggregated_sig.hex())
+    print("===============================")
     if valid:
         print("Congratulations!! You successfully ran the FROST protocol")
     else:
