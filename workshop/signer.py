@@ -1,10 +1,10 @@
 """Signer worksheet for the FROST workshop.
 
 Edit this file by filling in the constants below. Run it twice:
-  1. Set RUN_STEP = "nonce" to produce your `secnonce_hex` and `pubnonce_hex`.
+  1. `python3 signer.py round1` to produce your `secnonce_hex` and `pubnonce_hex`.
      Keep the secnonce secret; share only the pubnonce with the aggregator.
   2. After the aggregator shares the aggregated nonce and the other signer’s data,
-     paste those values into the STEP 2 section, set RUN_STEP = "sign", and rerun
+     paste those values into the STEP 2 section and run `python3 signer.py round2`
      to obtain your partial signature.
 """
 from pathlib import Path
@@ -45,13 +45,6 @@ def ensure_step2_complete():
         raise SystemExit("Participant lists must all have the same length.")
     if MY_IDENTIFIER not in PARTICIPANT_IDS:
         raise SystemExit("Your identifier must be included in PARTICIPANT_IDS.")
-
-# ---------------------------------------------------------------------------
-# Control switch: pick which part of the protocol you want to run.
-#   "nonce" -> generate a fresh nonce pair (Step 1)
-#   "sign"  -> produce a partial signature using pasted inputs (Step 2)
-RUN_STEP = "nonce"
-
 
 ####################################
 # IGNORE EVERYTHING ABOVE THIS LINE#
@@ -146,13 +139,18 @@ def round2_sign():
     print("partial_signature_hex (share with aggregator):", psig.hex())
     print("========================")
 
-def main():
-    if RUN_STEP == "nonce":
+def main(argv=None):
+    args = list(sys.argv[1:] if argv is None else argv)
+    if not args:
+        raise SystemExit('Usage: python3 signer.py [round1|round2]')
+
+    cmd = args[0].lower()
+    if cmd == "round1":
         round1_generate_nonce()
-    elif RUN_STEP == "sign":
+    elif cmd == "round2":
         round2_sign()
     else:
-        raise SystemExit('Set RUN_STEP to "nonce" or "sign".')
+        raise SystemExit('Usage: python3 signer.py [round1|round2]')
 
 
 if __name__ == "__main__":

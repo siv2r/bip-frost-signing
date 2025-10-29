@@ -1,11 +1,9 @@
 """Aggregator worksheet for the FROST workshop.
 
 Edit this file to mirror the two responsibilities of the non-signing participant:
-  1. Aggregate the pubnonces shared by the two signers.
-  2. After receiving their partial signatures, verify and combine them into the
-     final Schnorr signature.
-
-Switch RUN_STEP between "aggregate_nonces" and "finalize" as you progress.
+  1. Run `python3 aggregator.py round1` to aggregate the pubnonces shared by the two signers.
+  2. Run `python3 aggregator.py round2` to verify their partial signatures and combine
+     them into the final Schnorr signature.
 """
 from pathlib import Path
 import sys
@@ -16,12 +14,6 @@ PROJECT_ROOT = WORKSHOP_ROOT.parent
 REFERENCE_DIR = PROJECT_ROOT / "reference"
 if str(REFERENCE_DIR) not in sys.path:
     sys.path.insert(0, str(REFERENCE_DIR))
-
-# ---------------------------------------------------------------------------
-# Control switch:
-#   "aggregate_nonces" -> compute aggregated nonce from signer pubnonces.
-#   "finalize"         -> verify partial signatures and produce final signature.
-RUN_STEP = "aggregate_nonces"
 
 def ensure_step0_complete():
     if not GROUP_PUBKEY_HEX or not MESSAGE_BYTES:
@@ -157,13 +149,18 @@ def round2_aggregate_partialsigs():
     print("===============================")
 
 
-def main():
-    if RUN_STEP == "aggregate_nonces":
+def main(argv=None):
+    args = list(sys.argv[1:] if argv is None else argv)
+    if not args:
+        raise SystemExit('Usage: python3 aggregator.py [round1|round2]')
+
+    cmd = args[0].lower()
+    if cmd == "round1":
         round1_aggregate_nonces()
-    elif RUN_STEP == "finalize":
+    elif cmd == "round2":
         round2_aggregate_partialsigs()
     else:
-        raise SystemExit('Set RUN_STEP to "aggregate_nonces" or "finalize".')
+        raise SystemExit('Usage: python3 aggregator.py [round1|round2]')
 
 
 if __name__ == "__main__":
