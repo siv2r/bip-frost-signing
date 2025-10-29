@@ -7,8 +7,6 @@ Edit this file to mirror the two responsibilities of the non-signing participant
 
 Switch RUN_STEP between "aggregate_nonces" and "finalize" as you progress.
 """
-from __future__ import annotations
-
 from pathlib import Path
 import sys
 
@@ -18,7 +16,7 @@ REFERENCE_DIR = ROOT / "reference"
 if str(REFERENCE_DIR) not in sys.path:
     sys.path.insert(0, str(REFERENCE_DIR))
 
-import reference as frost  # type: ignore  # pylint: disable=import-error
+import reference as frost  # pylint: disable=import-error
 from secp256k1lab.bip340 import schnorr_verify
 
 
@@ -50,19 +48,19 @@ PARTICIPANT_PUBSHARES_HEX = ["02c19dfcd0294beb072e0d430706f1e7144c9b29d60373c061
 PARTIAL_SIGNATURES_HEX = ["4f27fc266ea6a9c1aeb804cc56957413cf3c86e3a6cbfda230525dad51a53c77", "23c7cc2db402c5742cb584c56e7963328e7f2d8da7b5d4320957de21e9628b4a"]  # e.g., ["89...", "ab..."]
 
 
-def ensure_step0_complete() -> None:
+def ensure_step0_complete():
     if not GROUP_PUBKEY_HEX or not MESSAGE_BYTES:
         raise SystemExit("Fill GROUP_PUBKEY_HEX and MESSAGE_BYTES from the dealer.")
 
 
-def ensure_step1_complete() -> None:
+def ensure_step1_complete():
     if not (PARTICIPANT_IDS and PARTICIPANT_PUBNONCES_HEX):
         raise SystemExit("Fill PARTICIPANT_IDS and PARTICIPANT_PUBNONCES_HEX.")
     if len(PARTICIPANT_IDS) != len(PARTICIPANT_PUBNONCES_HEX):
         raise SystemExit("PARTICIPANT_IDS and PUBNONCES_HEX must have the same length.")
 
 
-def step1_aggregate_nonces() -> None:
+def step1_aggregate_nonces():
     ensure_step0_complete()
     ensure_step1_complete()
 
@@ -73,7 +71,7 @@ def step1_aggregate_nonces() -> None:
     print("aggregated_nonce_hex (share with signers):", aggnonce.hex())
 
 
-def ensure_step2_complete() -> None:
+def ensure_step2_complete():
     if not AGGREGATED_NONCE_HEX:
         raise SystemExit("Paste AGGREGATED_NONCE_HEX (your Step 1 output).")
     if not (
@@ -96,7 +94,7 @@ def ensure_step2_complete() -> None:
         raise SystemExit("All participant lists must have the same length.")
 
 
-def step2_finalize_signature() -> None:
+def step2_finalize_signature():
     ensure_step0_complete()
     ensure_step2_complete()
 
@@ -139,7 +137,7 @@ def step2_finalize_signature() -> None:
     print("schnorr_verify:", valid)
 
 
-def main() -> None:
+def main():
     if RUN_STEP == "aggregate_nonces":
         step1_aggregate_nonces()
     elif RUN_STEP == "finalize":

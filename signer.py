@@ -10,8 +10,6 @@ Edit this file by filling in the constants below. Run it twice:
 This script intentionally keeps things simple—no command-line arguments, just
 edit-and-run to mirror the manual workshop flow.
 """
-from __future__ import annotations
-
 from pathlib import Path
 import sys
 
@@ -21,7 +19,7 @@ REFERENCE_DIR = ROOT / "reference"
 if str(REFERENCE_DIR) not in sys.path:
     sys.path.insert(0, str(REFERENCE_DIR))
 
-import reference as frost  # type: ignore  # pylint: disable=import-error
+import reference as frost  # pylint: disable=import-error
 
 
 # ---------------------------------------------------------------------------
@@ -56,7 +54,7 @@ PARTICIPANT_PUBSHARES_HEX = ["02c19dfcd0294beb072e0d430706f1e7144c9b29d60373c061
 PARTICIPANT_PUBNONCES_HEX = ["03cf9360086e7a8ceb13492c8bbb0a9609cfaf3fc902d2cbd9e3956a41b825e57502f600306521b53fd2dbd38d03218d22694d5430c36e6f4d1faf12c5a1c800a23c", "02a805de8e170a4fea1f5c8809b4e2f365478d1a90a89a08014330039a7fa3cb57034e52d046e778c7e2e4a38ee0897ceb8ffc5094da47d349aab7b78642d1bf62a4"]  # e.g., ["03...", "02..."]
 
 
-def ensure_step0_complete() -> None:
+def ensure_step0_complete():
     if not (
         isinstance(MY_IDENTIFIER, int)
         and MY_SECSHARE_HEX
@@ -68,7 +66,7 @@ def ensure_step0_complete() -> None:
             "Please fill in STEP 0 values (identifier, shares, group key, message)."
         )
 
-def ensure_step2_complete() -> None:
+def ensure_step2_complete():
     if not MY_SECNONCE_HEX:
         raise SystemExit("Paste MY_SECNONCE_HEX from Step 1.")
     if not AGGREGATED_NONCE_HEX:
@@ -84,7 +82,7 @@ def ensure_step2_complete() -> None:
     if MY_IDENTIFIER not in PARTICIPANT_IDS:
         raise SystemExit("Your identifier must be included in PARTICIPANT_IDS.")
 
-def step1_generate_nonce() -> None:
+def step1_generate_nonce():
     ensure_step0_complete()
 
     secshare = bytes.fromhex(MY_SECSHARE_HEX)
@@ -105,7 +103,7 @@ def step1_generate_nonce() -> None:
     print("pubnonce_hex (share with aggregator):", pubnonce.hex())
 
 
-def step2_sign() -> None:
+def step2_sign():
     ensure_step0_complete()
     ensure_step2_complete()
 
@@ -150,7 +148,7 @@ def step2_sign() -> None:
     print("partial_signature_hex (share with aggregator):", psig.hex())
 
 
-def main() -> None:
+def main():
     if RUN_STEP == "nonce":
         step1_generate_nonce()
     elif RUN_STEP == "sign":
