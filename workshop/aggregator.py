@@ -85,7 +85,6 @@ def round1_aggregate_nonces():
 
     pubnonces = [bytes.fromhex(value) for value in PARTICIPANT_PUBNONCES_HEX]
     # TODO 1.3: Call the appropriate nonce aggregation FROST API on the above inputs
-    # aggnonce = frost.nonce_agg(pubnonces=pubnonces, ids=PARTICIPANT_IDS)
     aggnonce = b""
 
     print("=== STEP 1: Nonce Aggregation ===")
@@ -143,7 +142,6 @@ def round2_aggregate_partialsigs():
 
     # TODO 2.2: Aggregate the partial signatures using the appropriate FROST API
     aggregated_sig = b""
-    # aggregated_sig = frost.partial_sig_agg(partial_sigs, PARTICIPANT_IDS, session_ctx)
 
     group_point = frost.cpoint(bytes.fromhex(GROUP_PUBKEY_HEX))
     group_pk_xonly = group_point.to_bytes_xonly()

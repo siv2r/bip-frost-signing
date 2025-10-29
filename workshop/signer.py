@@ -85,13 +85,6 @@ def round1_generate_nonce():
 
     # TODO 1.2: Call the appropriate nonce generation FROST API on the above inputs
     secnonce, pubnonce = ()
-    # secnonce, pubnonce = frost.nonce_gen(
-    #     secshare=secshare,
-    #     pubshare=pubshare,
-    #     group_pk=group_pk_xonly,
-    #     msg=MESSAGE_BYTES,
-    #     extra_in=None,
-    # )
 
     print("=== ROUND 1: Nonce Generation ===")
     print("secnonce_hex (KEEP PRIVATE):", secnonce.hex())
@@ -134,12 +127,6 @@ def round2_sign():
 
     # TODO 2.2: Create a signature using FROST API on the above inputs
     psig = b""
-    # psig = frost.sign(
-    #     secnonce=secnonce,
-    #     secshare=secshare,
-    #     my_id=MY_IDENTIFIER,
-    #     session_ctx=session_ctx,
-    # )
 
     signer_index = PARTICIPANT_IDS.index(MY_IDENTIFIER)
     verified = frost.partial_sig_verify(
