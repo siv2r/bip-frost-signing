@@ -13,19 +13,21 @@ Inside each team, two members take the signer roles (participant IDs 0 and 1) an
 All communication between signers and the aggregator is manual—share the hex blobs the scripts print during each round exactly as the code requests. Once both rounds are finished, the aggregator verifies the final signature using the provided group public key. If the verification succeeds, your team has successfully executed the FROST signing protocol.
 
 ## Signer Task
-- `TODO 1.1`: Paste the identifier, secret share, public share, and message provided by the dealer; convert them to bytes as shown.
+- `TODO 1.1`: Paste the identifier, secret share, public share, and message provided by the dealer
 - `TODO 1.2`: Call `frost.nonce_gen(...)` with those inputs to produce a private `secnonce` and a shareable `pubnonce`.
+- Run `python3 signer.py round1` for nonce generation
 - `TODO 2.1`: After the aggregator replies, paste the aggregated nonce, the ordered participant IDs, and each signer’s pubshare and pubnonce.
 - `TODO 2.2`: Call `frost.sign(...)` with your secnonce, secret share, identifier, and `SessionContext` to emit your partial signature, then share the printed hex back to the aggregator.
-- Run `python3 signer.py round1` for nonce generation and `python3 signer.py round2` for signing once the required inputs are filled in.
+- Run `python3 signer.py round2` for signing once the required inputs are filled in.
 
 ## Aggregator Task
 - `TODO 1.1`: Paste the group public key and message the dealer supplied.
 - `TODO 1.2`: Record the two pubnonces you receive from signers 0 and 1 (keep the order aligned with `PARTICIPANT_IDS`).
 - `TODO 1.3`: Call `frost.nonce_agg(...)` with the collected pubnonces and IDs to derive the aggregated nonce; share that value back with both signers.
+- Run `python3 aggregator.py round1` to perform nonce aggregation
 - `TODO 2.1`: After both signers respond, paste their partial signatures along with the corresponding pubshares.
 - `TODO 2.2`: Use `frost.partial_sig_agg(...)` to combine the partials, then verify the resulting Schnorr signature with `schnorr_verify(...)`.
-- Run `python3 aggregator.py round1` to perform nonce aggregation and `python3 aggregator.py round2` to combine and verify the signatures.
+- Run `python3 aggregator.py round2` to create the final schnorr signature.
 
 # FROST Signing Workflow
 ![General Signing Flow](./docs/bip-signing-workflow.png)
