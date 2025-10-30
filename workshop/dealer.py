@@ -34,12 +34,12 @@ def print_key_material(group_pk, identifiers, secshares, pubshares):
     group_point = frost.cpoint(group_pk)
     group_pk_xonly = group_point.to_bytes_xonly()
 
-    print("=== Group Parameters ===")
+    print("\n=== Group Parameters ===")
     print(f"group_public_key (plain/compressed): {group_pk.hex()}\n")
     # print(f"group_public_key (x-only): {group_pk_xonly.hex()}")
     # print()
 
-    print("=== Participant Shares ===")
+    print("\n=== Participant Shares ===")
     for idx, (identifier, secshare, pubshare) in enumerate(
         zip(identifiers, secshares, pubshares)
     ):
@@ -51,16 +51,20 @@ def generate_keys():
 
 
 def main():
-    group_pk, identifiers, secshares, pubshares = generate_keys()
-    print_key_material(group_pk, identifiers, secshares, pubshares)
-    assert frost.check_frost_key_compatibility(
-        MAX_PARTICIPANTS,
-        MIN_PARTICIPANTS,
-        group_pk,
-        identifiers,
-        secshares,
-        pubshares,
-    )
+    for i in range(3):
+        print(f"\n    FROST Keys for Team {i + 1}    ")
+        group_pk, identifiers, secshares, pubshares = generate_keys()
+        print_key_material(group_pk, identifiers, secshares, pubshares)
+        assert frost.check_frost_key_compatibility(
+            MAX_PARTICIPANTS,
+            MIN_PARTICIPANTS,
+            group_pk,
+            identifiers,
+            secshares,
+            pubshares,
+        )
+        print(f"\n===================================")
+
 
 
 if __name__ == "__main__":

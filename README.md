@@ -2,6 +2,7 @@
 ```bash
 git clone https://github.com/siv2r/bip-frost-signing.git
 git checkout boss-workshop
+cd workshop
 ```
 
 # Workshop Task Description
