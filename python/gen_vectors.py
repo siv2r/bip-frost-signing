@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 import os
 import sys
 import shutil
@@ -7,8 +9,9 @@ from pprint import pprint
 from typing import Sequence, List, Dict, Union
 from copy import deepcopy
 
-from reference import *
-from utils.trusted_keygen import trusted_dealer_keygen
+from frost_ref import *
+from frost_ref.signing import nonce_gen_internal
+from trusted_dealer import trusted_dealer_keygen
 from secp256k1lab.secp256k1 import GE
 from secp256k1lab.util import bytes_from_int, int_from_bytes
 
@@ -36,7 +39,7 @@ def point_to_hex(P):
     assert len(res) == 33
     return res.hex().upper()
 
-ErrorInfo = Dict[str, Union[int, str, type(None), "ErrorInfo"]]
+ErrorInfo = Dict[str, Union[int, str, None, "ErrorInfo"]]
 
 def exception_asdict(e: Exception) -> dict:
     error_info: ErrorInfo = {"type": e.__class__.__name__}

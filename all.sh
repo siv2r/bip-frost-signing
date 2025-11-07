@@ -2,6 +2,6 @@
 
 set -euo pipefail
 
-cd reference || exit 1
+cd python || exit 1
 ./tests.sh
 #TODO: add example

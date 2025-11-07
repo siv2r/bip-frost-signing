@@ -1,3 +1,5 @@
+# TODO: remove this file, and use trusted dealer BIP's reference code instead
+
 # Implementation of the Trusted Dealer Key Generation approach for FROST mentioned
 # in https://datatracker.ietf.org/doc/draft-irtf-cfrg-frost/15/ (Appendix D).
 #
@@ -19,6 +21,8 @@ import secrets
 # script_dir = os.path.dirname(os.path.abspath(__file__))
 # parent_dir = os.path.abspath(os.path.join(script_dir, '..'))
 # sys.path.append(parent_dir)
+
+# Add the vendored copy of secp256k1lab to path.
 from secp256k1lab.secp256k1 import G, GE, Scalar
 
 curve_order = GE.ORDER
