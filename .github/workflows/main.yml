@@ -10,7 +10,7 @@ jobs:
         with:
           python-version: 3.11
       - name: Run reference implementation tests
-        run: python3 reference/reference.py
+        run: ./python/tests.py
   trusted_dealer_unit_tests:
     runs-on: ubuntu-latest
     steps:
@@ -20,4 +20,6 @@ jobs:
         with:
           python-version: 3.11
       - name: Run Trusted Dealer unit tests
-        run: python3 -m unittest reference/utils/trusted_keygen.py
+        env:
+          PYTHONPATH: python/secp256k1lab/src
+        run: python3 -m unittest python.trusted_dealer
