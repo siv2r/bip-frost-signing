@@ -1,6 +1,38 @@
 name: Tests
 on: [push, pull_request]
 jobs:
+  ruff_checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: 3.11
+      - name: Install Ruff
+        run: pip install ruff
+      - name: Ruff check
+        working-directory: python
+        run: ruff check .
+      - name: Ruff format check
+        working-directory: python
+        run: ruff format --check --diff .
+  mypy_checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: 3.11
+      - name: Install mypy
+        run: pip install mypy
+      - name: mypy (default settings)
+        working-directory: python
+        run: mypy --no-error-summary .
+      - name: mypy (strict frost_ref)
+        working-directory: python
+        run: mypy --no-error-summary --strict --untyped-calls-exclude=secp256k1lab -p frost_ref --follow-imports=silent
   reference_implementation_tests:
     runs-on: ubuntu-latest
     steps:
