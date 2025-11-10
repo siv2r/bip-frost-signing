@@ -399,11 +399,11 @@ def sign(
         raise ValueError("The signer's participant identifier is out of range")
     (Q, gacc, _, b, R, e) = get_session_values(session_ctx)
     try:
-        k_1_ = Scalar.from_bytes_nonzero_checked(secnonce[0:32])
+        k_1_ = Scalar.from_bytes_nonzero_checked(bytes(secnonce[0:32]))
     except ValueError:
         raise ValueError("first secnonce value is out of range.")
     try:
-        k_2_ = Scalar.from_bytes_nonzero_checked(secnonce[32:64])
+        k_2_ = Scalar.from_bytes_nonzero_checked(bytes(secnonce[32:64]))
     except ValueError:
         raise ValueError("second secnonce value is out of range.")
     # Overwrite the secnonce argument with zeros such that subsequent calls of
