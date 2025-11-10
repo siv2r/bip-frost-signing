@@ -17,7 +17,7 @@ from .signing import (
     # Types
     PlainPk,
     XonlyPk,
-    SessionContext
+    SessionContext,
 )
 
 __all__ = [
@@ -33,5 +33,5 @@ __all__ = [
     # Types
     "PlainPk",
     "XonlyPk",
-    "SessionContext"
+    "SessionContext",
 ]

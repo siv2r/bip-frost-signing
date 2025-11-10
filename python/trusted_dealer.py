@@ -7,11 +7,11 @@
 # there are alternative key generation methods available, such as BIP-FROST-DKG:
 # https://github.com/BlockstreamResearch/bip-frost-dkg
 
-# todo: use the `Scalar` type like BIP-DKG?
-#todo: this shows mypy error, but the file runs
+# todo: this shows mypy error, but the file runs
 
 from typing import Tuple, List, NewType
 import unittest
+
 # todo: replace random module with secrets
 import random
 import secrets
@@ -25,6 +25,7 @@ import secrets
 # Add the vendored copy of secp256k1lab to path.
 from secp256k1lab.secp256k1 import G, GE, Scalar
 
+# todo: FIX IMPORTS. don't defined own types. Import them from signing or secp256k1lab
 curve_order = GE.ORDER
 # point on the secret polynomial, represents a signer's secret share
 PolyPoint = Tuple[int, int]
@@ -34,13 +35,16 @@ ECPoint = GE
 #
 # The following helper functions and types were copied from reference.py
 #
-PlainPk = NewType('PlainPk', bytes)
+PlainPk = NewType("PlainPk", bytes)
+
 
 def xbytes(P: GE) -> bytes:
     return P.to_bytes_xonly()
 
+
 def cbytes(P: GE) -> bytes:
     return P.to_bytes_compressed()
+
 
 def derive_interpolating_value_internal(L: List[int], x_i: int) -> Scalar:
     num, deno = 1, 1
@@ -48,11 +52,14 @@ def derive_interpolating_value_internal(L: List[int], x_i: int) -> Scalar:
         if x_j == x_i:
             continue
         num *= x_j
-        deno *= (x_j - x_i)
+        deno *= x_j - x_i
     return Scalar.from_int_wrapping(num * pow(deno, curve_order - 2, curve_order))
+
+
 #
 # End of helper functions and types copied from reference.py.
 #
+
 
 # evaluates poly using Horner's method, assuming coeff[0] corresponds
 # to the coefficient of highest degree term
@@ -65,17 +72,20 @@ def polynomial_evaluate(coeffs: List[int], x: int) -> int:
 
 def secret_share_combine(shares: List[PolyPoint]) -> Scalar:
     x_coords = []
-    for (x, y) in shares:
+    for x, y in shares:
         x_coords.append(x)
 
     secret = Scalar(0)
-    for (x, y) in shares:
+    for x, y in shares:
         delta = y * derive_interpolating_value_internal(x_coords, x)
         secret += delta
     return secret
 
+
 # coeffs shouldn't include the const term (i.e. secret)
-def secret_share_shard(secret: int, coeffs: List[int], max_participants: int) -> List[PolyPoint]:
+def secret_share_shard(
+    secret: int, coeffs: List[int], max_participants: int
+) -> List[PolyPoint]:
     coeffs = coeffs + [secret]
 
     secshares: List[PolyPoint] = []
@@ -85,9 +95,12 @@ def secret_share_shard(secret: int, coeffs: List[int], max_participants: int) ->
         secshares.append(secshare_i)
     return secshares
 
-def trusted_dealer_keygen(secret_key: Scalar, max_participants: int, min_participants: int) -> Tuple[ECPoint, List[PolyPoint], List[ECPoint]]:
+
+def trusted_dealer_keygen(
+    secret_key: Scalar, max_participants: int, min_participants: int
+) -> Tuple[ECPoint, List[PolyPoint], List[ECPoint]]:
     assert secret_key != 0
-    assert (2 <= min_participants <= max_participants)
+    assert 2 <= min_participants <= max_participants
     # we don't force BIP340 compatibility of group pubkey in keygen
     P = secret_key * G
     assert not P.infinity
@@ -103,6 +116,7 @@ def trusted_dealer_keygen(secret_key: Scalar, max_participants: int, min_partici
         pubshares.append(X)
     return (P, secshares, pubshares)
 
+
 # Test vector from RFC draft.
 # section F.5 of https://datatracker.ietf.org/doc/draft-irtf-cfrg-frost/15/
 class Tests(unittest.TestCase):
@@ -110,15 +124,15 @@ class Tests(unittest.TestCase):
         self.max_participants = 3
         self.min_participants = 2
         self.poly = [
-            0xfbf85eadae3058ea14f19148bb72b45e4399c0b16028acaf0395c9b03c823579,
-            0x0d004150d27c3bf2a42f312683d35fac7394b1e9e318249c1bfe7f0795a83114,
+            0xFBF85EADAE3058EA14F19148BB72B45E4399C0B16028ACAF0395C9B03C823579,
+            0x0D004150D27C3BF2A42F312683D35FAC7394B1E9E318249C1BFE7F0795A83114,
         ]
         self.shares: List[PolyPoint] = [
-            (1, 0x08f89ffe80ac94dcb920c26f3f46140bfc7f95b493f8310f5fc1ea2b01f4254c),
-            (2, 0x04f0feac2edcedc6ce1253b7fab8c86b856a797f44d83d82a385554e6e401984),
-            (3, 0x00e95d59dd0d46b0e303e500b62b7ccb0e555d49f5b849f5e748c071da8c0dbc),
+            (1, 0x08F89FFE80AC94DCB920C26F3F46140BFC7F95B493F8310F5FC1EA2B01F4254C),
+            (2, 0x04F0FEAC2EDCEDC6CE1253B7FAB8C86B856A797F44D83D82A385554E6E401984),
+            (3, 0x00E95D59DD0D46B0E303E500B62B7CCB0E555D49F5B849F5E748C071DA8C0DBC),
         ]
-        self.secret = 0x0d004150d27c3bf2a42f312683d35fac7394b1e9e318249c1bfe7f0795a83114
+        self.secret = 0x0D004150D27C3BF2A42F312683D35FAC7394B1E9E318249C1BFE7F0795A83114
 
     def test_polynomial_evaluate(self) -> None:
         coeffs = self.poly.copy()
@@ -139,7 +153,9 @@ class Tests(unittest.TestCase):
         secret_key = Scalar.from_bytes_wrapping(secrets.token_bytes(32))
         max_participants = 5
         min_participants = 3
-        group_pk, secshares, pubshares = trusted_dealer_keygen(secret_key, max_participants, min_participants)
+        group_pk, secshares, pubshares = trusted_dealer_keygen(
+            secret_key, max_participants, min_participants
+        )
 
         # group_pk need not be xonly (i.e., have even y always)
         self.assertEqual(group_pk, secret_key * G)
@@ -150,5 +166,6 @@ class Tests(unittest.TestCase):
             with self.subTest(i=i):
                 self.assertEqual(pubshares[i], secshares[i][1] * G)
 
-if __name__=='__main__':
+
+if __name__ == "__main__":
     unittest.main()
