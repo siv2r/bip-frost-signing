@@ -1514,7 +1514,6 @@ def main():
     run_gen_vectors("generate_sign_verify_vectors", generate_sign_verify_vectors)
     run_gen_vectors("generate_sig_agg_vectors", generate_sig_agg_vectors)
     run_gen_vectors("generate_det_sign_vectors", generate_det_sign_vectors)
-    generate_sig_agg_vectors()
     print("Test vectors generated successfully")
 
 
