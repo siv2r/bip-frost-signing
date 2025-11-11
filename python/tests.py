@@ -15,8 +15,6 @@ from frost_ref.signing import (
     XonlyPk,
     cbytes,
     check_frost_key_compatibility,
-    check_group_pubkey_correctness,
-    check_pubshares_correctness,
     deterministic_sign,
     get_xonly_pk,
     group_pubkey_and_tweak,
@@ -97,47 +95,6 @@ def generate_frost_keys(
     ser_secshares = [bytes_from_int(secshare_i[1]) for secshare_i in secshares]
     ser_pubshares = [PlainPk(cbytes(pubshare_i)) for pubshare_i in pubshares]
     return (group_pk, identifiers, ser_secshares, ser_pubshares)
-
-
-# REVIEW we might not need this vectors, as `check_pubshares_correctness`
-# can't be implemented securely (they need secshares!!).
-def test_keygen_vectors():
-    with open(os.path.join(sys.path[0], "vectors", "keygen_vectors.json")) as f:
-        test_data = json.load(f)
-
-    valid_test_cases = test_data["valid_test_cases"]
-    for test_case in valid_test_cases:
-        max_participants = test_case["max_participants"]
-        min_participants = test_case["min_participants"]
-        group_pk = bytes.fromhex(test_case["group_public_key"])
-        # assert the length using min & max participants?
-        ids = test_case["participant_identifiers"]
-        pubshares = fromhex_all(test_case["participant_pubshares"])
-        secshares = fromhex_all(test_case["participant_secshares"])
-
-        assert check_frost_key_compatibility(
-            max_participants, min_participants, group_pk, ids, secshares, pubshares
-        )
-
-    pubshare_fail_test_cases = test_data["pubshare_correctness_fail_test_cases"]
-    for test_case in pubshare_fail_test_cases:
-        pubshares = fromhex_all(test_case["participant_pubshares"])
-        secshares = fromhex_all(test_case["participant_secshares"])
-
-        assert not check_pubshares_correctness(secshares, pubshares)
-
-    group_pubkey_fail_test_cases = test_data["group_pubkey_correctness_fail_test_cases"]
-    for test_case in group_pubkey_fail_test_cases:
-        max_participants = test_case["max_participants"]
-        min_participants = test_case["min_participants"]
-        group_pk = bytes.fromhex(test_case["group_public_key"])
-        ids = test_case["participant_identifiers"]
-        pubshares = fromhex_all(test_case["participant_pubshares"])
-        secshares = fromhex_all(test_case["participant_secshares"])
-
-        assert not check_group_pubkey_correctness(
-            min_participants, group_pk, ids, pubshares
-        )
 
 
 def test_nonce_gen_vectors():
@@ -535,6 +492,9 @@ def test_sig_agg_vectors():
         )
 
 
+# TODO: Add tests random tests for `check_group_pubkey_correctness` function
+
+
 def test_sign_and_verify_random(iterations: int) -> None:
     for itr in range(iterations):
         secure_rng = secrets.SystemRandom()
@@ -696,7 +656,6 @@ def run_test(test_name, test_func):
 
 
 if __name__ == "__main__":
-    run_test("test_keygen_vectors", test_keygen_vectors)
     run_test("test_nonce_gen_vectors", test_nonce_gen_vectors)
     run_test("test_nonce_agg_vectors", test_nonce_agg_vectors)
     run_test("test_sign_verify_vectors", test_sign_verify_vectors)

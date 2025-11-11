@@ -4,7 +4,6 @@ import json
 import os
 import shutil
 import sys
-from copy import deepcopy
 from typing import Dict, List, Sequence, Union
 
 from frost_ref import (
@@ -125,65 +124,6 @@ def get_frost_keys():
     # print(secshares)
     # print(f"pubshares = ")
     # print(pubshares)
-
-
-# REVIEW: I think we don't need this vector because this doesn't really test
-# the keygen mechanism used by the user. It simply gives one example of a
-# valid FROST key
-def generate_keygen_vectors():
-    vectors = {
-        "valid_test_cases": [],
-        "pubshare_correctness_fail_test_cases": [],
-        "group_pubkey_correctness_fail_test_cases": [],
-    }
-
-    t, group_pk, secshares, pubshares = get_frost_keys()
-    n = len(pubshares)
-    # --- Valid Test Case 1 ---
-    vectors["valid_test_cases"].append(
-        {
-            "max_participants": n,
-            "min_participants": t,
-            "group_public_key": bytes_to_hex(group_pk),
-            "participant_identifiers": list(range(n)),
-            "participant_pubshares": bytes_list_to_hex(pubshares),
-            "participant_secshares": bytes_list_to_hex(secshares),
-        }
-    )
-
-    # --- Pubshare correctness Fail Test Case 1 ---
-    invalid_pubshare = deepcopy(pubshares[0])
-    # flips '\x02' to '\x03`, and vice versa`
-    invalid_pubshare = bytes([invalid_pubshare[0] ^ 1]) + invalid_pubshare[1:]
-    invalid_pubshares = [invalid_pubshare] + pubshares[1:]
-    vectors["pubshare_correctness_fail_test_cases"].append(
-        {
-            "max_participants": n,
-            "min_participants": t,
-            "group_public_key": bytes_to_hex(group_pk),
-            "participant_identifiers": list(range(n)),
-            "participant_pubshares": bytes_list_to_hex(invalid_pubshares),
-            "participant_secshares": bytes_list_to_hex(secshares),
-        }
-    )
-
-    # --- Group Pubkey correctness Fail Test Case 1 ---
-    # flips '\x02' to '\x03`, and vice versa`
-    invalid_group_pk = bytes([group_pk[0] ^ 1]) + group_pk[1:]
-    vectors["group_pubkey_correctness_fail_test_cases"].append(
-        {
-            "max_participants": n,
-            "min_participants": t,
-            "group_public_key": bytes_to_hex(invalid_group_pk),
-            "participant_identifiers": list(range(n)),
-            "participant_pubshares": bytes_list_to_hex(pubshares),
-            "participant_secshares": bytes_list_to_hex(secshares),
-        }
-    )
-
-    output_file = os.path.join("vectors", "keygen_vectors.json")
-    with open(output_file, "w") as f:
-        json.dump(vectors, f, indent=4)
 
 
 def generate_nonce_gen_vectors():
@@ -1568,7 +1508,6 @@ def run_gen_vectors(test_name, test_func):
 
 def main():
     create_vectors_directory()
-    run_gen_vectors("generate_keygen_vectors", generate_keygen_vectors)
     run_gen_vectors("generate_tweak_vectors", generate_tweak_vectors)
     run_gen_vectors("generate_nonce_gen_vectors", generate_nonce_gen_vectors)
     run_gen_vectors("generate_nonce_agg_vectors", generate_nonce_agg_vectors)
