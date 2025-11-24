@@ -15,7 +15,7 @@ Comments-URI:
 
 ### Abstract
 
-This document proposes a standard for the Flexible Round-Optimized Schnorr Threshold (FROST) signing protocol. The standard is compatible with [BIP340](https://github.com/bitcoin/bips/blob/master/bip-0340.mediawiki) public keys and signatures. It supports _tweaking_, which allows deriving [BIP32](https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki) child keys from the group public key and creating [BIP341](https://github.com/bitcoin/bips/blob/master/bip-0341.mediawiki) Taproot outputs with key and script paths.
+This document proposes a standard for the Flexible Round-Optimized Schnorr Threshold (FROST) signing protocol. The standard is compatible with [BIP340](https://github.com/bitcoin/bips/blob/master/bip-0340.mediawiki) public keys and signatures. It supports _tweaking_, which allows deriving [BIP32](https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki) child keys from the threshold public key and creating [BIP341](https://github.com/bitcoin/bips/blob/master/bip-0341.mediawiki) Taproot outputs with key and script paths.
 
 ### Copyright
 
@@ -28,29 +28,32 @@ This document proposes the FROST signing protocol based on the FROST3 variant (s
 Many sections of this document have been directly copied or modified from [BIP327](https://github.com/bitcoin/bips/blob/master/bip-0327.mediawiki) due to the similarities between the FROST3 and [MuSig2](https://eprint.iacr.org/2020/1261.pdf) signature schemes.
 
 ### Motivation
+<!-- todo: this section seems direct copy of chilldkg. So update/change this to focus on the signing than key gen -->
 
 The FROST signature scheme [[KG20](https://eprint.iacr.org/2020/852),[CKM21](https://eprint.iacr.org/2021/1375),[BTZ21](https://eprint.iacr.org/2022/833),[CGRS23](https://eprint.iacr.org/2023/899)] enables _t-of-n_ Schnorr threshold signatures, in which a threshold _t_ of some set of _n_ signers is required to produce a signature.
 FROST remains unforgeable as long as at most _t-1_ signers are compromised, and remains functional as long as _t_ honest signers do not lose their secret key material. It supports any choice of _t_ as long as _1 ≤ t ≤ n_.[^t-edge-cases]
 
 The primary motivation is to create a standard that allows users of different software projects to jointly control Taproot outputs ([BIP341](https://github.com/bitcoin/bips/blob/master/bip-0341.mediawiki)).
-Such an output contains a public key which, in this case, would be the group public key derived from the public shares of threshold signers.
+Such an output contains a public key which, in this case, would be the threshold public key derived from the public shares of threshold signers.
 It can be spent using FROST to produce a signature for the key-based spending path.
 
 The on-chain footprint of a FROST Taproot output is essentially a single BIP340 public key, and a transaction spending the output only requires a single signature cooperatively produced by _threshold_ signers. This is **more compact** and has **lower verification cost** than signers providing _n_ individual public keys and _t_ signatures, as would be required by an _t-of-n_ policy implemented using <code>OP_CHECKSIGADD</code> as introduced in ([BIP342](https://github.com/bitcoin/bips/blob/master/bip-0342.mediawiki)).
 As a side effect, the numbers _t_ and _n_ of signers are not limited by any consensus rules when using FROST.
 
-Moreover, FROST offers a **higher level of privacy** than <code>OP_CHECKSIGADD</code>: FROST Taproot outputs are indistinguishable for a blockchain observer from regular, single-signer Taproot outputs even though they are actually controlled by multiple signers. By tweaking a group public key, the shared Taproot output can have script spending paths that are hidden unless used.
+Moreover, FROST offers a **higher level of privacy** than <code>OP_CHECKSIGADD</code>: FROST Taproot outputs are indistinguishable for a blockchain observer from regular, single-signer Taproot outputs even though they are actually controlled by multiple signers. By tweaking a threshold public key, the shared Taproot output can have script spending paths that are hidden unless used.
 
 There are threshold-signature schemes other than FROST that are fully compatible with Schnorr signatures.
 The FROST variant proposed below stands out by combining all the following features:
 * **Two Communication Rounds**: FROST is faster in practice than other threshold-signature schemes [[GJKR03](https://link.springer.com/chapter/10.1007/3-540-36563-x_26)] which requires at least three rounds, particularly when signers are connected through high-latency anonymous links. Moreover, the need for fewer communication rounds simplifies the algorithms and reduces the probability that implementations and users make security-relevant mistakes.
 * **Efficiency over Robustness**: FROST trades off the robustness property for network efficiency (fewer communication rounds), requiring the protocol to be aborted in the case of any misbehaving participant.
+<!--todo: the security is also proved for distributed setup right? mention that.
+and also about the combination of security proofs. we can't randomly use combination. Don't mention it here. But somewhere else. -->
 * **Provable security**: FROST3 with an idealized key generation (i.e., trusted setup) has been [proven existentially unforgeable](https://eprint.iacr.org/2022/550.pdf) under the one-more discrete logarithm (OMDL) assumption (instead of the discrete logarithm assumption required for single-signer Schnorr signatures) in the random oracle model (ROM).
 
 ### Design
 
-* **Compatibility with BIP340**: The group public key and participant public shares produced by a compatible key generation algorithm MUST be _plain_ public keys in compressed format. In this proposal, the signature output at the end of the signing protocol is a BIP340 signature, which passes BIP340 verification for the BIP340 X-only version of the group public key and a message.
-* **Tweaking for BIP32 derivations and Taproot**: This proposal supports tweaking group public key and signing for this tweaked group public key. We distinguish two modes of tweaking: _Plain_ tweaking can be used to derive child group public keys per [BIP32](https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki)._X-only_ tweaking, on the other hand, allows creating a [BIP341](https://github.com/bitcoin/bips/blob/master/bip-0341.mediawiki) tweak to add script paths to a Taproot output. See [tweaking the group public key](./README.md#tweaking-group-public-key) below for details.
+* **Compatibility with BIP340**: The threshold public key and participant public shares produced by a compatible key generation algorithm MUST be _plain_ public keys in compressed format. In this proposal, the signature output at the end of the signing protocol is a BIP340 signature, which passes BIP340 verification for the BIP340 X-only version of the threshold public key and a message.
+* **Tweaking for BIP32 derivations and Taproot**: This proposal supports tweaking threshold public key and signing for this tweaked threshold public key. We distinguish two modes of tweaking: _Plain_ tweaking can be used to derive child threshold public keys per [BIP32](https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki)._X-only_ tweaking, on the other hand, allows creating a [BIP341](https://github.com/bitcoin/bips/blob/master/bip-0341.mediawiki) tweak to add script paths to a Taproot output. See [tweaking the threshold public key](./README.md#tweaking-threshold-public-key) below for details.
 * **Non-interactive signing with preprocessing**: The first communication round, exchanging the nonces, can happen before the message or the exact set of signers is determined. Once the parameters of the signing session are finalized, the signers can send partial signatures without additional interaction.
 * **Partial signature independent of order**: The output of the signing algorithm remains consistent regardless of the order in which participant identifiers and public shares are used during the session context initialization. This property is inherent when combining Shamir shares to derive any value.
 * **Third-party nonce and partial signature aggregation**: Instead of every signer sending their nonce and partial signature to every other signer, it is possible to use an untrusted third-party _aggregator_ in order to reduce the communication complexity from quadratic to linear in the number of signers. In each of the two rounds, the aggregator collects all signers' contributions (nonces or partial signatures), aggregates them, and broadcasts the aggregate back to the signers. A malicious aggregator can force the signing session to fail to produce a valid Schnorr signature but cannot negatively affect the unforgeability of the scheme.
@@ -79,15 +82,15 @@ We distinguish between two public key types, namely _plain public keys_, the key
 Plain public keys are byte strings of length 33 (often called _compressed_ format).
 In contrast, X-only public keys are 32-byte strings defined in [BIP340](https://github.com/bitcoin/bips/blob/master/bip-0340.mediawiki).
 
-FROST generates signatures that are verifiable as if produced by a single signer using a secret key _s_ with the corresponding public key. As a threshold signing protocol, the group secret key _s_ is shared among all _MAX_PARTICIPANTS_ participants using Shamir's secret sharing, and at least _MIN_PARTICIPANTS_ participants must collaborate to issue a valid signature.  
+FROST generates signatures that are verifiable as if produced by a single signer using a secret key _s_ with the corresponding public key. As a threshold signing protocol, the threshold secret key _s_ is shared among all _MAX_PARTICIPANTS_ participants using Shamir's secret sharing, and at least _MIN_PARTICIPANTS_ participants must collaborate to issue a valid signature.  
 &emsp;&ensp;_MIN_PARTICIPANTS_ is a positive non-zero integer lesser than or equal to _MAX_PARTICIPANTS_  
 &emsp;&ensp;_MAX_PARTICIPANTS_ MUST be a positive integer less than 2^32.
 
 In particular, FROST signing assumes each participant is configured with the following information:
 - An identifier _id_, which is an integer in the range _[0, MAX_PARTICIPANTS-1]_ and MUST be distinct from the identifier of every other participant.
 <!-- REVIEW we haven't introduced participant identifier yet. So, don't use them here -->
-- A secret share _secshare<sub>id</sub>_, which is a positive non-zero integer less than the secp256k1 curve order. This value represents the _i_-th Shamir secret share of the group secret key _s_.  In particular, _secshare<sub>id</sub>_ is the value _f(id+1)_ on a secret polynomial _f_ of degree _(MIN_PARTICIPANTS - 1)_, where _s_ is _f(0)_.
-- A Group public key _group_pk_, which is point on the secp256k1 curve.
+- A secret share _secshare<sub>id</sub>_, which is a positive non-zero integer less than the secp256k1 curve order. This value represents the _i_-th Shamir secret share of the threshold secret key _s_.  In particular, _secshare<sub>id</sub>_ is the value _f(id+1)_ on a secret polynomial _f_ of degree _(MIN_PARTICIPANTS - 1)_, where _s_ is _f(0)_.
+- A Threshold public key _thresh_pk_, which is point on the secp256k1 curve.
 - A public share _pubshare<sub>id</sub>_, which is point on the secp256k1 curve.
 
 > [!NOTE]
@@ -95,7 +98,7 @@ In particular, FROST signing assumes each participant is configured with the fol
 
 As key generation for FROST signing is beyond the scope of this document, we do not specify how this information is configured and distributed to the participants. Generally, there are two possible key generation mechanisms: one involves a single, trusted dealer (see Appendix D of [FROST RFC draft](https://datatracker.ietf.org/doc/draft-irtf-cfrg-frost/15/)), and the other requires performing a distributed key generation protocol (see [BIP FROST DKG draft](https://github.com/BlockstreamResearch/bip-frost-dkg)).
 
-For a key generation mechanism to be compatible with FROST signing, the participant information it generates MUST successfully pass both the _ValidateGroupPubkey_ and _ValidatePubshares_ functions (see [Key Generation Compatibility](./README.md#key-generation-compatibility)).
+For a key generation mechanism to be compatible with FROST signing, the participant information it generates MUST successfully pass both the _ValidateThreshPubkey_ and _ValidatePubshares_ functions (see [Key Generation Compatibility](./README.md#key-generation-compatibility)).
 
 > [!IMPORTANT]
 > It should be noted that while passing these functions ensures functional compatibility, it does not guarantee the security of the key generation mechanism.
@@ -138,7 +141,7 @@ This party would have complete control over the aggregate public key and message
 
 The optional arguments to _NonceGen_ enable a defense-in-depth mechanism that may prevent secret share exposure if _rand'_ is accidentally not drawn uniformly at random.
 If the value _rand'_ was identical in two _NonceGen_ invocations, but any other argument was different, the _secnonce_ would still be guaranteed to be different as well (with overwhelming probability), and thus accidentally using the same _secnonce_ for _Sign_ in both sessions would be avoided.
-Therefore, it is recommended to provide the optional arguments _secshare_, _pubshare_, _group_pk_, and _m_ if these session parameters are already determined during nonce generation.
+Therefore, it is recommended to provide the optional arguments _secshare_, _pubshare_, _thresh_pk_, and _m_ if these session parameters are already determined during nonce generation.
 The auxiliary input _extra_in_ can contain additional contextual data that has a chance of changing between _NonceGen_ runs,
 e.g., a supposedly unique session id (taken from the application), a session counter wide enough not to repeat in practice, any nonces by other signers (if already known), or the serialization of a data structure containing multiple of the above.
 However, the protection provided by the optional arguments should only be viewed as a last resort.
@@ -186,11 +189,11 @@ An adversary can forge a partial signature, i.e., create a partial signature wit
 However, if _PartialSigVerify_ succeeds for all partial signatures then _PartialSigAgg_ will return a valid Schnorr signature.
 
 
-### Tweaking the Group Public Key
+### Tweaking the Threshold Public Key
 
-The group public key can be _tweaked_, which modifies the key as defined in the [Tweaking Definition](./README.md#tweaking-definition) subsection.
+The threshold public key can be _tweaked_, which modifies the key as defined in the [Tweaking Definition](./README.md#tweaking-definition) subsection.
 In order to apply a tweak, the Tweak Context output by _TweakCtxInit_ is provided to the _ApplyTweak_ algorithm with the _is_xonly_t_ argument set to false for plain tweaking and true for X-only tweaking.
-The resulting Tweak Context can be used to apply another tweak with _ApplyTweak_ or obtain the group public key with _GetXonlyPubkey_ or _GetPlainPubkey_.
+The resulting Tweak Context can be used to apply another tweak with _ApplyTweak_ or obtain the threshold public key with _GetXonlyPubkey_ or _GetPlainPubkey_.
 
 The purpose of supporting tweaking is to ensure compatibility with existing uses of tweaking, i.e., that the result of signing is a valid signature for the tweaked public key.
 The FROST signing algorithms take arbitrary tweaks as input but accepting arbitrary tweaks may negatively affect the security of the scheme.[^arbitrary-tweaks]
@@ -274,11 +277,11 @@ Algorithm _ValidatePubshares(secshare<sub>1..u</sub>, pubshare<sub>1..u</sub>)_
     - Fail if _PlainPubkeyGen(secshare<sub>i</sub>)_ ≠ _pubshare<sub>i</sub>_
 - Return success iff no failure occurred before reaching this point.
 
-Algorithm _ValidateGroupPubkey(threshold, group_pk, id<sub>1..u</sub>, pubshare<sub>1..u</sub>)_:
+Algorithm _ValidateThreshPubkey(threshold, thresh_pk, id<sub>1..u</sub>, pubshare<sub>1..u</sub>)_:
 - Inputs:
     - The number _u_ of participants involved in keygen: an integer equal to _max_participants_
     - The number _threshold_ of participants required to issue a signature: an integer equal to _min_participants_
-    - The group public key _group_pk_: a 33-byte array
+    - The threshold public key _thresh_pk_: a 33-byte array
     - The participant identifiers _id<sub>1..u</sub>_: _u_ integers, each with 0 ≤ _id<sub>i</sub>_ < _max_participants_
     - The participant public shares _pubshares<sub>1..u</sub>_: _u_ 33-byte arrays
 - Fail if _threshold_ > _u_
@@ -286,8 +289,8 @@ Algorithm _ValidateGroupPubkey(threshold, group_pk, id<sub>1..u</sub>, pubshare<
     - For each combination of _t_ elements from _id<sub>1..u</sub>_:[^itertools-combinations]
         - Let _signer_id<sub>1..t</sub>_ be the current combination of participant identifiers
         - Let _signer_pubshare<sub>1..t</sub>_ be their corresponding participant pubshares[^calc-signer-pubshares]
-        - _expected_pk_ = _DeriveGroupPubkey(signer_id<sub>1..t</sub>, signer_pubshare<sub>1..t</sub>)_
-        - Fail if _group_pk_ ≠ _expected_pk_
+        - _expected_pk_ = _DeriveThreshPubkey(signer_id<sub>1..t</sub>, signer_pubshare<sub>1..t</sub>)_
+        - Fail if _thresh_pk_ ≠ _expected_pk_
 - Return success iff no failure occurred before reaching this point.
 
 ### Key Derivation and Tweaking
@@ -295,7 +298,7 @@ Algorithm _ValidateGroupPubkey(threshold, group_pk, id<sub>1..u</sub>, pubshare<
 #### Tweak Context
 
 The Tweak Context is a data structure consisting of the following elements:
-- The point _Q_ representing the potentially tweaked group public key: an elliptic curve point
+- The point _Q_ representing the potentially tweaked threshold public key: an elliptic curve point
 - The accumulated tweak _tacc_: an integer with _0 ≤ tacc < n_
 - The value _gacc_: 1 or -1 mod n
 
@@ -306,14 +309,14 @@ Algorithm _TweakCtxInit(id<sub>1..u</sub>, pubshare<sub>1..u</sub>):_
     - The number _u_ of participants available in the signing session with _min_participants ≤ u ≤ max_participants_
     - The participant identifiers _id<sub>1..u</sub>_: _u_ integers, each with 0 ≤ _id<sub>i</sub>_ < _max_participants_
 	- The individual public shares _pubshare<sub>1..u</sub>_: _u_ 33-byte arrays
-- Let _group_pk = DeriveGroupPubkey(id<sub>1..u</sub>, pubshare<sub>1..u</sub>)_; fail if that fails
-- Let _Q = cpoint(group_pk)_
+- Let _thresh_pk = DeriveThreshPubkey(id<sub>1..u</sub>, pubshare<sub>1..u</sub>)_; fail if that fails
+- Let _Q = cpoint(thresh_pk)_
 - Fail if _is_infinite(Q)_.
 - Let _gacc = 1_
 - Let _tacc = 0_
 - Return _tweak_ctx = (Q, gacc, tacc)_.
 
-Internal Algorithm _DeriveGroupPubkey(id<sub>1..u</sub>, pubshare<sub>1..u</sub>)_
+Internal Algorithm _DeriveThreshPubkey(id<sub>1..u</sub>, pubshare<sub>1..u</sub>)_
 - _inf_point = bytes(33, 0)_
 - _Q_ = _cpoint_ext(inf_point)_
 - For _i_ = _1..u_:
@@ -363,11 +366,11 @@ Algorithm _ApplyTweak(tweak_ctx, tweak, is_xonly_t)_:
 
 ### Nonce Generation
 
-Algorithm _NonceGen(secshare, pubshare, group_pk, m, extra_in)_:
+Algorithm _NonceGen(secshare, pubshare, thresh_pk, m, extra_in)_:
 - Inputs:
     - The participant’s secret share _secshare_: a 32-byte array (optional argument)
     - The corresponding public share _pubshare_: a 33-byte array (optional argument)
-    - The x-only group public key _group_pk_: a 32-byte array (optional argument)
+    - The x-only threshold public key _thresh_pk_: a 32-byte array (optional argument)
     - The message _m_: a byte array (optional argument)[^max-msg-len]
     - The auxiliary input _extra_in_: a byte array with _0 ≤ len(extra_in) ≤ 2<sup>32</sup>-1_ (optional argument)
 - Let _rand'_ be a 32-byte array freshly drawn uniformly at random
@@ -377,15 +380,15 @@ Algorithm _NonceGen(secshare, pubshare, group_pk, m, extra_in)_:
     - Let _rand = rand'_
 - If the optional argument _pubshare_ is not present:
     - Let _pubshare_ = _empty_bytestring_
-- If the optional argument _group_pk_ is not present:
-    - Let _group_pk_ = _empty_bytestring_
+- If the optional argument _thresh_pk_ is not present:
+    - Let _thresh_pk_ = _empty_bytestring_
 - If the optional argument _m_ is not present:
     - Let _m_prefixed = bytes(1, 0)_
 - Else:
     - Let _m_prefixed = bytes(1, 1) || bytes(8, len(m)) || m_
 - If the optional argument _extra_in_ is not present:
     - Let _extra_in = empty_bytestring_
-- Let _k<sub>i</sub> = int(hash<sub>FROST/nonce</sub>(rand || bytes(1, len(pubshare)) || pubshare || bytes(1, len(group_pk)) || group_pk || m_prefixed || bytes(4, len(extra_in)) || extra_in || bytes(1, i - 1))) mod n_ for _i = 1,2_
+- Let _k<sub>i</sub> = int(hash<sub>FROST/nonce</sub>(rand || bytes(1, len(pubshare)) || pubshare || bytes(1, len(thresh_pk)) || thresh_pk || m_prefixed || bytes(4, len(extra_in)) || extra_in || bytes(1, i - 1))) mod n_ for _i = 1,2_
 - Fail if _k<sub>1</sub> = 0_ or _k<sub>2</sub> = 0_
 - Let _R<sub>⁎,1</sub> = k<sub>1</sub>⋅G, R<sub>⁎,2</sub> = k<sub>2</sub>⋅G_
 - Let _pubnonce = cbytes(R<sub>,1</sub>) || cbytes(R<sub>⁎,2</sub>)_
@@ -529,7 +532,7 @@ Algorithm _PartialSigAgg(psig<sub>1..u</sub>, id<sub>1..u</sub>, session_ctx)_:
 
 ### Test Vectors & Reference Code
 
-We provide a naive, highly inefficient, and non-constant time [pure Python 3 reference implementation of the group public key tweaking, nonce generation, partial signing, and partial signature verification algorithms](./reference/reference.py).
+We provide a naive, highly inefficient, and non-constant time [pure Python 3 reference implementation of the threshold public key tweaking, nonce generation, partial signing, and partial signature verification algorithms](./reference/reference.py).
 
 Standalone JSON test vectors are also available in the [same directory](./reference/vectors/), to facilitate porting the test vectors into other implementations.
 
@@ -583,8 +586,8 @@ Algorithm _DeterministicSign(secshare, my_id, aggothernonce, id<sub>1..u</sub>, 
 - Let _tweak_ctx<sub>0</sub> = TweakCtxInit(id<sub>1..u</sub>, pubshare<sub>1..u</sub>)_; fail if that fails
 - For _i = 1 .. v_:
     - Let _tweak_ctx<sub>i</sub> = ApplyTweak(tweak_ctx<sub>i-1</sub>, tweak<sub>i</sub>, is_xonly_t<sub>i</sub>)_; fail if that fails
-- Let _tweaked_gpk = GetXonlyPubkey(tweak_ctx<sub>v</sub>)_
-- Let _k<sub>i</sub> = int(hash<sub>FROST/deterministic/nonce</sub>(secshare' || aggothernonce || tweaked_gpk || bytes(8, len(m)) || m || bytes(1, i - 1))) mod n_ for _i = 1,2_
+- Let _tweaked_tpk = GetXonlyPubkey(tweak_ctx<sub>v</sub>)_
+- Let _k<sub>i</sub> = int(hash<sub>FROST/deterministic/nonce</sub>(secshare' || aggothernonce || tweaked_tpk || bytes(8, len(m)) || m || bytes(1, i - 1))) mod n_ for _i = 1,2_
 - Fail if _k<sub>1</sub> = 0_ or _k<sub>2</sub> = 0_
 - Let _R<sub>⁎,1</sub> = k<sub>1</sub>⋅G, R<sub>⁎,2</sub> = k<sub>2</sub>⋅G_
 - Let _pubnonce = cbytes(R<sub>⁎,2</sub>) || cbytes(R<sub>⁎,2</sub>)_
@@ -599,7 +602,7 @@ Algorithm _DeterministicSign(secshare, my_id, aggothernonce, id<sub>1..u</sub>, 
 
 ### Tweaking Definition
 
-Two modes of tweaking the group public key are supported. They correspond to the following algorithms:
+Two modes of tweaking the threshold public key are supported. They correspond to the following algorithms:
 
 Algorithm _ApplyPlainTweak(P, t)_:
 - Inputs:
@@ -612,20 +615,20 @@ Algorithm _ApplyXonlyTweak(P, t)_:
 
 ### Negation of the Secret Share when Signing
 
-During the signing process, the *[Sign](./README.md#signing)* algorithm might have to negate the secret share in order to produce a partial signature for an X-only group public key. This public key is derived from *u* public shares and *u* participant identifiers (denoted by the signer set *U*) and then tweaked *v* times (X-only or plain).
+During the signing process, the *[Sign](./README.md#signing)* algorithm might have to negate the secret share in order to produce a partial signature for an X-only threshold public key. This public key is derived from *u* public shares and *u* participant identifiers (denoted by the signer set *U*) and then tweaked *v* times (X-only or plain).
 
 The following elliptic curve points arise as intermediate steps when creating a signature:  
 • _P<sub>i</sub>_ as computed in any compatible key generation method is the point corresponding to the *i*-th signer's public share. Defining *d<sub>i</sub>'* to be the *i*-th signer's secret share as an integer, i.e., the *d’* value as computed in the *Sign* algorithm of the *i*-th signer, we have:  
 &emsp;&ensp;*P<sub>i</sub> = d<sub>i</sub>'⋅G*  
-• *Q<sub>0</sub>* is the group public key derived from the signer’s public shares. It is identical to the value *Q* computed in *DeriveGroupPubkey* and therefore defined as:  
+• *Q<sub>0</sub>* is the threshold public key derived from the signer’s public shares. It is identical to the value *Q* computed in *DeriveThreshPubkey* and therefore defined as:  
 &emsp;&ensp;_Q<sub>0</sub> = &lambda;<sub>1, U</sub>⋅P<sub>1</sub> + &lambda;<sub>2, U</sub>⋅P<sub>2</sub> + ... + &lambda;<sub>u, U</sub>⋅P<sub>u</sub>_  
-• *Q<sub>i</sub>* is the tweaked group public key after the *i*-th execution of *ApplyTweak* for *1 ≤ i ≤ v*. It holds that  
+• *Q<sub>i</sub>* is the tweaked threshold public key after the *i*-th execution of *ApplyTweak* for *1 ≤ i ≤ v*. It holds that  
 &emsp;&ensp;*Q<sub>i</sub> = f(i-1) + t<sub>i</sub>⋅G* for *i = 1, ..., v* where  
 &emsp;&ensp;&emsp;&ensp;*f(i-1) := with_even_y(Q<sub>i-1</sub>)* if *is_xonly_t<sub>i</sub>* and  
 &emsp;&ensp;&emsp;&ensp;*f(i-1) := Q<sub>i-1</sub>* otherwise.  
-• *with_even_y(Q*<sub>v</sub>*)* is the final result of the group public key derivation and tweaking operations. It corresponds to the output of *GetXonlyPubkey* applied on the final Tweak Context.
+• *with_even_y(Q*<sub>v</sub>*)* is the final result of the threshold public key derivation and tweaking operations. It corresponds to the output of *GetXonlyPubkey* applied on the final Tweak Context.
 
-The signer's goal is to produce a partial signature corresponding to the final result of group pubkey derivation and tweaking, i.e., the X-only public key *with_even_y(Q<sub>v</sub>)*.
+The signer's goal is to produce a partial signature corresponding to the final result of threshold pubkey derivation and tweaking, i.e., the X-only public key *with_even_y(Q<sub>v</sub>)*.
 
 For _1 ≤ i ≤ v_, we denote the value _g_ computed in the _i_-th execution of _ApplyTweak_ by _g<sub>i-1</sub>_. Therefore, _g<sub>i-1</sub>_ is _-1 mod n_ if and only if _is_xonly_t<sub>i</sub>_ is true and _Q<sub>i-1</sub>_ has an odd Y coordinate. In other words, _g<sub>i-1</sub>_ indicates whether _Q<sub>i-1</sub>_ needed to be negated to apply an X-only tweak:  
 &emsp;&ensp;_f(i-1) = g<sub>i-1</sub>⋅Q<sub>i-1</sub>_ for _1 ≤ i ≤ v_.  
@@ -665,7 +668,7 @@ Intuitively, _gacc<sub>i</sub>_ tracks accumulated sign flipping and _tacc<sub>i
 
 As explained in [Negation Of The Secret Share When Signing](./README.md#negation-of-the-secret-share-when-signing) the signer uses a possibly negated secret share  
 &emsp;&ensp;_d = g<sub>v</sub>⋅gacc<sub>v</sub>⋅d' mod n_  
-when producing a partial signature to ensure that the aggregate signature will correspond to a group public key with even Y coordinate.
+when producing a partial signature to ensure that the aggregate signature will correspond to a threshold public key with even Y coordinate.
 
 The [_PartialSigVerifyInternal_](./README.md#partial-signature-verification) algorithm is supposed to check  
 &emsp;&ensp;_s⋅G = Re<sub>⁎</sub> + e⋅&lambda;⋅d⋅G_.
@@ -674,7 +677,7 @@ The verifier doesn't have access to _d⋅G_ but can construct it using the parti
 _d⋅G  
 &emsp;&ensp;= g<sub>v</sub>⋅gacc<sub>v</sub>⋅d'⋅G  
 &emsp;&ensp;= g<sub>v</sub>⋅gacc<sub>v</sub>⋅cpoint(pubshare)_  
-Note that the group public key and list of tweaks are inputs to partial signature verification, so the verifier can also construct _g<sub>v</sub>_ and _gacc<sub>v</sub>_.
+Note that the threshold public key and list of tweaks are inputs to partial signature verification, so the verifier can also construct _g<sub>v</sub>_ and _gacc<sub>v</sub>_.
 
 ### Dealing with Infinity in Nonce Aggregation
 
@@ -706,7 +709,7 @@ The `MINOR` version is incremented whenever the inputs or the output of an algor
 The `PATCH` version is incremented for other noteworthy changes (bug fixes, test vectors, important clarifications, etc.).
 
 * *0.2.0* (2025-04-11): Includes minor fixes and the following major changes:
-  - Initialize `TweakCtxInit` using individual `pubshares` instead of the group public key.
+  - Initialize `TweakCtxInit` using individual `pubshares` instead of the threshold public key.
   - Add Python script to automate generation of test vectors.
   - Represent participant identifiers as 4-byte integers in the range `0..MAX_PARTICIPANTS - 1` (inclusive).
 * *0.1.0* (2024-07-31): Publication of draft BIP on the bitcoin-dev mailing list
@@ -720,7 +723,7 @@ We thank Jonas Nick, Tim Ruffing, Jesse Posner, and Sebastian Falbesoner for the
 [^t-edge-cases]: While `t = n` and `t = 1` are in principle supported, simpler alternatives are available in these cases.
 In the case `t = n`, using a dedicated `n`-of-`n` multi-signature scheme such as MuSig2 (see [BIP327](bip-0327.mediawiki)) instead of FROST avoids the need for an interactive DKG.
 The case `t = 1` can be realized by letting one signer generate an ordinary [BIP340](bip-0340.mediawiki) key pair and transmitting the key pair to every other signer, who can check its consistency and then simply use the ordinary [BIP340](bip-0340.mediawiki) signing algorithm.
-Signers still need to ensure that they agree on a key pair. A detailed specification for this key sharing protocol is not in the scope of this document.
+Signers still need to ensure that they agree on a key pair.
 
 [^nonce-serialization-detail]: We treat the _secnonce_ and _pubnonce_ as grammatically singular even though they include serializations of two scalars and two elliptic curve points, respectively. This treatment may be confusing for readers familiar with the MuSig2 paper. However, serialization is a technical detail that is irrelevant for users of MuSig2 interfaces.
 

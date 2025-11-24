@@ -17,7 +17,7 @@ from frost_ref.signing import (
     check_frost_key_compatibility,
     deterministic_sign,
     get_xonly_pk,
-    group_pubkey_and_tweak,
+    thresh_pubkey_and_tweak,
     individual_pk,
     nonce_agg,
     nonce_gen,
@@ -89,12 +89,12 @@ def generate_frost_keys(
         secret, max_participants, min_participants
     )
 
-    group_pk = PlainPk(cbytes(P))
+    thresh_pk = PlainPk(cbytes(P))
     # we need decrement by one, since our identifiers represent integer indices
     identifiers = [int(secshare_i[0] - 1) for secshare_i in secshares]
     ser_secshares = [bytes_from_int(secshare_i[1]) for secshare_i in secshares]
     ser_pubshares = [PlainPk(cbytes(pubshare_i)) for pubshare_i in pubshares]
-    return (group_pk, identifiers, ser_secshares, ser_pubshares)
+    return (thresh_pk, identifiers, ser_secshares, ser_pubshares)
 
 
 def test_nonce_gen_vectors():
@@ -117,16 +117,16 @@ def test_nonce_gen_vectors():
         pubshare = get_value_maybe("pubshare")
         if pubshare is not None:
             pubshare = PlainPk(pubshare)
-        group_pk = get_value_maybe("group_pk")
-        if group_pk is not None:
-            group_pk = XonlyPk(group_pk)
+        thresh_pk = get_value_maybe("threshold_public_key")
+        if thresh_pk is not None:
+            thresh_pk = XonlyPk(thresh_pk)
         msg = get_value_maybe("msg")
         extra_in = get_value_maybe("extra_in")
         expected_secnonce = get_value("expected_secnonce")
         expected_pubnonce = get_value("expected_pubnonce")
 
         assert nonce_gen_internal(
-            rand_, secshare, pubshare, group_pk, msg, extra_in
+            rand_, secshare, pubshare, thresh_pk, msg, extra_in
         ) == (expected_secnonce, expected_pubnonce)
 
 
@@ -154,7 +154,7 @@ def test_nonce_agg_vectors():
 
 
 # todo: include vectors from the frost draft too
-# todo: add a test where group_pk is even (might need to modify json file)
+# todo: add a test where thresh_pk is even (might need to modify json file)
 def test_sign_verify_vectors():
     with open(os.path.join(sys.path[0], "vectors", "sign_verify_vectors.json")) as f:
         test_data = json.load(f)
@@ -465,10 +465,10 @@ def test_sig_agg_vectors():
 
         bip340sig = partial_sig_agg(psigs_tmp, ids_tmp, session_ctx)
         assert bip340sig == expected
-        tweaked_group_pk = get_xonly_pk(
-            group_pubkey_and_tweak(pubshares_tmp, ids_tmp, tweaks_tmp, tweak_modes_tmp)
+        tweaked_thresh_pk = get_xonly_pk(
+            thresh_pubkey_and_tweak(pubshares_tmp, ids_tmp, tweaks_tmp, tweak_modes_tmp)
         )
-        assert schnorr_verify(msg, tweaked_group_pk, bip340sig)
+        assert schnorr_verify(msg, tweaked_thresh_pk, bip340sig)
 
     for test_case in error_test_cases:
         exception, except_fn = get_error_details(test_case)
@@ -492,7 +492,7 @@ def test_sig_agg_vectors():
         )
 
 
-# TODO: Add tests random tests for `check_group_pubkey_correctness` function
+# TODO: Add tests random tests for `check_thresh_pubkey_correctness` function
 
 
 def test_sign_and_verify_random(iterations: int) -> None:
@@ -503,12 +503,12 @@ def test_sign_and_verify_random(iterations: int) -> None:
         # randomly choose a number: 2 <= number <= max_participants
         min_participants = secure_rng.randrange(2, max_participants + 1)
 
-        group_pk, ids, secshares, pubshares = generate_frost_keys(
+        thresh_pk, ids, secshares, pubshares = generate_frost_keys(
             max_participants, min_participants
         )
         assert len(ids) == len(secshares) == len(pubshares) == max_participants
         assert check_frost_key_compatibility(
-            max_participants, min_participants, group_pk, ids, secshares, pubshares
+            max_participants, min_participants, thresh_pk, ids, secshares, pubshares
         )
 
         # randomly choose the signer set, with len: min_participants <= len <= max_participants
@@ -524,7 +524,7 @@ def test_sign_and_verify_random(iterations: int) -> None:
         # we do it here to improve the code readability
         signer_secshares = [secshares[i] for i in signer_indices]
 
-        # In this example, the message and group pubkey are known
+        # In this example, the message and threshold pubkey are known
         # before nonce generation, so they can be passed into the nonce
         # generation function as a defense-in-depth measure to protect
         # against nonce reuse.
@@ -536,8 +536,8 @@ def test_sign_and_verify_random(iterations: int) -> None:
         v = secrets.randbelow(4)
         tweaks = [secrets.token_bytes(32) for _ in range(v)]
         tweak_modes = [secrets.choice([False, True]) for _ in range(v)]
-        tweaked_group_pk = get_xonly_pk(
-            group_pubkey_and_tweak(signer_pubshares, signer_ids, tweaks, tweak_modes)
+        tweaked_thresh_pk = get_xonly_pk(
+            thresh_pubkey_and_tweak(signer_pubshares, signer_ids, tweaks, tweak_modes)
         )
 
         signer_secnonces = []
@@ -548,7 +548,7 @@ def test_sign_and_verify_random(iterations: int) -> None:
             secnonce_i, pubnonce_i = nonce_gen(
                 signer_secshares[i],
                 signer_pubshares[i],
-                tweaked_group_pk,
+                tweaked_thresh_pk,
                 msg,
                 t.to_bytes(8, "big"),
             )
@@ -562,7 +562,7 @@ def test_sign_and_verify_random(iterations: int) -> None:
             secnonce_final, pubnonce_final = nonce_gen(
                 signer_secshares[-1],
                 signer_pubshares[-1],
-                tweaked_group_pk,
+                tweaked_thresh_pk,
                 msg,
                 t.to_bytes(8, "big"),
             )
@@ -641,7 +641,7 @@ def test_sign_and_verify_random(iterations: int) -> None:
         )
 
         bip340sig = partial_sig_agg(signer_psigs, signer_ids, session_ctx)
-        assert schnorr_verify(msg, tweaked_group_pk, bip340sig)
+        assert schnorr_verify(msg, tweaked_thresh_pk, bip340sig)
 
 
 def run_test(test_name, test_func):

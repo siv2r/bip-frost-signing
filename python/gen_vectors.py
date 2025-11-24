@@ -86,7 +86,7 @@ def expect_exception(try_fn, expected_exception):
 def get_frost_keys():
     n = 5  # noqa: F841
     t = 3
-    group_pubkey = bytes.fromhex(
+    thresh_pubkey = bytes.fromhex(
         "03F9186397E61022663935B3FDFF7880A9F0EC288D8B054DF6AC2BC5777B5FBBB1"
     )
     secshares = hex_list_to_bytes(
@@ -107,19 +107,19 @@ def get_frost_keys():
             "03E483B7D41072D6E883447EB85617A086290EB67B40C89F3A787CF1B66005F488",
         ]
     )
-    return (t, group_pubkey, secshares, pubshares)
-    # group_pubkey = individual_pk(group_secret)
-    # gpk, secshares, pubshares = trusted_dealer_keygen(
+    return (t, thresh_pubkey, secshares, pubshares)
+    # thresh_pubkey = individual_pk(group_secret)
+    # tpk, secshares, pubshares = trusted_dealer_keygen(
     #     int.from_bytes(group_secret, "big"),
     #     5,
     #     3
     # )
-    # # assert group_pubkey == gpk
-    # pprint(group_pubkey.hex().upper())
+    # # assert thresh_pubkey == tpk
+    # pprint(thresh_pubkey.hex().upper())
     # print("....")
     # secshares = [hex(share[1]).upper() for share in secshares]
     # pubshares = [point_to_hex(P) for P in pubshares]
-    # print(f"group pk = {point_to_hex(gpk)}")
+    # print(f"threshold pk = {point_to_hex(tpk)}")
     # print(f"secshares = ")
     # print(secshares)
     # print(f"pubshares = ")
@@ -129,28 +129,28 @@ def get_frost_keys():
 def generate_nonce_gen_vectors():
     vectors = {"test_cases": []}
 
-    t, group_pk, secshares, pubshares = get_frost_keys()
+    t, thresh_pk, secshares, pubshares = get_frost_keys()
     rand = bytes.fromhex(
         "0F0F0F0F0F0F0F0F0F0F0F0F0F0F0F0F0F0F0F0F0F0F0F0F0F0F0F0F0F0F0F0F"
     )
     extra_in = bytes.fromhex(
         "0808080808080808080808080808080808080808080808080808080808080808"
     )
-    xonly_group_pk = group_pk[1:]
+    xonly_thresh_pk = thresh_pk[1:]
 
     # --- Valid Test Case 1 ---
     msg = bytes.fromhex(
         "0101010101010101010101010101010101010101010101010101010101010101"
     )
     secnonce, pubnonce = nonce_gen_internal(
-        rand, secshares[0], pubshares[0], xonly_group_pk, msg, extra_in
+        rand, secshares[0], pubshares[0], xonly_thresh_pk, msg, extra_in
     )
     vectors["test_cases"].append(
         {
             "rand_": bytes_to_hex(rand),
             "secshare": bytes_to_hex(secshares[0]),
             "pubshare": bytes_to_hex(pubshares[0]),
-            "group_pk": bytes_to_hex(xonly_group_pk),
+            "threshold_public_key": bytes_to_hex(xonly_thresh_pk),
             "msg": bytes_to_hex(msg),
             "extra_in": bytes_to_hex(extra_in),
             "expected_secnonce": bytes_to_hex(secnonce),
@@ -161,14 +161,14 @@ def generate_nonce_gen_vectors():
     # --- Valid Test Case 2 ---
     empty_msg = b""
     secnonce, pubnonce = nonce_gen_internal(
-        rand, secshares[0], pubshares[0], xonly_group_pk, empty_msg, extra_in
+        rand, secshares[0], pubshares[0], xonly_thresh_pk, empty_msg, extra_in
     )
     vectors["test_cases"].append(
         {
             "rand_": bytes_to_hex(rand),
             "secshare": bytes_to_hex(secshares[0]),
             "pubshare": bytes_to_hex(pubshares[0]),
-            "group_pk": bytes_to_hex(xonly_group_pk),
+            "threshold_public_key": bytes_to_hex(xonly_thresh_pk),
             "msg": bytes_to_hex(empty_msg),
             "extra_in": bytes_to_hex(extra_in),
             "expected_secnonce": bytes_to_hex(secnonce),
@@ -181,14 +181,14 @@ def generate_nonce_gen_vectors():
         "2626262626262626262626262626262626262626262626262626262626262626262626262626"
     )
     secnonce, pubnonce = nonce_gen_internal(
-        rand, secshares[0], pubshares[0], xonly_group_pk, long_msg, extra_in
+        rand, secshares[0], pubshares[0], xonly_thresh_pk, long_msg, extra_in
     )
     vectors["test_cases"].append(
         {
             "rand_": bytes_to_hex(rand),
             "secshare": bytes_to_hex(secshares[0]),
             "pubshare": bytes_to_hex(pubshares[0]),
-            "group_pk": bytes_to_hex(xonly_group_pk),
+            "threshold_public_key": bytes_to_hex(xonly_thresh_pk),
             "msg": bytes_to_hex(long_msg),
             "extra_in": bytes_to_hex(extra_in),
             "expected_secnonce": bytes_to_hex(secnonce),
@@ -203,7 +203,7 @@ def generate_nonce_gen_vectors():
             "rand_": bytes_to_hex(rand),
             "secshare": None,
             "pubshare": None,
-            "group_pk": None,
+            "threshold_public_key": None,
             "msg": None,
             "extra_in": None,
             "expected_secnonce": bytes_to_hex(secnonce),
@@ -318,16 +318,16 @@ def generate_nonce_agg_vectors():
 def generate_sign_verify_vectors():
     vectors = dict()
 
-    t, group_pk, secshares, pubshares = get_frost_keys()
+    t, thresh_pk, secshares, pubshares = get_frost_keys()
     n = len(pubshares)
-    xonly_group_pk = group_pk[1:]
+    xonly_thresh_pk = thresh_pk[1:]
     secshare_p1 = secshares[0]
     ids = list(range(n))
     assert len(pubshares) == len(secshares)
 
     vectors["max_participants"] = n
     vectors["min_participants"] = t
-    vectors["group_public_key"] = bytes_to_hex(group_pk)
+    vectors["threshold_public_key"] = bytes_to_hex(thresh_pk)
     vectors["secshare_p1"] = bytes_to_hex(secshare_p1)
     vectors["identifiers"] = ids
     pubshares.append(  # add an invalid pubshare at the end
@@ -344,7 +344,7 @@ def generate_sign_verify_vectors():
     pubnonces = []
     for i in range(n):
         sec, pub = nonce_gen_internal(
-            rand_, secshares[i], pubshares[i], xonly_group_pk, None, None
+            rand_, secshares[i], pubshares[i], xonly_thresh_pk, None, None
         )
         secnonces.append(sec)
         pubnonces.append(pub)
@@ -791,16 +791,16 @@ def generate_sign_verify_vectors():
 def generate_tweak_vectors():
     vectors = dict()
 
-    t, group_pk, secshares, pubshares = get_frost_keys()
+    t, thresh_pk, secshares, pubshares = get_frost_keys()
     n = len(pubshares)
-    xonly_group_pk = group_pk[1:]
+    xonly_thresh_pk = thresh_pk[1:]
     secshare_p1 = secshares[0]
     ids = list(range(n))
     assert len(pubshares) == len(secshares)
 
     vectors["max_participants"] = n
     vectors["min_participants"] = t
-    vectors["group_public_key"] = bytes_to_hex(group_pk)
+    vectors["threshold_public_key"] = bytes_to_hex(thresh_pk)
     vectors["secshare_p1"] = bytes_to_hex(secshare_p1)
     vectors["identifiers"] = ids
     pubshares.append(  # add an invalid pubshare at the end
@@ -817,7 +817,7 @@ def generate_tweak_vectors():
     pubnonces = []
     for i in range(n):
         sec, pub = nonce_gen_internal(
-            rand_, secshares[i], pubshares[i], xonly_group_pk, None, None
+            rand_, secshares[i], pubshares[i], xonly_thresh_pk, None, None
         )
         secnonces.append(sec)
         pubnonces.append(pub)
@@ -979,16 +979,16 @@ def generate_tweak_vectors():
 def generate_det_sign_vectors():
     vectors = dict()
 
-    t, group_pk, secshares, pubshares = get_frost_keys()
+    t, thresh_pk, secshares, pubshares = get_frost_keys()
     n = len(pubshares)
-    xonly_group_pk = group_pk[1:]
+    xonly_thresh_pk = thresh_pk[1:]
     secshare_p1 = secshares[0]
     ids = list(range(n))
     assert len(pubshares) == len(secshares)
 
     vectors["max_participants"] = n
     vectors["min_participants"] = t
-    vectors["group_public_key"] = bytes_to_hex(group_pk)
+    vectors["threshold_public_key"] = bytes_to_hex(thresh_pk)
     vectors["secshare_p1"] = bytes_to_hex(secshare_p1)
     vectors["identifiers"] = ids
     pubshares.append(  # add an invalid pubshare at the end
@@ -1128,7 +1128,7 @@ def generate_det_sign_vectors():
                 continue
             tmp = b"" if curr_rand is None else curr_rand
             _, pub = nonce_gen_internal(
-                tmp, secshares[i], pubshares[i], xonly_group_pk, curr_msg, None
+                tmp, secshares[i], pubshares[i], xonly_thresh_pk, curr_msg, None
             )
             other_pubnonces.append(pub)
         curr_aggothernonce = nonce_agg(other_pubnonces, other_ids)
@@ -1270,7 +1270,7 @@ def generate_det_sign_vectors():
                     continue
                 tmp = b"" if curr_rand is None else curr_rand
                 _, pub = nonce_gen_internal(
-                    tmp, secshares[i], pubshares[i], xonly_group_pk, curr_msg, None
+                    tmp, secshares[i], pubshares[i], xonly_thresh_pk, curr_msg, None
                 )
                 other_pubnonces.append(pub)
             curr_aggothernonce = nonce_agg(other_pubnonces, other_ids)
@@ -1323,15 +1323,15 @@ def generate_det_sign_vectors():
 def generate_sig_agg_vectors():
     vectors = dict()
 
-    t, group_pk, secshares, pubshares = get_frost_keys()
+    t, thresh_pk, secshares, pubshares = get_frost_keys()
     n = len(pubshares)
-    xonly_group_pk = group_pk[1:]
+    xonly_thresh_pk = thresh_pk[1:]
     ids = list(range(n))
     assert len(pubshares) == len(secshares)
 
     vectors["max_participants"] = n
     vectors["min_participants"] = t
-    vectors["group_public_key"] = bytes_to_hex(group_pk)
+    vectors["threshold_public_key"] = bytes_to_hex(thresh_pk)
     vectors["identifiers"] = ids
     vectors["pubshares"] = bytes_list_to_hex(pubshares)
 
@@ -1342,7 +1342,7 @@ def generate_sig_agg_vectors():
     pubnonces = []
     for i in range(n):
         sec, pub = nonce_gen_internal(
-            rand_, secshares[i], pubshares[i], xonly_group_pk, None, None
+            rand_, secshares[i], pubshares[i], xonly_thresh_pk, None, None
         )
         secnonces.append(sec)
         pubnonces.append(pub)
@@ -1377,7 +1377,7 @@ def generate_sig_agg_vectors():
             "indices": [0, 1, 2],
             "tweaks": [0, 1, 2],
             "is_xonly": [True, False, False],
-            "comment": "Signing with tweaked group public key",
+            "comment": "Signing with tweaked threshold public key",
         },
         {
             "indices": [0, 1, 2, 3],
@@ -1385,7 +1385,7 @@ def generate_sig_agg_vectors():
         },
         {
             "indices": [0, 1, 2, 3, 4],
-            "comment": "Signing with max number of participants and tweaked group public key",
+            "comment": "Signing with max number of participants and tweaked threshold public key",
         },
     ]
     for case in valid_cases:

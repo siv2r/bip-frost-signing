@@ -1,7 +1,7 @@
 {
     "max_participants": 5,
     "min_participants": 3,
-    "group_public_key": "03F9186397E61022663935B3FDFF7880A9F0EC288D8B054DF6AC2BC5777B5FBBB1",
+    "threshold_public_key": "03F9186397E61022663935B3FDFF7880A9F0EC288D8B054DF6AC2BC5777B5FBBB1",
     "identifiers": [
         0,
         1,
@@ -117,7 +117,7 @@
                 "4A0101D2BB5D6C21CC7A91EF0B85B66E6B2CC9B68FF5F9246CC18D7C1DC3DAFE"
             ],
             "expected": "A20BE914C439559FA5F0DE232AC7807D50D73197AA375873F13F1499CD4AB803C6A7B1CCF4C3E151ED738920850AA3246670F0BE9872FBB656AA692C964CD393",
-            "comment": "Signing with tweaked group public key"
+            "comment": "Signing with tweaked threshold public key"
         },
         {
             "id_indices": [
@@ -183,7 +183,7 @@
                 "A4056C3CC737D7D2A702A88CA491659FB4513CE6D11F48D84F43EAFA349034CA"
             ],
             "expected": "9D549680421FD8F5FC5100A071E027F6CF74FB093695C1FD15D9114765AF96CCBCA192837944A48D51178E8FBB57370757084C96C3730CCED567A4C09D57CF88",
-            "comment": "Signing with max number of participants and tweaked group public key"
+            "comment": "Signing with max number of participants and tweaked threshold public key"
         }
     ],
     "error_test_cases": [

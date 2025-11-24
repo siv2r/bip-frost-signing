@@ -12,7 +12,7 @@ Key Setup: Let's consider a 3-of-5 FROST policy among a group of participants $\
 - The participant identifiers are $I = \{1, 2, 3, 4, 5\}$.
 - Each participant's public share is denoted by $X_i \;\forall i \in I$.
 - Each participant's secret share is denoted by $x_i \;\forall i \in I$.
-- The group public key is denoted by $\tilde{X}$.
+- The threshold public key is denoted by $\tilde{X}$.
 
 2.
 Signing Setup: Assume we start a signing session with $S = \{P_1, P_2, P_4^*, P_5\}$. The adversarial participant will take the role of both $P_4^*$ and $P_5$, and will forge a partial signature on the public share $X_4$ without knowing the corresponding secret share $x_4$, on a given message $m$.

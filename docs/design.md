@@ -11,23 +11,23 @@ In this BIP, we follow the FROST3 scheme (see section 2.3 in [ROAST paper](https
 TODO: update this section to reflect that we currently follow the alternative 1 instead.
 ### Key Generation
 
-We aim to represent $(t, n)$ FROST keys using [1] input/output arguments of keygen and [2] conditions that output arguments must satisfy (see definition 2.5 in the [ROAST paper](https://eprint.iacr.org/2022/550.pdf)). This representation should be easy to understand without sacrificing precision. At present, we represent these conditions using boolean functions _ValidateGroupPubkey_ and _ValidatePubshares_.
+We aim to represent $(t, n)$ FROST keys using [1] input/output arguments of keygen and [2] conditions that output arguments must satisfy (see definition 2.5 in the [ROAST paper](https://eprint.iacr.org/2022/550.pdf)). This representation should be easy to understand without sacrificing precision. At present, we represent these conditions using boolean functions _ValidateThreshPubkey_ and _ValidatePubshares_.
 
 ### No Key Sorting
 
-MuSig2's [KeyAgg](https://github.com/bitcoin/bips/blob/master/bip-0327.mediawiki#user-content-Key_Generation_and_Aggregation) produces an aggregate public key (aka group public key), which depends on the order of the individual public keys. To ensure that the aggregate public key is independent of the individual public key order, it provides a [KeySort](https://github.com/bitcoin/bips/blob/master/bip-0327.mediawiki#user-content-Key_Sorting) mechanism. This mechanism defines a canonical order, which ensures that the aggregate public key remains the same regardless of the order of individual public keys.
+MuSig2's [KeyAgg](https://github.com/bitcoin/bips/blob/master/bip-0327.mediawiki#user-content-Key_Generation_and_Aggregation) produces an aggregate public key (aka threshold public key), which depends on the order of the individual public keys. To ensure that the aggregate public key is independent of the individual public key order, it provides a [KeySort](https://github.com/bitcoin/bips/blob/master/bip-0327.mediawiki#user-content-Key_Sorting) mechanism. This mechanism defines a canonical order, which ensures that the aggregate public key remains the same regardless of the order of individual public keys.
 
-In FROST, the order of the public shares does not affect the group public key created by aggregating the signer's public share, so no sorting mechanism is needed.
+In FROST, the order of the public shares does not affect the threshold public key created by aggregating the signer's public share, so no sorting mechanism is needed.
 
-### Group Pubkey Type
+### Threshold Pubkey Type
 
-If a key generation method produces a group public key incompatible with BIP340 (i.e., a plain pubkey), it doesn't automatically render the method incompatible with our signing protocol. Hence, we allow the keygen to produce the group public key as `PlainPk` (33 bytes) instead of `XonlyPk` (32 bytes). For example, BIP-FROST-DKG outputs a `PlainPk` not `XonlyPk`.
+If a key generation method produces a threshold public key incompatible with BIP340 (i.e., a plain pubkey), it doesn't automatically render the method incompatible with our signing protocol. Hence, we allow the keygen to produce the threshold public key as `PlainPk` (33 bytes) instead of `XonlyPk` (32 bytes). For example, BIP-FROST-DKG outputs a `PlainPk` not `XonlyPk`.
 
-It is crucial to note that the signatures generated through our [signing protocol](../README.md#signing) are only verifiable with a BIP340 compatible group pubkey. Therefore, if you are using a key generation method that outputs a `PlainPk` type group pubkey, you need to convert it to `XonlyPk` using the [`secp256k1_xonly_pubkey_from_pubkey`](https://github.com/bitcoin-core/secp256k1/blob/master/include/secp256k1_extrakeys.h#L93) API (TODO change this sentence, sign algo takes care of this).
+It is crucial to note that the signatures generated through our [signing protocol](../README.md#signing) are only verifiable with a BIP340 compatible threshold pubkey. Therefore, if you are using a key generation method that outputs a `PlainPk` type threshold pubkey, you need to convert it to `XonlyPk` using the [`secp256k1_xonly_pubkey_from_pubkey`](https://github.com/bitcoin-core/secp256k1/blob/master/include/secp256k1_extrakeys.h#L93) API (TODO change this sentence, sign algo takes care of this).
 
 ### Tweak Context
 
-To ensure compatibility with various key generation methods, we have avoided the KeyAgg context mentioned in MuSig2 BIP. Instead, we define the Tweak Context, which must be initialized with the group public key when users wish to tweak it.
+To ensure compatibility with various key generation methods, we have avoided the KeyAgg context mentioned in MuSig2 BIP. Instead, we define the Tweak Context, which must be initialized with the threshold public key when users wish to tweak it.
 
 ### No Mandatory PK in Nonce Generation
 
@@ -43,9 +43,9 @@ An alternative approach is to follow the original FROST protocol, where the aggr
 
 ### Session Context Structure
 
-There are two ways to store the group public key in the Session context data structure.
-- Option 1: The Session context contains individual public shares for each participant involved in the signing process. Whenever we need the group public key, we call the _GetSessionGroupPubkey_ algorithm.
-- Option 2: The Session context contains the group public key itself.
+There are two ways to store the threshold public key in the Session context data structure.
+- Option 1: The Session context contains individual public shares for each participant involved in the signing process. Whenever we need the threshold public key, we call the _GetSessionThreshPubkey_ algorithm.
+- Option 2: The Session context contains the threshold public key itself.
 
 I chose Option 1 because it fits nicely with the _PartialSigVerify_ algorithm which requires the list of individual public shares.
 
@@ -53,7 +53,7 @@ I chose Option 1 because it fits nicely with the _PartialSigVerify_ algorithm wh
 
 The FROST3 scheme computes the binding factor as
 ```math
-b = H_{non}(T, \text{group\_pk}, \text{aggnonce}, \text{msg})
+b = H_{non}(T, \text{thresh\_pk}, \text{aggnonce}, \text{msg})
 ```
 where $T$ represents the signer set. Since $T$ is a set, it must be independent of the order of signers, i.e., {1, 2, 3} = {2, 1, 3}. Therefore, we sort the IDs (see [_GetSessionValues_](../README.md#session-context)) when computing the binding factor.
 

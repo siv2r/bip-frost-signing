@@ -101,7 +101,7 @@ def trusted_dealer_keygen(
 ) -> Tuple[ECPoint, List[PolyPoint], List[ECPoint]]:
     assert secret_key != 0
     assert 2 <= min_participants <= max_participants
-    # we don't force BIP340 compatibility of group pubkey in keygen
+    # we don't force BIP340 compatibility of threshold pubkey in keygen
     P = secret_key * G
     assert not P.infinity
 
@@ -153,12 +153,12 @@ class Tests(unittest.TestCase):
         secret_key = Scalar.from_bytes_wrapping(secrets.token_bytes(32))
         max_participants = 5
         min_participants = 3
-        group_pk, secshares, pubshares = trusted_dealer_keygen(
+        thresh_pk, secshares, pubshares = trusted_dealer_keygen(
             secret_key, max_participants, min_participants
         )
 
-        # group_pk need not be xonly (i.e., have even y always)
-        self.assertEqual(group_pk, secret_key * G)
+        # thresh_pk need not be xonly (i.e., have even y always)
+        self.assertEqual(thresh_pk, secret_key * G)
         self.assertEqual(secret_share_combine(secshares), secret_key)
         self.assertEqual(len(secshares), max_participants)
         self.assertEqual(len(pubshares), max_participants)

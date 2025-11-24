@@ -108,8 +108,8 @@ def check_pubshares_correctness(
     return True
 
 
-def check_group_pubkey_correctness(
-    min_participants: int, group_pk: PlainPk, ids: List[int], pubshares: List[PlainPk]
+def check_thresh_pubkey_correctness(
+    min_participants: int, thresh_pk: PlainPk, ids: List[int], pubshares: List[PlainPk]
 ) -> bool:
     assert len(ids) == len(pubshares)
     assert len(ids) >= min_participants
@@ -121,8 +121,8 @@ def check_group_pubkey_correctness(
         for signer_set in itertools.combinations(zip(ids, pubshares), signer_count):
             signer_ids = [pid for pid, pubshare in signer_set]
             signer_pubshares = [pubshare for pid, pubshare in signer_set]
-            expected_pk = derive_group_pubkey(signer_pubshares, signer_ids)
-            if expected_pk != group_pk:
+            expected_pk = derive_thresh_pubkey(signer_pubshares, signer_ids)
+            if expected_pk != thresh_pk:
                 return False
     return True
 
@@ -130,7 +130,7 @@ def check_group_pubkey_correctness(
 def check_frost_key_compatibility(
     max_participants: int,
     min_participants: int,
-    group_pk: PlainPk,
+    thresh_pk: PlainPk,
     ids: List[int],
     secshares: List[bytes],
     pubshares: List[PlainPk],
@@ -140,10 +140,10 @@ def check_frost_key_compatibility(
     if not len(ids) == len(secshares) == len(pubshares) == max_participants:
         return False
     pubshare_check = check_pubshares_correctness(secshares, pubshares)
-    group_pk_check = check_group_pubkey_correctness(
-        min_participants, group_pk, ids, pubshares
+    thresh_pk_check = check_thresh_pubkey_correctness(
+        min_participants, thresh_pk, ids, pubshares
     )
-    return pubshare_check and group_pk_check
+    return pubshare_check and thresh_pk_check
 
 
 TweakContext = NamedTuple(
@@ -163,7 +163,7 @@ def get_plain_pk(tweak_ctx: TweakContext) -> PlainPk:
 
 
 # nit: switch the args ordering
-def derive_group_pubkey(pubshares: List[PlainPk], ids: List[int]) -> PlainPk:
+def derive_thresh_pubkey(pubshares: List[PlainPk], ids: List[int]) -> PlainPk:
     assert len(pubshares) == len(ids)
     # assert AGGREGATOR_ID not in ids
     Q = GE()
@@ -180,8 +180,8 @@ def derive_group_pubkey(pubshares: List[PlainPk], ids: List[int]) -> PlainPk:
 
 
 def tweak_ctx_init(pubshares: List[PlainPk], ids: List[int]) -> TweakContext:
-    group_pk = derive_group_pubkey(pubshares, ids)
-    Q = cpoint(group_pk)
+    thresh_pk = derive_thresh_pubkey(pubshares, ids)
+    Q = cpoint(thresh_pk)
     gacc = Scalar(1)
     tacc = Scalar(0)
     return TweakContext(Q, gacc, tacc)
@@ -214,7 +214,7 @@ def bytes_xor(a: bytes, b: bytes) -> bytes:
 def nonce_hash(
     rand: bytes,
     pubshare: PlainPk,
-    group_pk: XonlyPk,
+    thresh_pk: XonlyPk,
     i: int,
     msg_prefixed: bytes,
     extra_in: bytes,
@@ -223,8 +223,8 @@ def nonce_hash(
     buf += rand
     buf += len(pubshare).to_bytes(1, "big")
     buf += pubshare
-    buf += len(group_pk).to_bytes(1, "big")
-    buf += group_pk
+    buf += len(thresh_pk).to_bytes(1, "big")
+    buf += thresh_pk
     buf += msg_prefixed
     buf += len(extra_in).to_bytes(4, "big")
     buf += extra_in
@@ -236,7 +236,7 @@ def nonce_gen_internal(
     rand_: bytes,
     secshare: Optional[bytes],
     pubshare: Optional[PlainPk],
-    group_pk: Optional[XonlyPk],
+    thresh_pk: Optional[XonlyPk],
     msg: Optional[bytes],
     extra_in: Optional[bytes],
 ) -> Tuple[bytearray, bytes]:
@@ -246,8 +246,8 @@ def nonce_gen_internal(
         rand = rand_
     if pubshare is None:
         pubshare = PlainPk(b"")
-    if group_pk is None:
-        group_pk = XonlyPk(b"")
+    if thresh_pk is None:
+        thresh_pk = XonlyPk(b"")
     if msg is None:
         msg_prefixed = b"\x00"
     else:
@@ -257,10 +257,10 @@ def nonce_gen_internal(
     if extra_in is None:
         extra_in = b""
     k_1 = Scalar.from_int_wrapping(
-        nonce_hash(rand, pubshare, group_pk, 0, msg_prefixed, extra_in)
+        nonce_hash(rand, pubshare, thresh_pk, 0, msg_prefixed, extra_in)
     )
     k_2 = Scalar.from_int_wrapping(
-        nonce_hash(rand, pubshare, group_pk, 1, msg_prefixed, extra_in)
+        nonce_hash(rand, pubshare, thresh_pk, 1, msg_prefixed, extra_in)
     )
     # k_1 == 0 or k_2 == 0 cannot occur except with negligible probability.
     assert k_1 != 0
@@ -277,11 +277,11 @@ def nonce_gen_internal(
 
 # think: can msg & extra_in be of any length here?
 # think: why doesn't musig2 ref code check for `pk` length here?
-# REVIEW: Why should group_pk be XOnlyPk here? Shouldn't it be PlainPk?
+# REVIEW: Why should thresh_pk be XOnlyPk here? Shouldn't it be PlainPk?
 def nonce_gen(
     secshare: Optional[bytes],
     pubshare: Optional[PlainPk],
-    group_pk: Optional[XonlyPk],
+    thresh_pk: Optional[XonlyPk],
     msg: Optional[bytes],
     extra_in: Optional[bytes],
 ) -> Tuple[bytearray, bytes]:
@@ -289,11 +289,11 @@ def nonce_gen(
         raise ValueError("The optional byte array secshare must have length 32.")
     if pubshare is not None and len(pubshare) != 33:
         raise ValueError("The optional byte array pubshare must have length 33.")
-    if group_pk is not None and len(group_pk) != 32:
-        raise ValueError("The optional byte array group_pk must have length 32.")
+    if thresh_pk is not None and len(thresh_pk) != 32:
+        raise ValueError("The optional byte array thresh_pk must have length 32.")
     # bench: will adding individual_pk(secshare) == pubshare check, increase the execution time significantly?
     rand_ = secrets.token_bytes(32)
-    return nonce_gen_internal(rand_, secshare, pubshare, group_pk, msg, extra_in)
+    return nonce_gen_internal(rand_, secshare, pubshare, thresh_pk, msg, extra_in)
 
 
 # REVIEW should we raise value errors for:
@@ -334,7 +334,7 @@ SessionContext = NamedTuple(
 )
 
 
-def group_pubkey_and_tweak(
+def thresh_pubkey_and_tweak(
     pubshares: List[PlainPk], ids: List[int], tweaks: List[bytes], is_xonly: List[bool]
 ) -> TweakContext:
     if len(pubshares) != len(ids):
@@ -352,7 +352,7 @@ def get_session_values(
     session_ctx: SessionContext,
 ) -> Tuple[GE, Scalar, Scalar, Scalar, GE, Scalar]:
     (aggnonce, ids, pubshares, tweaks, is_xonly, msg) = session_ctx
-    Q, gacc, tacc = group_pubkey_and_tweak(pubshares, ids, tweaks, is_xonly)
+    Q, gacc, tacc = thresh_pubkey_and_tweak(pubshares, ids, tweaks, is_xonly)
     # sort the ids before serializing because ROAST paper considers them as a set
     ser_ids = serialize_ids(ids)
     b = Scalar.from_bytes_wrapping(
@@ -438,12 +438,12 @@ def sign(
 
 # REVIEW should we hash the signer set (or pubshares) too? Otherwise same nonce will be generate even if the signer set changes
 def det_nonce_hash(
-    secshare_: bytes, aggothernonce: bytes, tweaked_gpk: bytes, msg: bytes, i: int
+    secshare_: bytes, aggothernonce: bytes, tweaked_tpk: bytes, msg: bytes, i: int
 ) -> int:
     buf = b""
     buf += secshare_
     buf += aggothernonce
-    buf += tweaked_gpk
+    buf += tweaked_tpk
     buf += len(msg).to_bytes(8, "big")
     buf += msg
     buf += i.to_bytes(1, "big")
@@ -466,13 +466,15 @@ def deterministic_sign(
     else:
         secshare_ = secshare
 
-    tweaked_gpk = get_xonly_pk(group_pubkey_and_tweak(pubshares, ids, tweaks, is_xonly))
+    tweaked_tpk = get_xonly_pk(
+        thresh_pubkey_and_tweak(pubshares, ids, tweaks, is_xonly)
+    )
 
     k_1 = Scalar.from_int_wrapping(
-        det_nonce_hash(secshare_, aggothernonce, tweaked_gpk, msg, 0)
+        det_nonce_hash(secshare_, aggothernonce, tweaked_tpk, msg, 0)
     )
     k_2 = Scalar.from_int_wrapping(
-        det_nonce_hash(secshare_, aggothernonce, tweaked_gpk, msg, 1)
+        det_nonce_hash(secshare_, aggothernonce, tweaked_tpk, msg, 1)
     )
     # k_1 == 0 or k_2 == 0 cannot occur except with negligible probability.
     assert k_1 != 0
