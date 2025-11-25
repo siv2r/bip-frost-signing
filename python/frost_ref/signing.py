@@ -77,7 +77,7 @@ def individual_pk(seckey: bytes) -> PlainPk:
     return PlainPk(pubkey_gen_plain(seckey))
 
 
-# TODO: add my_id < max_participants check
+# TODO: add my_id < n check
 def derive_interpolating_value(ids: List[int], my_id: int) -> Scalar:
     if my_id not in ids:
         raise ValueError(
@@ -109,14 +109,14 @@ def check_pubshares_correctness(
 
 
 def check_thresh_pubkey_correctness(
-    min_participants: int, thresh_pk: PlainPk, ids: List[int], pubshares: List[PlainPk]
+    t: int, thresh_pk: PlainPk, ids: List[int], pubshares: List[PlainPk]
 ) -> bool:
     assert len(ids) == len(pubshares)
-    assert len(ids) >= min_participants
+    assert len(ids) >= t
 
-    max_participants = len(ids)
+    n = len(ids)
     # loop through all possible number of signers
-    for signer_count in range(min_participants, max_participants + 1):
+    for signer_count in range(t, n + 1):
         # loop through all possible signer sets with length `signer_count`
         for signer_set in itertools.combinations(zip(ids, pubshares), signer_count):
             signer_ids = [pid for pid, pubshare in signer_set]
@@ -128,21 +128,19 @@ def check_thresh_pubkey_correctness(
 
 
 def check_frost_key_compatibility(
-    max_participants: int,
-    min_participants: int,
+    n: int,
+    t: int,
     thresh_pk: PlainPk,
     ids: List[int],
     secshares: List[bytes],
     pubshares: List[PlainPk],
 ) -> bool:
-    if not max_participants >= min_participants > 1:
+    if not n >= t > 1:
         return False
-    if not len(ids) == len(secshares) == len(pubshares) == max_participants:
+    if not len(ids) == len(secshares) == len(pubshares) == n:
         return False
     pubshare_check = check_pubshares_correctness(secshares, pubshares)
-    thresh_pk_check = check_thresh_pubkey_correctness(
-        min_participants, thresh_pk, ids, pubshares
-    )
+    thresh_pk_check = check_thresh_pubkey_correctness(t, thresh_pk, ids, pubshares)
     return pubshare_check and thresh_pk_check
 
 
@@ -196,14 +194,14 @@ def apply_tweak(tweak_ctx: TweakContext, tweak: bytes, is_xonly: bool) -> TweakC
     else:
         g = Scalar(1)
     try:
-        t = Scalar.from_bytes_checked(tweak)
+        twk = Scalar.from_bytes_checked(tweak)
     except ValueError:
         raise ValueError("The tweak must be less than n.")
-    Q_ = g * Q + t * G
+    Q_ = g * Q + twk * G
     if Q_.infinity:
         raise ValueError("The result of tweaking cannot be infinity.")
     gacc_ = g * gacc
-    tacc_ = t + g * tacc
+    tacc_ = twk + g * tacc
     return TweakContext(Q_, gacc_, tacc_)
 
 

@@ -63,10 +63,10 @@ where $T$ represents the signer set. Since $T$ is a set, it must be independent 
   - power power n-2
     - easy to follow
     - but makes it unclear that we are computing inverse
-- what should be limit for MAX_PARTICIPANTS?
+- what should be limit for n?
   - we should use 32-byte array for it
   - The frost draft says this:
-    > MAX_PARTICIPANTS MUST be a positive integer less than the group order
+    > n MUST be a positive integer less than the group order
 - should ARG_CHECK the `ids[i]` when converting it from `bytes` to `ints`?
   - If yes, how to blame the singer if their `id` itself is incorrect?
 - hash tag for b, "noncecoef" vs "noncecoeff"

@@ -30,15 +30,15 @@ Many sections of this document have been directly copied or modified from [BIP32
 ### Motivation
 <!-- todo: this section seems direct copy of chilldkg. So update/change this to focus on the signing than key gen -->
 
-The FROST signature scheme [[KG20](https://eprint.iacr.org/2020/852),[CKM21](https://eprint.iacr.org/2021/1375),[BTZ21](https://eprint.iacr.org/2022/833),[CGRS23](https://eprint.iacr.org/2023/899)] enables _t-of-n_ Schnorr threshold signatures, in which a threshold _t_ of some set of _n_ signers is required to produce a signature.
-FROST remains unforgeable as long as at most _t-1_ signers are compromised, and remains functional as long as _t_ honest signers do not lose their secret key material. It supports any choice of _t_ as long as _1 ≤ t ≤ n_.[^t-edge-cases]
+The FROST signature scheme [[KG20](https://eprint.iacr.org/2020/852),[CKM21](https://eprint.iacr.org/2021/1375),[BTZ21](https://eprint.iacr.org/2022/833),[CGRS23](https://eprint.iacr.org/2023/899)] enables `t`-of-`n` Schnorr threshold signatures, in which a threshold `t` of some set of `n` signers is required to produce a signature.
+FROST remains unforgeable as long as at most `t-1` signers are compromised, and remains functional as long as `t` honest signers do not lose their secret key material. It supports any choice of `t` as long as `1 <= t <= n`.[^t-edge-cases]
 
 The primary motivation is to create a standard that allows users of different software projects to jointly control Taproot outputs ([BIP341](https://github.com/bitcoin/bips/blob/master/bip-0341.mediawiki)).
 Such an output contains a public key which, in this case, would be the threshold public key derived from the public shares of threshold signers.
 It can be spent using FROST to produce a signature for the key-based spending path.
 
-The on-chain footprint of a FROST Taproot output is essentially a single BIP340 public key, and a transaction spending the output only requires a single signature cooperatively produced by _threshold_ signers. This is **more compact** and has **lower verification cost** than signers providing _n_ individual public keys and _t_ signatures, as would be required by an _t-of-n_ policy implemented using <code>OP_CHECKSIGADD</code> as introduced in ([BIP342](https://github.com/bitcoin/bips/blob/master/bip-0342.mediawiki)).
-As a side effect, the numbers _t_ and _n_ of signers are not limited by any consensus rules when using FROST.
+The on-chain footprint of a FROST Taproot output is essentially a single BIP340 public key, and a transaction spending the output only requires a single signature cooperatively produced by _threshold_ signers. This is **more compact** and has **lower verification cost** than signers providing `n` individual public keys and `t` signatures, as would be required by an `t`-of-`n` policy implemented using <code>OP_CHECKSIGADD</code> as introduced in ([BIP342](https://github.com/bitcoin/bips/blob/master/bip-0342.mediawiki)).
+As a side effect, the numbers `t` and `n` of signers are not limited by any consensus rules when using FROST.
 
 Moreover, FROST offers a **higher level of privacy** than <code>OP_CHECKSIGADD</code>: FROST Taproot outputs are indistinguishable for a blockchain observer from regular, single-signer Taproot outputs even though they are actually controlled by multiple signers. By tweaking a threshold public key, the shared Taproot output can have script spending paths that are hidden unless used.
 
@@ -82,14 +82,14 @@ We distinguish between two public key types, namely _plain public keys_, the key
 Plain public keys are byte strings of length 33 (often called _compressed_ format).
 In contrast, X-only public keys are 32-byte strings defined in [BIP340](https://github.com/bitcoin/bips/blob/master/bip-0340.mediawiki).
 
-FROST generates signatures that are verifiable as if produced by a single signer using a secret key _s_ with the corresponding public key. As a threshold signing protocol, the threshold secret key _s_ is shared among all _MAX_PARTICIPANTS_ participants using Shamir's secret sharing, and at least _MIN_PARTICIPANTS_ participants must collaborate to issue a valid signature.  
-&emsp;&ensp;_MIN_PARTICIPANTS_ is a positive non-zero integer lesser than or equal to _MAX_PARTICIPANTS_  
-&emsp;&ensp;_MAX_PARTICIPANTS_ MUST be a positive integer less than 2^32.
+FROST generates signatures that are verifiable as if produced by a single signer using a secret key `s` with the corresponding public key. As a threshold signing protocol, the threshold secret key `s` is shared among all `n` participants using Shamir's secret sharing, and at least `t` participants must collaborate to issue a valid signature.  
+&emsp;&ensp;`t` is a positive non-zero integer lesser than or equal to `n`  
+&emsp;&ensp;`n` MUST be a positive integer less than 2^32.
 
 In particular, FROST signing assumes each participant is configured with the following information:
-- An identifier _id_, which is an integer in the range _[0, MAX_PARTICIPANTS-1]_ and MUST be distinct from the identifier of every other participant.
+- An identifier _id_, which is an integer in the range `[0, n-1]` and MUST be distinct from the identifier of every other participant.
 <!-- REVIEW we haven't introduced participant identifier yet. So, don't use them here -->
-- A secret share _secshare<sub>id</sub>_, which is a positive non-zero integer less than the secp256k1 curve order. This value represents the _i_-th Shamir secret share of the threshold secret key _s_.  In particular, _secshare<sub>id</sub>_ is the value _f(id+1)_ on a secret polynomial _f_ of degree _(MIN_PARTICIPANTS - 1)_, where _s_ is _f(0)_.
+- A secret share _secshare<sub>id</sub>_, which is a positive non-zero integer less than the secp256k1 curve order. This value represents the _i_-th Shamir secret share of the threshold secret key _s_.  In particular, _secshare<sub>id</sub>_ is the value `f(id+1)` on a secret polynomial `f` of degree `t - 1`, where `s` is `f(0)`.
 - A Threshold public key _thresh_pk_, which is point on the secp256k1 curve.
 - A public share _pubshare<sub>id</sub>_, which is point on the secp256k1 curve.
 
@@ -105,7 +105,7 @@ For a key generation mechanism to be compatible with FROST signing, the particip
 
 ### General Signing Flow
 
-FROST signing is designed to be executed by a predetermined number of signer participants, referred to as _NUM_PARTICIPANTS_. This value is a positive non-zero integer that MUST be at least _MIN_PARTICIPANTS_ and MUST NOT exceed _MAX_PARTICIPANTS_. Therefore, the selection of signing participants from the participant group must be performed outside the signing protocol, prior to its initiation.
+FROST signing is designed to be executed by a predetermined number of signer participants, referred to as _NUM_PARTICIPANTS_. This value is a positive non-zero integer that MUST be at least `t` and MUST NOT exceed `n`. Therefore, the selection of signing participants from the participant group must be performed outside the signing protocol, prior to its initiation.
 
 Whenever the signing participants want to sign a message, the basic order of operations to create a threshold-signature is as follows:
 
@@ -214,13 +214,14 @@ The bit can be obtained with _GetPlainPubkey(tweak_ctx)[0] & 1_.
 The following specification of the algorithms has been written with a focus on clarity. As a result, the specified algorithms are not always optimal in terms of computation and space. In particular, some values are recomputed but can be cached in actual implementations (see [General Signing Flow](./README.md#general-signing-flow)).
 
 ### Notation
-
+<!-- TODO: remove this section (add a small note) as we're using secp256k1lab python library for scalar and group operations. Also, remove these wrapper functions from python code. -->
+<!-- Should we just use the secp256k1lab's variable, or function calls here? For defining the curver order? -->
 The following conventions are used, with constants as defined for [secp256k1](https://www.secg.org/sec2-v2.pdf). We note that adapting this proposal to other elliptic curves is not straightforward and can result in an insecure scheme.
 
 - Lowercase variables represent integers or byte arrays.
     - The constant _p_ refers to the field size, _0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFFC2F_.
-    - The constant _n_ refers to the curve order, _0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141_.
-    - The constant _num_participants_ refers to number of participants involved in the signing process, must be at least _min_participants_ but must not be larger than _max_participants_.
+    - The constant _curve_order_ refers to the curve order, _0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141_.
+    - The constant _num_participants_ refers to number of participants involved in the signing process, must be at least `t` but must not be larger than `n`.
 - Uppercase variables refer to points on the curve with equation _y<sup>2</sup> = x<sup>3</sup> + 7_ over the integers modulo _p_.
     - _is_infinite(P)_ returns whether _P_ is the point at infinity.
     - _x(P)_ and _y(P)_ are integers in the range _0..p-1_ and refer to the X and Y coordinates of a point _P_ (assuming it is not infinity).
@@ -270,26 +271,26 @@ Internal Algorithm _PlainPubkeyGen(sk):_[^pubkey-gen-ecdsa]
 <!-- REVIEW maybe write scripts to automate these italics (math symbols)? -->
 Algorithm _ValidatePubshares(secshare<sub>1..u</sub>, pubshare<sub>1..u</sub>)_
 - Inputs:
-    - The number _u_ of participants involved in keygen: an integer equal to _max_participants_
+    - The number _u_ of participants involved in keygen: an integer equal to `n`
     - The participant secret shares _secshare<sub>1..u</sub>_: _u_ 32-byte arrays
     - The corresponding public shares _pubshare<sub>1..u</sub>_: _u_ 33-byte arrays
 - For _i = 1 .. u_:
     - Fail if _PlainPubkeyGen(secshare<sub>i</sub>)_ ≠ _pubshare<sub>i</sub>_
 - Return success iff no failure occurred before reaching this point.
 
-Algorithm _ValidateThreshPubkey(threshold, thresh_pk, id<sub>1..u</sub>, pubshare<sub>1..u</sub>)_:
+Algorithm _ValidateThreshPubkey(t, thresh_pk, id<sub>1..n</sub>, pubshare<sub>1..n</sub>)_:
 - Inputs:
-    - The number _u_ of participants involved in keygen: an integer equal to _max_participants_
-    - The number _threshold_ of participants required to issue a signature: an integer equal to _min_participants_
+    - The total number _n_ of participants involved in key generation
+    - The threshold number _t_ of participants required to issue a signature
     - The threshold public key _thresh_pk_: a 33-byte array
-    - The participant identifiers _id<sub>1..u</sub>_: _u_ integers, each with 0 ≤ _id<sub>i</sub>_ < _max_participants_
-    - The participant public shares _pubshares<sub>1..u</sub>_: _u_ 33-byte arrays
-- Fail if _threshold_ > _u_
-- For _t_ = _threshold..u_:
-    - For each combination of _t_ elements from _id<sub>1..u</sub>_:[^itertools-combinations]
-        - Let _signer_id<sub>1..t</sub>_ be the current combination of participant identifiers
-        - Let _signer_pubshare<sub>1..t</sub>_ be their corresponding participant pubshares[^calc-signer-pubshares]
-        - _expected_pk_ = _DeriveThreshPubkey(signer_id<sub>1..t</sub>, signer_pubshare<sub>1..t</sub>)_
+    - The participant identifiers _id<sub>1..n</sub>_: _n_ integers in the range _[0..n-1]_
+    - The participant public shares _pubshares<sub>1..n</sub>_: _n_ 33-byte arrays
+- Fail if _t_ > _n_
+- For _k_ = _t..n_:
+    - For each combination of _k_ elements from _id<sub>1..n</sub>_:[^itertools-combinations]
+        - Let _signer_id<sub>1..k</sub>_ be the current combination of participant identifiers
+        - Let _signer_pubshare<sub>1..k</sub>_ be their corresponding participant pubshares[^calc-signer-pubshares]
+        - _expected_pk_ = _DeriveThreshPubkey(signer_id<sub>1..k</sub>, signer_pubshare<sub>1..k</sub>)_
         - Fail if _thresh_pk_ ≠ _expected_pk_
 - Return success iff no failure occurred before reaching this point.
 
@@ -306,8 +307,8 @@ We write "Let _(Q, gacc, tacc) = tweak_ctx_" to assign names to the elements of 
 
 Algorithm _TweakCtxInit(id<sub>1..u</sub>, pubshare<sub>1..u</sub>):_
 - Input:
-    - The number _u_ of participants available in the signing session with _min_participants ≤ u ≤ max_participants_
-    - The participant identifiers _id<sub>1..u</sub>_: _u_ integers, each with 0 ≤ _id<sub>i</sub>_ < _max_participants_
+    - The number _u_ of participants available in the signing session with _t ≤ u ≤ n_
+    - The participant identifiers _id<sub>1..u</sub>_: _u_ integers, each with 0 ≤ _id<sub>i</sub>_ < _n_
 	- The individual public shares _pubshare<sub>1..u</sub>_: _u_ 33-byte arrays
 - Let _thresh_pk = DeriveThreshPubkey(id<sub>1..u</sub>, pubshare<sub>1..u</sub>)_; fail if that fails
 - Let _Q = cpoint(thresh_pk)_
@@ -399,9 +400,9 @@ Algorithm _NonceGen(secshare, pubshare, thresh_pk, m, extra_in)_:
 
 Algorithm _NonceAgg(pubnonce<sub>1..u</sub>, id<sub>1..u</sub>)_:
 - Inputs:
-    - The number of signers _u_: an integer with _min_participants ≤ u ≤ max_participants_
+    - The number of signers _u_: an integer with _t ≤ u ≤ n_
     - The public nonces _pubnonce<sub>1..u</sub>_: _u_ 66-byte arrays
-    - The participant identifiers _id<sub>1..u</sub>_: _u_ integers, each with 0 ≤ _id<sub>i</sub>_ < _max_participants_
+    - The participant identifiers _id<sub>1..u</sub>_: _u_ integers, each with 0 ≤ _id<sub>i</sub>_ < _n_
 - For _j = 1 .. 2_:
     - For _i = 1 .. u_:
         - Let _R<sub>i,j</sub> = cpoint(pubnonce<sub>i</sub>[(j-1)_33:j_33])_; fail if that fails and blame signer _id<sub>i</sub>_ for invalid _pubnonce_.
@@ -411,8 +412,8 @@ Algorithm _NonceAgg(pubnonce<sub>1..u</sub>, id<sub>1..u</sub>)_:
 ### Session Context
 
 The Session Context is a data structure consisting of the following elements:
-- The number _u_ of participants available in the signing session with _min_participants ≤ u ≤ max_participants_
-- The participant identifiers _id<sub>1..u</sub>_: _u_ integers, each with 0 ≤ _id<sub>i</sub>_ < _max_participants_
+- The number _u_ of participants available in the signing session with _t ≤ u ≤ n_
+- The participant identifiers _id<sub>1..u</sub>_: _u_ integers, each with 0 ≤ _id<sub>i</sub>_ < _n_
 - The individual public shares _pubshare<sub>1..u</sub>_: _u_ 33-byte arrays
 - The aggregate public nonce of signers _aggnonce_: a 66-byte array
 - The number _v_ of tweaks with _0 ≤ v < 2^32_
@@ -462,7 +463,7 @@ Algorithm _Sign(secnonce, secshare, my_id, session_ctx)_:
 - Inputs:
     - The secret nonce _secnonce_ that has never been used as input to _Sign_ before: a 64-byte array[^secnonce-ser]
     - The secret signing key _secshare_: a 32-byte array
-    - The identifier of the signing participant _my_id_: an integer with 0 _≤ my_id < max_participants_
+    - The identifier of the signing participant _my_id_: an integer with _0 ≤ my_id < n_
     - The _session_ctx_: a [Session Context](./README.md#session-context) data structure
 - Let _(Q, gacc, _, b, R, e) = GetSessionValues(session_ctx)_; fail if that fails
 - Let _k<sub>1</sub>' = int(secnonce[0:32]), k<sub>2</sub>' = int(secnonce[32:64])_
@@ -487,8 +488,8 @@ Algorithm _Sign(secnonce, secshare, my_id, session_ctx)_:
 Algorithm _PartialSigVerify(psig, id<sub>1..u</sub>, pubnonce<sub>1..u</sub>, pubshare<sub>1..u</sub>, tweak<sub>1..v</sub>, is_xonly_t<sub>1..v</sub>, m, i)_:
 - Inputs:
     - The partial signature _psig_: a 32-byte array
-    - The number _u_ of identifiers, public nonces, and individual public shares with _min_participants ≤ u ≤ max_participants_
-    - The participant identifiers _id<sub>1..u</sub>_: _u_ integers, each with 0 ≤ _id<sub>i</sub>_ < _max_participants_
+    - The number _u_ of identifiers, public nonces, and individual public shares with _t ≤ u ≤ n_
+    - The participant identifiers _id<sub>1..u</sub>_: _u_ integers, each with 0 ≤ _id<sub>i</sub>_ < _n_
     - The public nonces _pubnonce<sub>1..u</sub>_: _u_ 66-byte arrays
     - The individual public shares _pubshare<sub>1..u</sub>_: _u_ 33-byte arrays
     - The number _v_ of tweaks with _0 ≤ v < 2^32_
@@ -519,9 +520,9 @@ Internal Algorithm _PartialSigVerifyInternal(psig, my_id, pubnonce, pubshare, se
 
 Algorithm _PartialSigAgg(psig<sub>1..u</sub>, id<sub>1..u</sub>, session_ctx)_:
 - Inputs:
-    - The number _u_ of signatures with _min_participants ≤ u ≤ max_participants_
+    - The number _u_ of signatures with _t ≤ u ≤ n_
     - The partial signatures _psig<sub>1..u</sub>_: _u_ 32-byte arrays
-    - The participant identifiers _id<sub>1..u</sub>_: _u_ integers, each with 0 ≤ _id<sub>i</sub>_ < _max_participants_
+    - The participant identifiers _id<sub>1..u</sub>_: _u_ integers, each with 0 ≤ _id<sub>i</sub>_ < _n_
     - The _session_ctx_: a [Session Context](./README.md#session-context) data structure
 - Let _(Q, _, tacc, _, _, R, e) = GetSessionValues(session_ctx)_; fail if that fails
 - For _i = 1 .. u_:
@@ -562,17 +563,17 @@ Such a nonce generation algorithm _DeterministicSign_ is specified below.
 Note that the only optional argument is _rand_, which can be omitted if randomness is entirely unavailable.
 _DeterministicSign_ requires the argument _aggothernonce_ which should be set to the output of _NonceAgg_ run on the _pubnonce_ value of **all** other signers (but can be provided by an untrusted party).
 Hence, using _DeterministicSign_ is only possible for the last signer to generate a nonce and makes the signer stateless, similar to the stateless signer described in the [Nonce Generation](./README.md#nonce-generation) section.
-<!-- REVIEW just say max_participants is < 2^32 during intro, than mentioning it everywhere -->
+<!-- REVIEW just say n is < 2^32 during intro, than mentioning it everywhere -->
 
 #### Deterministic and Stateless Signing for a Single Signer
 
 Algorithm _DeterministicSign(secshare, my_id, aggothernonce, id<sub>1..u</sub>, pubshare<sub>1..u</sub>, tweak<sub>1..v</sub>, is_xonly_t<sub>1..v</sub>, m, rand)_:
 - Inputs:
     - The secret share _secshare_: a 32-byte array
-    - The identifier of the signing participant _my_id_: an integer with 0 _≤ my_id < max_participants_
+    - The identifier of the signing participant _my_id_: an integer with 0 _≤ my_id < n_
     - The aggregate public nonce _aggothernonce_ (see [above](./README.md#modifications-to-nonce-generation)): a 66-byte array
-    - The number _u_ of identifiers and participant public shares with _min_participants ≤ u ≤ max_participants_
-    - The participant identifiers _id<sub>1..u</sub>_: _u_ integers, each with 0 ≤ _id<sub>i</sub>_ < _max_participants_
+    - The number _u_ of identifiers and participant public shares with _t ≤ u ≤ n_
+    - The participant identifiers _id<sub>1..u</sub>_: _u_ integers, each with 0 ≤ _id<sub>i</sub>_ < _n_
     - The individual public shares _pubshare<sub>1..u</sub>_: _u_ 33-byte arrays
     - The number _v_ of tweaks with _0 &le; v < 2^32_
     - The tweaks _tweak<sub>1..v</sub>_: _v_ 32-byte arrays
@@ -607,8 +608,8 @@ Two modes of tweaking the threshold public key are supported. They correspond to
 Algorithm _ApplyPlainTweak(P, t)_:
 - Inputs:
     - _P_: a point
-    - The tweak _t_: an integer with _0 ≤ t < n_
-- Return _P + t⋅G_
+    - The tweak _twk_: an integer with _0 ≤ twk < curve_order_
+- Return _P + twk⋅G_
 
 Algorithm _ApplyXonlyTweak(P, t)_:
 - Return _with_even_y(P) + t⋅G_
@@ -711,7 +712,7 @@ The `PATCH` version is incremented for other noteworthy changes (bug fixes, test
 * *0.2.0* (2025-04-11): Includes minor fixes and the following major changes:
   - Initialize `TweakCtxInit` using individual `pubshares` instead of the threshold public key.
   - Add Python script to automate generation of test vectors.
-  - Represent participant identifiers as 4-byte integers in the range `0..MAX_PARTICIPANTS - 1` (inclusive).
+  - Represent participant identifiers as 4-byte integers in the range `0..n - 1` (inclusive).
 * *0.1.0* (2024-07-31): Publication of draft BIP on the bitcoin-dev mailing list
 
 ## Acknowledgments

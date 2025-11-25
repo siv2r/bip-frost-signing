@@ -83,13 +83,11 @@ def secret_share_combine(shares: List[PolyPoint]) -> Scalar:
 
 
 # coeffs shouldn't include the const term (i.e. secret)
-def secret_share_shard(
-    secret: int, coeffs: List[int], max_participants: int
-) -> List[PolyPoint]:
+def secret_share_shard(secret: int, coeffs: List[int], n: int) -> List[PolyPoint]:
     coeffs = coeffs + [secret]
 
     secshares: List[PolyPoint] = []
-    for x_i in range(1, max_participants + 1):
+    for x_i in range(1, n + 1):
         y_i = polynomial_evaluate(coeffs, x_i)
         secshare_i = (x_i, y_i)
         secshares.append(secshare_i)
@@ -97,18 +95,18 @@ def secret_share_shard(
 
 
 def trusted_dealer_keygen(
-    secret_key: Scalar, max_participants: int, min_participants: int
+    secret_key: Scalar, n: int, t: int
 ) -> Tuple[ECPoint, List[PolyPoint], List[ECPoint]]:
     assert secret_key != 0
-    assert 2 <= min_participants <= max_participants
+    assert 2 <= t <= n
     # we don't force BIP340 compatibility of threshold pubkey in keygen
     P = secret_key * G
     assert not P.infinity
 
     coeffs = []
-    for i in range(min_participants - 1):
+    for i in range(t - 1):
         coeffs.append(random.randint(1, curve_order - 1))
-    secshares = secret_share_shard(int(secret_key), coeffs, max_participants)
+    secshares = secret_share_shard(int(secret_key), coeffs, n)
     pubshares = []
     for secshare in secshares:
         X = secshare[1] * G
@@ -121,8 +119,8 @@ def trusted_dealer_keygen(
 # section F.5 of https://datatracker.ietf.org/doc/draft-irtf-cfrg-frost/15/
 class Tests(unittest.TestCase):
     def setUp(self) -> None:
-        self.max_participants = 3
-        self.min_participants = 2
+        self.n = 3
+        self.t = 2
         self.poly = [
             0xFBF85EADAE3058EA14F19148BB72B45E4399C0B16028ACAF0395C9B03C823579,
             0x0D004150D27C3BF2A42F312683D35FAC7394B1E9E318249C1BFE7F0795A83114,
@@ -151,17 +149,15 @@ class Tests(unittest.TestCase):
 
     def test_trusted_dealer_keygen(self) -> None:
         secret_key = Scalar.from_bytes_wrapping(secrets.token_bytes(32))
-        max_participants = 5
-        min_participants = 3
-        thresh_pk, secshares, pubshares = trusted_dealer_keygen(
-            secret_key, max_participants, min_participants
-        )
+        n = 5
+        t = 3
+        thresh_pk, secshares, pubshares = trusted_dealer_keygen(secret_key, n, t)
 
         # thresh_pk need not be xonly (i.e., have even y always)
         self.assertEqual(thresh_pk, secret_key * G)
         self.assertEqual(secret_share_combine(secshares), secret_key)
-        self.assertEqual(len(secshares), max_participants)
-        self.assertEqual(len(pubshares), max_participants)
+        self.assertEqual(len(secshares), n)
+        self.assertEqual(len(pubshares), n)
         for i in range(len(pubshares)):
             with self.subTest(i=i):
                 self.assertEqual(pubshares[i], secshares[i][1] * G)

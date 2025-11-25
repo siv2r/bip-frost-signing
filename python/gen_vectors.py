@@ -325,8 +325,8 @@ def generate_sign_verify_vectors():
     ids = list(range(n))
     assert len(pubshares) == len(secshares)
 
-    vectors["max_participants"] = n
-    vectors["min_participants"] = t
+    vectors["n"] = n
+    vectors["t"] = t
     vectors["threshold_public_key"] = bytes_to_hex(thresh_pk)
     vectors["secshare_p1"] = bytes_to_hex(secshare_p1)
     vectors["identifiers"] = ids
@@ -798,8 +798,8 @@ def generate_tweak_vectors():
     ids = list(range(n))
     assert len(pubshares) == len(secshares)
 
-    vectors["max_participants"] = n
-    vectors["min_participants"] = t
+    vectors["n"] = n
+    vectors["t"] = t
     vectors["threshold_public_key"] = bytes_to_hex(thresh_pk)
     vectors["secshare_p1"] = bytes_to_hex(secshare_p1)
     vectors["identifiers"] = ids
@@ -986,8 +986,8 @@ def generate_det_sign_vectors():
     ids = list(range(n))
     assert len(pubshares) == len(secshares)
 
-    vectors["max_participants"] = n
-    vectors["min_participants"] = t
+    vectors["n"] = n
+    vectors["t"] = t
     vectors["threshold_public_key"] = bytes_to_hex(thresh_pk)
     vectors["secshare_p1"] = bytes_to_hex(secshare_p1)
     vectors["identifiers"] = ids
@@ -1329,8 +1329,8 @@ def generate_sig_agg_vectors():
     ids = list(range(n))
     assert len(pubshares) == len(secshares)
 
-    vectors["max_participants"] = n
-    vectors["min_participants"] = t
+    vectors["n"] = n
+    vectors["t"] = t
     vectors["threshold_public_key"] = bytes_to_hex(thresh_pk)
     vectors["identifiers"] = ids
     vectors["pubshares"] = bytes_list_to_hex(pubshares)

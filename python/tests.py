@@ -544,13 +544,13 @@ def test_sign_and_verify_random(iterations: int) -> None:
         signer_pubnonces = []
         for i in range(signer_count - 1):
             # Use a clock for extra_in
-            t = time.clock_gettime_ns(time.CLOCK_MONOTONIC)
+            timestamp = time.clock_gettime_ns(time.CLOCK_MONOTONIC)
             secnonce_i, pubnonce_i = nonce_gen(
                 signer_secshares[i],
                 signer_pubshares[i],
                 tweaked_thresh_pk,
                 msg,
-                t.to_bytes(8, "big"),
+                timestamp.to_bytes(8, "big"),
             )
             signer_secnonces.append(secnonce_i)
             signer_pubnonces.append(pubnonce_i)
@@ -558,13 +558,13 @@ def test_sign_and_verify_random(iterations: int) -> None:
         # On even iterations use regular signing algorithm for the final signer,
         # otherwise use deterministic signing algorithm
         if itr % 2 == 0:
-            t = time.clock_gettime_ns(time.CLOCK_MONOTONIC)
+            timestamp = time.clock_gettime_ns(time.CLOCK_MONOTONIC)
             secnonce_final, pubnonce_final = nonce_gen(
                 signer_secshares[-1],
                 signer_pubshares[-1],
                 tweaked_thresh_pk,
                 msg,
-                t.to_bytes(8, "big"),
+                timestamp.to_bytes(8, "big"),
             )
             signer_secnonces.append(secnonce_final)
         else:

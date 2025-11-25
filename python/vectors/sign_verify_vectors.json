@@ -1,6 +1,6 @@
 {
-    "max_participants": 5,
-    "min_participants": 3,
+    "n": 5,
+    "t": 3,
     "threshold_public_key": "03F9186397E61022663935B3FDFF7880A9F0EC288D8B054DF6AC2BC5777B5FBBB1",
     "secshare_p1": "6FF0F78C1F0E76C4AB67C1B32E0B4B1652120B794AC1AE7EC3992DE06092B566",
     "identifiers": [
