@@ -140,7 +140,9 @@ def check_frost_key_compatibility(
     if not len(ids) == len(secshares) == len(pubshares) == n:
         return False
     pubshare_check = check_pubshares_correctness(secshares, pubshares)
-    thresh_pk_check = check_thresh_pubkey_correctness(t, thresh_pk, ids, pubshares)
+    thresh_pk_check = check_thresh_pubkey_correctness(
+        t, thresh_pk, ids, pubshares
+    )
     return pubshare_check and thresh_pk_check
 
 

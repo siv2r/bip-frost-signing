@@ -709,6 +709,9 @@ An exception to this rule is `MAJOR` version zero (0.y.z) which is for developme
 The `MINOR` version is incremented whenever the inputs or the output of an algorithm changes in a backward-compatible way or new backward-compatible functionality is added.
 The `PATCH` version is incremented for other noteworthy changes (bug fixes, test vectors, important clarifications, etc.).
 
+* *0.2.3* (2025-11-25): Sync terminologies with the ChillDKG BIP.
+* *0.2.2* (2025-11-11): Remove key generation test vectors as key generation is out of scope for this specification.
+* *0.2.1* (2025-11-10): Vendor secp256k1lab library to provide `Scalar` and `GE` primitives. Restructure reference implementation into a Python package layout.
 * *0.2.0* (2025-04-11): Includes minor fixes and the following major changes:
   - Initialize `TweakCtxInit` using individual `pubshares` instead of the threshold public key.
   - Add Python script to automate generation of test vectors.
