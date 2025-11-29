@@ -140,15 +140,16 @@ def check_frost_key_compatibility(
     if not len(ids) == len(secshares) == len(pubshares) == n:
         return False
     pubshare_check = check_pubshares_correctness(secshares, pubshares)
-    thresh_pk_check = check_thresh_pubkey_correctness(
-        t, thresh_pk, ids, pubshares
-    )
+    thresh_pk_check = check_thresh_pubkey_correctness(t, thresh_pk, ids, pubshares)
     return pubshare_check and thresh_pk_check
 
 
-TweakContext = NamedTuple(
-    "TweakContext", [("Q", GE), ("gacc", Scalar), ("tacc", Scalar)]
-)
+class TweakContext(NamedTuple):
+    Q: GE
+    gacc: Scalar
+    tacc: Scalar
+
+
 AGGREGATOR_ID = None
 
 
@@ -321,17 +322,13 @@ def nonce_agg(pubnonces: List[bytes], ids: Sequence[Optional[int]]) -> bytes:
     return aggnonce
 
 
-SessionContext = NamedTuple(
-    "SessionContext",
-    [
-        ("aggnonce", bytes),
-        ("identifiers", List[int]),
-        ("pubshares", List[PlainPk]),
-        ("tweaks", List[bytes]),
-        ("is_xonly", List[bool]),
-        ("msg", bytes),
-    ],
-)
+class SessionContext(NamedTuple):
+    aggnonce: bytes
+    identifiers: List[int]
+    pubshares: List[PlainPk]
+    tweaks: List[bytes]
+    is_xonly: List[bool]
+    msg: bytes
 
 
 def thresh_pubkey_and_tweak(
