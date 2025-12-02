@@ -290,11 +290,23 @@ Algorithm _ValidateThreshPubkey(t, thresh_pk, id<sub>1..n</sub>, pubshare<sub>1.
     - For each combination of _k_ elements from _id<sub>1..n</sub>_:[^itertools-combinations]
         - Let _signer_id<sub>1..k</sub>_ be the current combination of participant identifiers
         - Let _signer_pubshare<sub>1..k</sub>_ be their corresponding participant pubshares[^calc-signer-pubshares]
-        - _expected_pk_ = _DeriveThreshPubkey(signer_id<sub>1..k</sub>, signer_pubshare<sub>1..k</sub>)_
+        - Let _signer_signers = (n, t, k, signer_id<sub>1..k</sub>, signer_pubshare<sub>1..k</sub>)_
+        - _expected_pk_ = _DeriveThreshPubkey(signer_signers)_
         - Fail if _thresh_pk_ ≠ _expected_pk_
 - Return success iff no failure occurred before reaching this point.
 
-### Key Derivation and Tweaking
+### Tweaking the Threshold Public Key
+
+#### Signers Context
+
+The Signers Context is a data structure consisting of the following elements:
+- The total number _n_ of participants involved in key generation: an integer with _2 ≤ n < 2<sup>32</sup>_
+- The threshold number _t_ of participants required to issue a signature: a positive integer with _t ≤ n_
+- The number _u_ of participants available in the signing session with _t ≤ u ≤ n_
+- The participant identifiers _id<sub>1..u</sub>_: _u_ integers, each with 0 ≤ _id<sub>i</sub>_ < _n_
+- The individual public shares _pubshare<sub>1..u</sub>_: _u_ 33-byte arrays
+
+We write "Let _(n, t, u, id<sub>1..u</sub>, pubshare<sub>1..u</sub>) = signers_" to assign names to the elements of Signers Context.
 
 #### Tweak Context
 
@@ -305,19 +317,18 @@ The Tweak Context is a data structure consisting of the following elements:
 
 We write "Let _(Q, gacc, tacc) = tweak_ctx_" to assign names to the elements of a Tweak Context.
 
-Algorithm _TweakCtxInit(id<sub>1..u</sub>, pubshare<sub>1..u</sub>):_
+Algorithm _TweakCtxInit(signers):_
 - Input:
-    - The number _u_ of participants available in the signing session with _t ≤ u ≤ n_
-    - The participant identifiers _id<sub>1..u</sub>_: _u_ integers, each with 0 ≤ _id<sub>i</sub>_ < _n_
-	- The individual public shares _pubshare<sub>1..u</sub>_: _u_ 33-byte arrays
-- Let _thresh_pk = DeriveThreshPubkey(id<sub>1..u</sub>, pubshare<sub>1..u</sub>)_; fail if that fails
-- Let _Q = cpoint(thresh_pk)_
-- Fail if _is_infinite(Q)_.
-- Let _gacc = 1_
-- Let _tacc = 0_
-- Return _tweak_ctx = (Q, gacc, tacc)_.
+    - The _signers_: a [Signers Context](#signers-context) data structure
+- Let _thresh_pk = DeriveThreshPubkey(signers)_; fail if that fails
+- Let _Q = cpoint(thresh_pk)_
+- Fail if _is_infinite(Q)_.
+- Let _gacc = 1_
+- Let _tacc = 0_
+- Return _tweak_ctx = (Q, gacc, tacc)_.
 
-Internal Algorithm _DeriveThreshPubkey(id<sub>1..u</sub>, pubshare<sub>1..u</sub>)_
+Internal Algorithm _DeriveThreshPubkey(signers)_
+- Let ( _ , _ , u, id<sub>1..u</sub>, pubshare<sub>1..u</sub>) = signers
 - _inf_point = bytes(33, 0)_
 - _Q_ = _cpoint_ext(inf_point)_
 - For _i_ = _1..u_:
@@ -412,20 +423,22 @@ Algorithm _NonceAgg(pubnonce<sub>1..u</sub>, id<sub>1..u</sub>)_:
 ### Session Context
 
 The Session Context is a data structure consisting of the following elements:
-- The number _u_ of participants available in the signing session with _t ≤ u ≤ n_
-- The participant identifiers _id<sub>1..u</sub>_: _u_ integers, each with 0 ≤ _id<sub>i</sub>_ < _n_
-- The individual public shares _pubshare<sub>1..u</sub>_: _u_ 33-byte arrays
+- The _signers_: a [Signers Context](#signers-context) data structure
 - The aggregate public nonce of signers _aggnonce_: a 66-byte array
 - The number _v_ of tweaks with _0 ≤ v < 2^32_
 - The tweaks _tweak<sub>1..v</sub>_: _v_ 32-byte arrays
 - The tweak modes _is_xonly_t<sub>1..v</sub>_ : _v_ booleans
 - The message _m_: a byte array[^max-msg-len]
 
-We write "Let _(u, id<sub>1..u</sub>, pubshare<sub>1..u</sub>, aggnonce, v, tweak<sub>1..v</sub>, is_xonly_t<sub>1..v</sub>, m) = session_ctx_" to assign names to the elements of a Session Context.
+We write "Let _(signers, aggnonce, v, tweak<sub>1..v</sub>, is_xonly_t<sub>1..v</sub>, m) = session_ctx_" to assign names to the elements of a Session Context.
+
+For brevity, when we need to access the individual elements of _signers_ within an algorithm, we may write:
+"Let _(n, t, u, id<sub>1..u</sub>, pubshare<sub>1..u</sub>) = signers_"
 
 Algorithm _GetSessionValues(session_ctx)_:
-- Let _(u, id<sub>1..u</sub>, pubshare<sub>1..u</sub>, aggnonce, v, tweak<sub>1..v</sub>, is_xonly_t<sub>1..v</sub>, m) = session_ctx_
-- Let _tweak_ctx<sub>0</sub> = TweakCtxInit(id<sub>1..u</sub>, pubshare<sub>1..u</sub>)_; fail if that fails
+- Let _(signers, aggnonce, v, tweak<sub>1..v</sub>, is_xonly_t<sub>1..v</sub>, m) = session_ctx_
+- Let (_ , _ , u, id<sub>1..u</sub>, pubshare<sub>1..u</sub>) = signers
+- Let _tweak_ctx<sub>0</sub> = TweakCtxInit(signers)_; fail if that fails
 - For _i = 1 .. v_:
     - Let _tweak_ctx<sub>i</sub> = ApplyTweak(tweak_ctx<sub>i-1</sub>, tweak<sub>i</sub>, is_xonly_t<sub>i</sub>)_; fail if that fails
 - Let _(Q, gacc, tacc) = tweak_ctx<sub>v</sub>_
@@ -448,11 +461,13 @@ Internal Algorithm _SerializeIds(id<sub>1..u</sub>)_:
 - Return _res_
 
 Algorithm _GetSessionInterpolatingValue(session_ctx, my_id)_:
-- Let _(u, id<sub>1..u</sub>, _, _, _, _, _) = session_ctx_
+- Let (signers, _, _, _, _, _) = session_ctx
+- Let (_, _, u, id<sub>1..u</sub>, _) = signers
 - Return _DeriveInterpolatingValue(id<sub>1..u</sub>, my_id)_; fail if that fails
 
 Algorithm _SessionHasSignerPubshare(session_ctx, signer_pubshare)_:
-- Let _(u, _, pubshare<sub>1..u</sub>, _, _, _, _) = session_ctx_
+- Let _(signers, _, _, _, _, _) = session_ctx_
+- Let (_, _, u, _, pubshare<sub>1..u</sub>) = signers
 - If _signer_pubshare in pubshare<sub>1..u</sub>_
 	- Return True
 - Otherwise Return False
@@ -485,20 +500,19 @@ Algorithm _Sign(secnonce, secshare, my_id, session_ctx)_:
 
 ### Partial Signature Verification
 
-Algorithm _PartialSigVerify(psig, id<sub>1..u</sub>, pubnonce<sub>1..u</sub>, pubshare<sub>1..u</sub>, tweak<sub>1..v</sub>, is_xonly_t<sub>1..v</sub>, m, i)_:
+Algorithm _PartialSigVerify(psig, pubnonce<sub>1..u</sub>, signers, tweak<sub>1..v</sub>, is_xonly_t<sub>1..v</sub>, m, i)_:
 - Inputs:
     - The partial signature _psig_: a 32-byte array
-    - The number _u_ of identifiers, public nonces, and individual public shares with _t ≤ u ≤ n_
-    - The participant identifiers _id<sub>1..u</sub>_: _u_ integers, each with 0 ≤ _id<sub>i</sub>_ < _n_
     - The public nonces _pubnonce<sub>1..u</sub>_: _u_ 66-byte arrays
-    - The individual public shares _pubshare<sub>1..u</sub>_: _u_ 33-byte arrays
+    - The _signers_: a [Signers Context](#signers-context) data structure
     - The number _v_ of tweaks with _0 ≤ v < 2^32_
     - The tweaks _tweak<sub>1..v</sub>_: _v_ 32-byte arrays
     - The tweak modes _is_xonly_t<sub>1..v</sub>_ : _v_ booleans
     - The message _m_: a byte array[^max-msg-len]
-    - The index _i_ of the signer in the list of identifiers, public nonces, and individual public shares where _0 < i ≤ u_
-- Let _aggnonce = NonceAgg(pubnonce<sub>1..u</sub>)_; fail if that fails
-- Let _session_ctx = (u, id<sub>1..u</sub>, pubshare<sub>1..u</sub>, aggnonce, v, tweak<sub>1..v</sub>, is_xonly_t<sub>1..v</sub>, m)_
+    - The index _i_ of the signer in the list of public nonces where _0 < i ≤ u_
+- Let _(_, _, u, id<sub>1..u</sub>, pubshare<sub>1..u</sub>) = signers_
+- Let _aggnonce = NonceAgg(pubnonce<sub>1..u</sub>, id<sub>1..u</sub>)_; fail if that fails
+- Let _session_ctx = (signers, aggnonce, v, tweak<sub>1..v</sub>, is_xonly_t<sub>1..v</sub>, m)_
 - Run _PartialSigVerifyInternal(psig, id<sub>i</sub>, pubnonce<sub>i</sub>, pubshare<sub>i</sub>, session_ctx)_
 - Return success iff no failure occurred before reaching this point.
 
@@ -567,14 +581,12 @@ Hence, using _DeterministicSign_ is only possible for the last signer to generat
 
 #### Deterministic and Stateless Signing for a Single Signer
 
-Algorithm _DeterministicSign(secshare, my_id, aggothernonce, id<sub>1..u</sub>, pubshare<sub>1..u</sub>, tweak<sub>1..v</sub>, is_xonly_t<sub>1..v</sub>, m, rand)_:
+Algorithm _DeterministicSign(secshare, my_id, aggothernonce, signers, tweak<sub>1..v</sub>, is_xonly_t<sub>1..v</sub>, m, rand)_:
 - Inputs:
     - The secret share _secshare_: a 32-byte array
     - The identifier of the signing participant _my_id_: an integer with 0 _≤ my_id < n_
     - The aggregate public nonce _aggothernonce_ (see [above](./README.md#modifications-to-nonce-generation)): a 66-byte array
-    - The number _u_ of identifiers and participant public shares with _t ≤ u ≤ n_
-    - The participant identifiers _id<sub>1..u</sub>_: _u_ integers, each with 0 ≤ _id<sub>i</sub>_ < _n_
-    - The individual public shares _pubshare<sub>1..u</sub>_: _u_ 33-byte arrays
+    - The _signers_: a [Signers Context](#signers-context) data structure
     - The number _v_ of tweaks with _0 &le; v < 2^32_
     - The tweaks _tweak<sub>1..v</sub>_: _v_ 32-byte arrays
     - The tweak methods _is_xonly_t<sub>1..v</sub>_: _v_ booleans
@@ -584,7 +596,8 @@ Algorithm _DeterministicSign(secshare, my_id, aggothernonce, id<sub>1..u</sub>, 
     - Let _secshare'_ be the byte-wise xor of _secshare_ and _hash<sub>FROST/aux</sub>(rand)_
 - Else:
     - Let _secshare' = secshare_
-- Let _tweak_ctx<sub>0</sub> = TweakCtxInit(id<sub>1..u</sub>, pubshare<sub>1..u</sub>)_; fail if that fails
+- Let (_, _, u, id<sub>1..u</sub>, pubshare<sub>1..u</sub>) = signers
+- Let _tweak_ctx<sub>0</sub> = TweakCtxInit(signers)_; fail if that fails
 - For _i = 1 .. v_:
     - Let _tweak_ctx<sub>i</sub> = ApplyTweak(tweak_ctx<sub>i-1</sub>, tweak<sub>i</sub>, is_xonly_t<sub>i</sub>)_; fail if that fails
 - Let _tweaked_tpk = GetXonlyPubkey(tweak_ctx<sub>v</sub>)_
@@ -597,9 +610,8 @@ Algorithm _DeterministicSign(secshare, my_id, aggothernonce, id<sub>1..u</sub>, 
 - Let _signer_pubshare = cbytes(d⋅G)_
 - Fail if _signer_pubshare_ is not present in _pubshare<sub>1..u</sub>_
 - Let _secnonce = bytes(32, k<sub>1</sub>) || bytes(32, k<sub>2</sub>)_
-- Let _aggnonce = NonceAgg((pubnonce, aggothernonce))_; fail if that fails and blame nonce aggregator for invalid _aggothernonce_.
-- Let _session_ctx = (u, id<sub>1..u</sub>, pubshare<sub>1..u</sub>, aggnonce, v, tweak<sub>1..v</sub>, is_xonly_t<sub>1..v</sub>, m)_
-- Return _(pubnonce, Sign(secnonce, secshare, my_id, session_ctx))_
+- Let _aggnonce = NonceAgg((pubnonce, aggothernonce), (my_id, AGGREGATOR_ID))_; fail if that fails and blame nonce aggregator for invalid _aggothernonce_.
+- Let _session_ctx = (signers, aggnonce, v, tweak<sub>1..v</sub>, is_xonly_t<sub>1..v</sub>, m)_
 
 ### Tweaking Definition
 
