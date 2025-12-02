@@ -2,7 +2,7 @@ name: Claude Code Review
 
 on:
   pull_request:
-    types: [opened, synchronize]
+    types: [opened, synchronize, reopened]
     # Optional: Only run on specific file changes
     # paths:
     #   - "src/**/*.ts"
@@ -21,7 +21,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      pull-requests: read
+      pull-requests: write
       issues: read
       id-token: write
 
@@ -40,18 +40,79 @@ jobs:
             REPO: ${{ github.repository }}
             PR NUMBER: ${{ github.event.pull_request.number }}
 
-            Please review this pull request and provide feedback on:
-            - Code quality and best practices
-            - Potential bugs or issues
-            - Performance considerations
-            - Security concerns
-            - Test coverage
+            You are reviewing a pull request for a Bitcoin Improvement Proposal (BIP) implementing FROST threshold signatures. This is a cryptographic protocol where correctness and security are paramount.
 
-            Use the repository's CLAUDE.md for guidance on style and conventions. Be constructive and helpful in your feedback.
+            ## Review Protocol
 
-            Use `gh pr comment` with your Bash tool to leave your review as a comment on the PR.
+            1. **Gather context:**
+               - Run: `gh pr view ${{ github.event.pull_request.number }} --json title,body,files`
+               - Run: `gh pr diff ${{ github.event.pull_request.number }}`
+               - Read `CLAUDE.md` for project-specific requirements
+
+            2. **Analyze for high-severity issues (max 6 findings):**
+
+               **Focus on:**
+               - Correctness bugs in FROST signing algorithms
+               - Security vulnerabilities (nonce reuse, timing attacks, key leakage)
+               - Logic errors in BIP340 signature compatibility
+               - Missing test coverage for critical protocol steps
+               - Arithmetic errors in cryptographic operations
+
+               **Explicitly skip:**
+               - Style nitpicks and formatting
+               - Minor refactoring opportunities
+               - Documentation typos
+               - Obvious issues the author likely knows about
+
+            3. **Format each finding:**
+               ```
+               **[Severity]** File: `path/to/file.py:123-125`
+
+               Code:
+               ```python
+               [exact code snippet showing the issue]
+               ```
+
+               Issue: [Technical description of the problem]
+               Fix: [Specific, actionable recommendation]
+               ```
+
+            4. **Submit review via GitHub API:**
+
+               First, create a pending review:
+               ```bash
+               REVIEW_ID=$(gh api repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}/reviews \
+                 -X POST \
+                 -f event="PENDING" \
+                 -f body="## Code Review Summary
+
+               Found X issues requiring attention. See inline comments for details." \
+                 --jq '.id')
+               ```
+
+               For each finding, add an inline comment:
+               ```bash
+               gh api repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}/reviews/$REVIEW_ID/comments \
+                 -X POST \
+                 -f path="FILE_PATH" \
+                 -f line=LINE_NUMBER \
+                 -f body="[Your formatted finding from step 3]"
+               ```
+
+               Finally, submit the review:
+               ```bash
+               gh api repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}/reviews/$REVIEW_ID/events \
+                 -X POST \
+                 -f event="COMMENT"
+               ```
+
+            ## Communication Style
+            - Senior engineer voice: technical, precise, objective
+            - No restating what the diff shows
+            - Every critique includes a concrete fix
+            - If no high-severity issues: "No blocking issues found. [Optional 1-sentence note on minor observations.]"
 
           # See https://github.com/anthropics/claude-code-action/blob/main/docs/usage.md
           # or https://docs.claude.com/en/docs/claude-code/cli-reference for available options
-          claude_args: '--allowed-tools "Bash(gh issue view:*),Bash(gh search:*),Bash(gh issue list:*),Bash(gh pr comment:*),Bash(gh pr diff:*),Bash(gh pr view:*),Bash(gh pr list:*)"'
+          claude_args: '--allowed-tools "Bash(gh pr diff:*),Bash(gh pr view:*),Bash(gh api:*)"'
 
