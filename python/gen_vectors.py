@@ -9,6 +9,7 @@ from typing import Dict, List, Sequence, Union
 from frost_ref import (
     InvalidContributionError,
     SessionContext,
+    SignersContext,
     deterministic_sign,
     nonce_agg,
     partial_sig_agg,
@@ -499,9 +500,8 @@ def generate_sign_verify_vectors():
         curr_aggnonce = aggnonces[case["aggnonce"]]
         curr_msg = msgs[case["msg"]]
         my_id = curr_ids[case["signer"]]
-        session_ctx = SessionContext(
-            curr_aggnonce, curr_ids, curr_pubshares, [], [], curr_msg
-        )
+        curr_signers = SignersContext(n, t, curr_ids, curr_pubshares)
+        session_ctx = SessionContext(curr_aggnonce, curr_signers, [], [], curr_msg)
         expected_psig = sign(
             bytearray(secnonces_p1[0]), secshare_p1, my_id, session_ctx
         )
@@ -623,9 +623,8 @@ def generate_sign_verify_vectors():
             my_id = case["signer_id"]
         else:
             my_id = curr_ids[case["signer_idx"]]
-        session_ctx = SessionContext(
-            curr_aggnonce, curr_ids, curr_pubshares, [], [], curr_msg
-        )
+        curr_signers = SignersContext(n, t, curr_ids, curr_pubshares)
+        session_ctx = SessionContext(curr_aggnonce, curr_signers, [], [], curr_msg)
         curr_secnonce = bytearray(secnonces_p1[case["secnonce"]])
         expected_error = (
             ValueError if case["error"] == "value" else InvalidContributionError
@@ -668,9 +667,8 @@ def generate_sign_verify_vectors():
     curr_aggnonce = aggnonces[aggnonce_idx]
     curr_msg = msgs[msg_idx]
     my_id = curr_ids[signer_idx]
-    session_ctx = SessionContext(
-        curr_aggnonce, curr_ids, curr_pubshares, [], [], curr_msg
-    )
+    curr_signers = SignersContext(n, t, curr_ids, curr_pubshares)
+    session_ctx = SessionContext(curr_aggnonce, curr_signers, [], [], curr_msg)
     curr_secnonce = bytearray(secnonces_p1[0])
     psig = sign(curr_secnonce, secshare_p1, my_id, session_ctx)
     # --- Verify Fail Test Cases 1 ---
@@ -760,13 +758,14 @@ def generate_sign_verify_vectors():
         curr_pubnonces = [pubnonces[i] for i in case["pubnonces"]]
         msg = case["msg"]
         signer_idx = case["signer"]
+        curr_signers = SignersContext(n, t, curr_ids, curr_pubshares)
         expected_error = (
             ValueError if case["error"] == "value" else InvalidContributionError
         )
         error = expect_exception(
             # reuse the valid `psig` generated at the start of "verify fail test cases"
             lambda: partial_sig_verify(
-                psig, curr_ids, curr_pubnonces, curr_pubshares, [], [], msg, signer_idx
+                psig, curr_pubnonces, curr_signers, [], [], msg, signer_idx
             ),
             expected_error,
         )
@@ -907,8 +906,9 @@ def generate_tweak_vectors():
         signer_idx = 0
         my_id = curr_ids[signer_idx]
 
+        curr_signers = SignersContext(n, t, curr_ids, curr_pubshares)
         session_ctx = SessionContext(
-            curr_aggnonce, curr_ids, curr_pubshares, curr_tweaks, curr_tweak_modes, msg
+            curr_aggnonce, curr_signers, curr_tweaks, curr_tweak_modes, msg
         )
         psig = sign(bytearray(secnonce_p1), secshare_p1, my_id, session_ctx)
 
@@ -951,8 +951,9 @@ def generate_tweak_vectors():
         signer_idx = 0
         my_id = curr_ids[signer_idx]
 
+        curr_signers = SignersContext(n, t, curr_ids, curr_pubshares)
         session_ctx = SessionContext(
-            curr_aggnonce, curr_ids, curr_pubshares, curr_tweaks, curr_tweak_modes, msg
+            curr_aggnonce, curr_signers, curr_tweaks, curr_tweak_modes, msg
         )
         error = expect_exception(
             lambda: sign(bytearray(secnonce_p1), secshare_p1, my_id, session_ctx),
@@ -1133,12 +1134,12 @@ def generate_det_sign_vectors():
             other_pubnonces.append(pub)
         curr_aggothernonce = nonce_agg(other_pubnonces, other_ids)
 
+        curr_signers = SignersContext(n, t, curr_ids, curr_pubshares)
         expected = deterministic_sign(
             secshare_p1,
             my_id,
             curr_aggothernonce,
-            curr_ids,
-            curr_pubshares,
+            curr_signers,
             curr_tweaks,
             curr_tweak_modes,
             curr_msg,
@@ -1280,13 +1281,13 @@ def generate_det_sign_vectors():
         expected_exception = (
             ValueError if case["error"] == "value" else InvalidContributionError
         )
+        curr_signers = SignersContext(n, t, curr_ids, curr_pubshares)
         error = expect_exception(
             lambda: deterministic_sign(
                 secshare_p1,
                 my_id,
                 curr_aggothernonce,
-                curr_ids,
-                curr_pubshares,
+                curr_signers,
                 curr_tweaks,
                 curr_tweak_modes,
                 curr_msg,
@@ -1398,10 +1399,10 @@ def generate_sig_agg_vectors():
         curr_tweaks = [tweaks[i] for i in tweak_indices]
         curr_tweak_modes = case.get("is_xonly", [])
         psigs = []
+        curr_signers = SignersContext(n, t, curr_ids, curr_pubshares)
         session_ctx = SessionContext(
             curr_aggnonce,
-            curr_ids,
-            curr_pubshares,
+            curr_signers,
             curr_tweaks,
             curr_tweak_modes,
             curr_msg,
@@ -1447,9 +1448,8 @@ def generate_sig_agg_vectors():
         curr_aggnonce = nonce_agg(curr_pubnonces, curr_ids)
         curr_msg = msg
         psigs = []
-        session_ctx = SessionContext(
-            curr_aggnonce, curr_ids, curr_pubshares, [], [], curr_msg
-        )
+        curr_signers = SignersContext(n, t, curr_ids, curr_pubshares)
+        session_ctx = SessionContext(curr_aggnonce, curr_signers, [], [], curr_msg)
         for i in case["indices"]:
             my_id = ids[i]
             sig = sign(bytearray(secnonces[i]), secshares[i], my_id, session_ctx)
