@@ -61,7 +61,7 @@ and also about the combination of security proofs. we can't randomly use combina
 * **Tweaking for BIP32 derivations and Taproot**: This proposal supports tweaking threshold public key and signing for this tweaked threshold public key. We distinguish two modes of tweaking: _Plain_ tweaking can be used to derive child threshold public keys per [BIP32](https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki)._X-only_ tweaking, on the other hand, allows creating a [BIP341](https://github.com/bitcoin/bips/blob/master/bip-0341.mediawiki) tweak to add script paths to a Taproot output. See [tweaking the threshold public key](./README.md#tweaking-threshold-public-key) below for details.
 * **Non-interactive signing with preprocessing**: The first communication round, exchanging the nonces, can happen before the message or the exact set of signers is determined. Once the parameters of the signing session are finalized, the signers can send partial signatures without additional interaction.
 * **Partial signature independent of order**: The output of the signing algorithm remains consistent regardless of the order in which participant identifiers and public shares are used during the session context initialization. This property is inherent when combining Shamir shares to derive any value.
-* **Third-party nonce and partial signature aggregation**: Instead of every signer sending their nonce and partial signature to every other signer, it is possible to use an untrusted third-party _aggregator_ in order to reduce the communication complexity from quadratic to linear in the number of signers. In each of the two rounds, the aggregator collects all signers' contributions (nonces or partial signatures), aggregates them, and broadcasts the aggregate back to the signers. A malicious aggregator can force the signing session to fail to produce a valid Schnorr signature but cannot negatively affect the unforgeability of the scheme.
+* **Third-party nonce and partial signature aggregation**: Instead of every signer sending their nonce and partial signature to every other signer, it is possible to use an untrusted third-party _coordinator_ to reduce the communication complexity from quadratic to linear in the number of signers. In each of the two rounds, the coordinator collects all signers' contributions (nonces or partial signatures), aggregates them, and broadcasts the aggregate back to the signers. A malicious coordinator can force the signing session to fail to produce a valid Schnorr signature but cannot negatively affect the unforgeability of the scheme.
 * **Partial signature verification**: If any signer sends a partial signature contribution that was not created by honestly following the signing protocol, the signing session will fail to produce a valid Schnorr signature. This proposal specifies a partial signature verification algorithm to identify disruptive signers. It is incompatible with third-party nonce aggregation because the individual nonce is required for partial verification.
 * **Size of the nonce**: In the FROST3 variant, each signer's nonce consists of two elliptic curve points.
 
@@ -126,7 +126,7 @@ Every signer computes a partial signature by running _Sign_ with the participant
 Then, the signers broadcast their partial signatures to each other and run _PartialSigAgg_ to obtain the final signature.
 If all signers behaved honestly, the result passes [BIP340](https://github.com/bitcoin/bips/blob/master/bip-0340.mediawiki) verification.
 
-Both broadcast rounds can be optimized by using an aggregator who collects all signers' nonces or partial signatures, aggregates them using _NonceAgg_ or _PartialSigAgg_, respectively, and broadcasts the aggregate result back to the signers. A malicious aggregator can force the signing session to fail to produce a valid Schnorr signature but cannot negatively affect the unforgeability of the scheme, i.e., even a malicious aggregator colluding with all but one signer cannot forge a signature.
+Both broadcast rounds can be optimized by using a coordinator who collects all signers' nonces or partial signatures, aggregates them using _NonceAgg_ or _PartialSigAgg_, respectively, and broadcasts the aggregate result back to the signers. A malicious coordinator can force the signing session to fail to produce a valid Schnorr signature but cannot negatively affect the unforgeability of the scheme, i.e., even a malicious coordinator colluding with all but one signer cannot forge a signature.
 
 > [!IMPORTANT]
 > The _Sign_ algorithm must **not** be executed twice with the same _secnonce_.
@@ -161,9 +161,9 @@ This way, the final signature is created quicker and with fewer round trips.
 However, applications that use this method presumably store the nonces for a longer time and must therefore be even more careful not to reuse them.
 Moreover, this method is not compatible with the defense-in-depth mechanism described in the previous paragraph.
 
-Instead of every signer broadcasting their _pubnonce_ to every other signer, the signers can send their _pubnonce_ to a single aggregator node that runs _NonceAgg_ and sends the _aggnonce_ back to the signers.
+Instead of every signer broadcasting their _pubnonce_ to every other signer, the signers can send their _pubnonce_ to a single coordinator node that runs _NonceAgg_ and sends the _aggnonce_ back to the signers.
 This technique reduces the overall communication.
-A malicious aggregator can force the signing session to fail to produce a valid Schnorr signature but cannot negatively affect the unforgeability of the scheme.
+A malicious coordinator can force the signing session to fail to produce a valid Schnorr signature but cannot negatively affect the unforgeability of the scheme.
 
 In general, FROST signers are stateful in the sense that they first generate _secnonce_ and then need to store it until they receive the other signers' _pubnonces_ or the _aggnonce_.
 However, it is possible for one of the signers to be stateless.
@@ -178,17 +178,17 @@ This property is called "identifiable aborts" and ensures that honest parties ca
 
 Aborts are identifiable for an honest party if the following conditions hold in a signing session:
 - The contributions received from all signers have not been tampered with (e.g., because they were sent over authenticated connections).
-- Nonce aggregation is performed honestly (e.g., because the honest signer performs nonce aggregation on its own or because the aggregator is trusted).
+- Nonce aggregation is performed honestly (e.g., because the honest signer performs nonce aggregation on its own or because the coordinator is trusted).
 - The partial signatures received from all signers are verified using the algorithm _PartialSigVerify_.
 
-If these conditions hold and an honest party (signer or aggregator) runs an algorithm that fails due to invalid protocol contributions from malicious signers, then the algorithm run by the honest party will output the participant identifier of exactly one malicious signer.
+If these conditions hold and an honest party (signer or coordinator) runs an algorithm that fails due to invalid protocol contributions from malicious signers, then the algorithm run by the honest party will output the participant identifier of exactly one malicious signer.
 Additionally, if the honest parties agree on the contributions sent by all signers in the signing session, all the honest parties who run the aborting algorithm will identify the same malicious signer.
 
 #### Further Remarks
 
-Some of the algorithms specified below may also assign blame to a malicious aggregator.
-While this is possible for some particular misbehavior of the aggregator, it is not guaranteed that a malicious aggregator can be identified.
-More specifically, a malicious aggregator (whose existence violates the second condition above) can always make signing abort and wrongly hold honest signers accountable for the abort (e.g., by claiming to have received an invalid contribution from a particular honest signer).
+Some of the algorithms specified below may also assign blame to a malicious coordinator.
+While this is possible for some particular misbehavior of the coordinator, it is not guaranteed that a malicious coordinator can be identified.
+More specifically, a malicious coordinator (whose existence violates the second condition above) can always make signing abort and wrongly hold honest signers accountable for the abort (e.g., by claiming to have received an invalid contribution from a particular honest signer).
 
 The only purpose of the algorithm _PartialSigVerify_ is to ensure identifiable aborts, and it is not necessary to use it when identifiable aborts are not desired.
 In particular, partial signatures are _not_ signatures.
@@ -466,7 +466,7 @@ Algorithm _GetSessionValues(session_ctx)_:
 - Let _(Q, gacc, tacc) = tweak_ctx<sub>v</sub>_
 - Let _ser_ids_ = _SerializeIds(id<sub>1..u</sub>)_
 - Let b = _int(hash<sub>FROST/noncecoef</sub>(ser_ids || aggnonce || xbytes(Q) || m)) mod n_
-- Let _R<sub>1</sub> = cpoint_ext(aggnonce[0:33]), R<sub>2</sub> = cpoint_ext(aggnonce[33:66])_; fail if that fails and blame nonce aggregator for invalid _aggnonce_.
+- Let _R<sub>1</sub> = cpoint_ext(aggnonce[0:33]), R<sub>2</sub> = cpoint_ext(aggnonce[33:66])_; fail if that fails and blame nonce coordinator for invalid _aggnonce_.
 - Let _R' = R<sub>1</sub> + b⋅R<sub>2</sub>_
 - If _is_infinite(R'):_
     - _Let final nonce_ R = G _([see Dealing with Infinity in Nonce Aggregation](./README.md#dealing-with-infinity-in-nonce-aggregation))_
@@ -639,7 +639,7 @@ Algorithm _DeterministicSign(secshare, my_id, aggothernonce, signers, tweak<sub>
 - Let _signer_pubshare = cbytes(d⋅G)_
 - Fail if _signer_pubshare_ is not present in _pubshare<sub>1..u</sub>_
 - Let _secnonce = bytes(32, k<sub>1</sub>) || bytes(32, k<sub>2</sub>)_
-- Let _aggnonce = NonceAgg((pubnonce, aggothernonce), (my_id, AGGREGATOR_ID))_; fail if that fails and blame nonce aggregator for invalid _aggothernonce_.
+- Let _aggnonce = NonceAgg((pubnonce, aggothernonce), (my_id, COORDINATOR_ID))_; fail if that fails and blame coordinator for invalid _aggothernonce_.
 - Let _session_ctx = (signers, aggnonce, v, tweak<sub>1..v</sub>, is_xonly_t<sub>1..v</sub>, m)_
 
 [^max-msg-len]: In theory, the allowed message size is restricted because SHA256 accepts byte strings only up to size of 2^61-1 bytes (and because of the 8-byte length encoding).
@@ -725,7 +725,7 @@ Note that the threshold public key and list of tweaks are inputs to partial sign
 
 ### Dealing with Infinity in Nonce Aggregation
 
-If the nonce aggregator provides _aggnonce = bytes(33,0) || bytes(33,0)_, either the nonce aggregator is dishonest or there is at least one dishonest signer (except with negligible probability).
+If the coordinator provides _aggnonce = bytes(33,0) || bytes(33,0)_, either the coordinator is dishonest or there is at least one dishonest signer (except with negligible probability).
 If signing aborted in this case, it would be impossible to determine who is dishonest.
 Therefore, signing continues so that the culprit is revealed when collecting and verifying partial signatures.
 

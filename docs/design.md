@@ -39,7 +39,7 @@ The above vulnerability is exploited by creating rogue keyagg coefficients (that
 
 We use the nonce aggregation technique described in the FROST3 scheme. The advantage here is that all co-signers involved in the signing process will create the same binding factor, which makes the nonce aggregation process simpler.
 
-An alternative approach is to follow the original FROST protocol, where the aggregator does not perform the aggregation. Instead, it sends the set $\bigcup \limits_{i=1}^{u}{(i, R_{i, 1}, R_{i, 2})}$ to each signer. The disadvantage is that the size of this set is $(32+33+33) \times u$ bytes, which is larger than the 66-byte aggregate nonce sent in the FROST3 scheme. The advantage is that signers can detect a malicious aggregator when their nonce commitment is absent in this set. However, this detection mechanism cannot validate the set when some signers collude with the malicious aggregator.
+An alternative approach is to follow the original FROST protocol, where the coordinator does not perform the aggregation. Instead, it sends the set $\bigcup \limits_{i=1}^{u}{(i, R_{i, 1}, R_{i, 2})}$ to each signer. The disadvantage is that the size of this set is $(32+33+33) \times u$ bytes, which is larger than the 66-byte aggregate nonce sent in the FROST3 scheme. The advantage is that signers can detect a malicious coordinator when their nonce commitment is absent in this set. However, this detection mechanism cannot validate the set when some signers collude with the malicious coordinator.
 
 ### Session Context Structure
 

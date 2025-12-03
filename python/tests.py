@@ -8,7 +8,7 @@ import time
 from typing import List, Optional, Tuple
 
 from frost_ref.signing import (
-    AGGREGATOR_ID,
+    COORDINATOR_ID,
     InvalidContributionError,
     PlainPk,
     SessionContext,
@@ -386,7 +386,7 @@ def test_det_sign_vectors():
         assert psig == expected[1]
 
         pubnonces = [aggothernonce, pubnonce]
-        aggnonce_tmp = nonce_agg(pubnonces, [AGGREGATOR_ID, my_id])
+        aggnonce_tmp = nonce_agg(pubnonces, [COORDINATOR_ID, my_id])
         session_ctx = SessionContext(aggnonce_tmp, signers_tmp, tweaks, is_xonly, msg)
         assert partial_sig_verify_internal(
             psig, my_id, pubnonce, pubshares_tmp[signer_index], session_ctx

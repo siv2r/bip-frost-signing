@@ -27,7 +27,7 @@ ContribKind = Literal[
 #     precondition (e.g. an input array is the wrong length, a serialized
 #     representation doesn't have the correct format).
 #   - InvalidContributionError for indicating that a signer (or the
-#     aggregator) is misbehaving in the protocol.
+#     coordinator) is misbehaving in the protocol.
 #
 # Assertions are used to (1) satisfy the type-checking system, and (2) check for
 # inconvenient events that can't happen except with negligible probability (e.g.
@@ -35,7 +35,7 @@ ContribKind = Literal[
 # signer.
 
 
-# This exception is raised if a party (signer or nonce aggregator) sends invalid
+# This exception is raised if a party (signer or nonce coordinator) sends invalid
 # values. Actual implementations should not crash when receiving invalid
 # contributions. Instead, they should hold the offending party accountable.
 class InvalidContributionError(Exception):
@@ -177,7 +177,7 @@ class TweakContext(NamedTuple):
     tacc: Scalar
 
 
-AGGREGATOR_ID = None
+COORDINATOR_ID = None
 
 
 def get_xonly_pk(tweak_ctx: TweakContext) -> XonlyPk:
@@ -193,7 +193,7 @@ def get_plain_pk(tweak_ctx: TweakContext) -> PlainPk:
 # nit: switch the args ordering
 def derive_thresh_pubkey(signers: SignersContext) -> PlainPk:
     ids, pubshares = get_signing_participants(signers)
-    # assert AGGREGATOR_ID not in ids
+    # assert COORDINATOR_ID not in ids
     Q = GE()
     for my_id, pubshare in zip(ids, pubshares):
         try:
@@ -384,7 +384,7 @@ def get_session_values(
         R_1 = cpoint_ext(aggnonce[0:33])
         R_2 = cpoint_ext(aggnonce[33:66])
     except ValueError:
-        # Nonce aggregator sent invalid nonces
+        # Nonce coordinator sent invalid nonces
         raise InvalidContributionError(None, "aggnonce")
     R_ = R_1 + b * R_2
     R = R_ if not R_.infinity else G
@@ -508,11 +508,11 @@ def deterministic_sign(
     pubnonce = cbytes(R_s1) + cbytes(R_s2)
     secnonce = bytearray(k_1.to_bytes() + k_2.to_bytes())
     try:
-        aggnonce = nonce_agg([pubnonce, aggothernonce], [my_id, AGGREGATOR_ID])
+        aggnonce = nonce_agg([pubnonce, aggothernonce], [my_id, COORDINATOR_ID])
     except Exception:
-        # Since `pubnonce` can never be invalid, blame aggregator's pubnonce.
-        # REVIEW: should we introduce an unknown participant or aggregator error?
-        raise InvalidContributionError(AGGREGATOR_ID, "aggothernonce")
+        # Since `pubnonce` can never be invalid, blame coordinator's pubnonce.
+        # REVIEW: should we introduce an unknown participant or coordinator error?
+        raise InvalidContributionError(COORDINATOR_ID, "aggothernonce")
     session_ctx = SessionContext(aggnonce, signers, tweaks, is_xonly, msg)
     psig = sign(secnonce, secshare, my_id, session_ctx)
     return (pubnonce, psig)
@@ -570,7 +570,7 @@ def partial_sig_verify_internal(
 def partial_sig_agg(
     psigs: List[bytes], ids: List[int], session_ctx: SessionContext
 ) -> bytes:
-    assert AGGREGATOR_ID not in ids
+    assert COORDINATOR_ID not in ids
     if len(psigs) != len(ids):
         raise ValueError("The psigs and ids arrays must have the same length.")
     (Q, _, tacc, _, R, e) = get_session_values(session_ctx)
