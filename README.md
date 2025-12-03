@@ -33,6 +33,11 @@ Many sections of this document have been directly copied or modified from [BIP32
 The FROST signature scheme [[KG20](https://eprint.iacr.org/2020/852),[CKM21](https://eprint.iacr.org/2021/1375),[BTZ21](https://eprint.iacr.org/2022/833),[CGRS23](https://eprint.iacr.org/2023/899)] enables `t`-of-`n` Schnorr threshold signatures, in which a threshold `t` of some set of `n` signers is required to produce a signature.
 FROST remains unforgeable as long as at most `t-1` signers are compromised, and remains functional as long as `t` honest signers do not lose their secret key material. It supports any choice of `t` as long as `1 <= t <= n`.[^t-edge-cases]
 
+[^t-edge-cases]: While `t = n` and `t = 1` are in principle supported, simpler alternatives are available in these cases.
+In the case `t = n`, using a dedicated `n`-of-`n` multi-signature scheme such as MuSig2 (see [BIP327](bip-0327.mediawiki)) instead of FROST avoids the need for an interactive DKG.
+The case `t = 1` can be realized by letting one signer generate an ordinary [BIP340](bip-0340.mediawiki) key pair and transmitting the key pair to every other signer, who can check its consistency and then simply use the ordinary [BIP340](bip-0340.mediawiki) signing algorithm.
+Signers still need to ensure that they agree on a key pair.
+
 The primary motivation is to create a standard that allows users of different software projects to jointly control Taproot outputs ([BIP341](https://github.com/bitcoin/bips/blob/master/bip-0341.mediawiki)).
 Such an output contains a public key which, in this case, would be the threshold public key derived from the public shares of threshold signers.
 It can be spent using FROST to produce a signature for the key-based spending path.
@@ -113,6 +118,8 @@ Whenever the signing participants want to sign a message, the basic order of ope
 The signers start the signing session by running _NonceGen_ to compute _secnonce_ and _pubnonce_.[^nonce-serialization-detail]
 Then, the signers broadcast their _pubnonce_ to each other and run _NonceAgg_ to compute an aggregate nonce.
 
+[^nonce-serialization-detail]: We treat the _secnonce_ and _pubnonce_ as grammatically singular even though they include serializations of two scalars and two elliptic curve points, respectively. This treatment may be confusing for readers familiar with the MuSig2 paper. However, serialization is a technical detail that is irrelevant for users of MuSig2 interfaces.
+
 **Second broadcast round:**
 At this point, every signer has the required data to sign, which, in the algorithms specified below, is stored in a data structure called [Session Context](./README.md#session-context).
 Every signer computes a partial signature by running _Sign_ with the participant identifier, the secret share, the _secnonce_ and the session context.
@@ -188,6 +195,7 @@ In particular, partial signatures are _not_ signatures.
 An adversary can forge a partial signature, i.e., create a partial signature without knowing the secret share for that particular participant public share.[^partialsig-forgery]
 However, if _PartialSigVerify_ succeeds for all partial signatures then _PartialSigAgg_ will return a valid Schnorr signature.
 
+[^partialsig-forgery]: Assume a malicious participant intends to forge a partial signature for the participant with public share _P_. It participates in the signing session pretending to be two distinct signers: one with the public share _P_ and the other with its own public share. The adversary then sets the nonce for the second signer in such a way that allows it to generate a partial signature for _P_. As a side effect, it cannot generate a valid partial signature for its own public share. An explanation of the steps required to create a partial signature forgery can be found in [this document](docs/partialsig_forgery.md).
 
 ### Tweaking the Threshold Public Key
 
@@ -201,6 +209,8 @@ Instead, signers should obtain the tweaks according to other specifications.
 This typically involves deriving the tweaks from a hash of the aggregate public key and some other information.
 Depending on the specific scheme that is used for tweaking, either the plain or the X-only aggregate public key is required.
 For example, to do [BIP32](https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki) derivation, you call _GetPlainPubkey_ to be able to compute the tweak, whereas [BIP341](https://github.com/bitcoin/bips/blob/master/bip-0341.mediawiki) TapTweaks require X-only public keys that are obtained with _GetXonlyPubkey_.
+
+[^arbitrary-tweaks]: It is an open question whether allowing arbitrary tweaks from an adversary affects the unforgeability of FROST.
 
 The tweak mode provided to _ApplyTweak_ depends on the application:
 Plain tweaking can be used to derive child public keys from an aggregate public key using [BIP32](https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki).
@@ -260,6 +270,8 @@ The following conventions are used, with constants as defined for [secp256k1](h
 - Other:
     - Tuples are written by listing the elements within parentheses and separated by commas. For example, _(2, 3, 1)_ is a tuple.
 
+[^liftx-soln]: Given a candidate X coordinate _x_ in the range _0..p-1_, there exist either exactly two or exactly zero valid Y coordinates. If no valid Y coordinate exists, then _x_ is not a valid X coordinate either, i.e., no point _P_ exists for which _x(P) = x_. The valid Y coordinates for a given candidate _x_ are the square roots of _c = x<sup>3</sup> + 7 mod p_ and they can be computed as _y = &plusmn;c<sup>(p+1)/4</sup> mod p_ (see [Quadratic residue](https://en.wikipedia.org/wiki/Quadratic_residue#Prime_or_prime_power_modulus)) if they exist, which can be checked by squaring and comparing with _c_.
+
 ### Key Generation Compatibility
 
 Internal Algorithm _PlainPubkeyGen(sk):_[^pubkey-gen-ecdsa]
@@ -278,6 +290,8 @@ Algorithm _ValidatePubshares(secshare<sub>1..u</sub>, pubshare<sub>1..u</sub>)_
     - Fail if _PlainPubkeyGen(secshare<sub>i</sub>)_ ≠ _pubshare<sub>i</sub>_
 - Return success iff no failure occurred before reaching this point.
 
+[^pubkey-gen-ecdsa]: The _PlainPubkeyGen_ algorithm matches the key generation procedure traditionally used for ECDSA in Bitcoin
+
 Algorithm _ValidateThreshPubkey(t, thresh_pk, id<sub>1..n</sub>, pubshare<sub>1..n</sub>)_:
 - Inputs:
     - The total number _n_ of participants involved in key generation
@@ -294,6 +308,12 @@ Algorithm _ValidateThreshPubkey(t, thresh_pk, id<sub>1..n</sub>, pubshare<sub>1.
         - _expected_pk_ = _DeriveThreshPubkey(signer_signers)_
         - Fail if _thresh_pk_ ≠ _expected_pk_
 - Return success iff no failure occurred before reaching this point.
+
+[^itertools-combinations]: This line represents a loop over every possible combination of `t` elements sourced from the `int_ids` array. This operation is equivalent to invoking the [`itertools.combinations(int_ids, t)`](https://docs.python.org/3/library/itertools.html#itertools.combinations) function call in Python.
+
+[^calc-signer-pubshares]: This _signer_pubshare<sub>1..t</sub>_ list can be computed from the input _pubshare<sub>1..u</sub>_ list.  
+Method 1 - use `itertools.combinations(zip(int_ids, pubshares), t)`  
+Method 2 - For _i = 1..t_ :  signer_pubshare<sub>i</sub> = pubshare<sub>signer_id<sub>i</sub></sub>
 
 ### Tweaking the Threshold Public Key
 
@@ -407,6 +427,8 @@ Algorithm _NonceGen(secshare, pubshare, thresh_pk, m, extra_in)_:
 - Let _secnonce = bytes(32, k<sub>1</sub>) || bytes(32, k<sub>2</sub>)_[^secnonce-ser]
 - Return _(secnonce, pubnonce)_
 
+[^sk-xor-rand]: The random data is hashed (with a unique tag) as a precaution against situations where the randomness may be correlated with the secret signing key itself. It is xored with the secret key (rather than combined with it in a hash) to reduce the number of operations exposed to the actual secret key.
+
 ### Nonce Aggregation
 
 Algorithm _NonceAgg(pubnonce<sub>1..u</sub>, id<sub>1..u</sub>)_:
@@ -498,6 +520,11 @@ Algorithm _Sign(secnonce, secshare, my_id, session_ctx)_:
 - If _PartialSigVerifyInternal(psig, my_id, pubnonce, pubshare, session_ctx)_ (see below) returns failure, fail[^why-verify-partialsig]
 - Return partial signature _psig_
 
+[^secnonce-ser]: The algorithms as specified here assume that the _secnonce_ is stored as a 64-byte array using the serialization _secnonce = bytes(32, k<sub>1</sub>) || bytes(32, k<sub>2</sub>)_. The same format is used in the reference implementation and in the test vectors. However, since the _secnonce_ is (obviously) not meant to be sent over the wire, compatibility between implementations is not a concern, and this method of storing the _secnonce_ is merely a suggestion.<br />
+The _secnonce_ is effectively a local data structure of the signer which comprises the value triple _(k<sub>1</sub>, k<sub>2</sub>)_, and implementations may choose any suitable method to carry it from _NonceGen_ (first communication round) to _Sign_ (second communication round). In particular, implementations may choose to hide the _secnonce_ in internal state without exposing it in an API explicitly, e.g., in an effort to prevent callers from reusing a _secnonce_ accidentally.
+
+[^why-verify-partialsig]: Verifying the signature before leaving the signer prevents random or adversarially provoked computation errors. This prevents publishing invalid signatures which may leak information about the secret key. It is recommended but can be omitted if the computation cost is prohibitive.
+
 ### Partial Signature Verification
 
 Algorithm _PartialSigVerify(psig, pubnonce<sub>1..u</sub>, signers, tweak<sub>1..v</sub>, is_xonly_t<sub>1..v</sub>, m, i)_:
@@ -529,6 +556,8 @@ Internal Algorithm _PartialSigVerifyInternal(psig, my_id, pubnonce, pubshare, se
 - Let _g' = g⋅gacc mod n_ (See [_Negation of Pubshare When Partially Verifying_](./README.md#negation-of-the-pubshare-when-partially-verifying))
 - Fail if _s⋅G ≠ Re<sub>⁎</sub> + e⋅&lambda;⋅g'⋅P_
 - Return success iff no failure occurred before reaching this point.
+
+[^lambda-cant-fail]: _GetSessionInterpolatingValue(session_ctx, my_id)_ cannot fail when called from _PartialSigVerifyInternal_.
 
 ### Partial Signature Aggregation
 
@@ -612,6 +641,8 @@ Algorithm _DeterministicSign(secshare, my_id, aggothernonce, signers, tweak<sub>
 - Let _secnonce = bytes(32, k<sub>1</sub>) || bytes(32, k<sub>2</sub>)_
 - Let _aggnonce = NonceAgg((pubnonce, aggothernonce), (my_id, AGGREGATOR_ID))_; fail if that fails and blame nonce aggregator for invalid _aggothernonce_.
 - Let _session_ctx = (signers, aggnonce, v, tweak<sub>1..v</sub>, is_xonly_t<sub>1..v</sub>, m)_
+
+[^max-msg-len]: In theory, the allowed message size is restricted because SHA256 accepts byte strings only up to size of 2^61-1 bytes (and because of the 8-byte length encoding).
 
 ### Tweaking Definition
 
@@ -733,38 +764,3 @@ The `PATCH` version is incremented for other noteworthy changes (bug fixes, test
 ## Acknowledgments
 
 We thank Jonas Nick, Tim Ruffing, Jesse Posner, and Sebastian Falbesoner for their contributions to this document.
-
-<!-- Footnotes -->
-
-[^t-edge-cases]: While `t = n` and `t = 1` are in principle supported, simpler alternatives are available in these cases.
-In the case `t = n`, using a dedicated `n`-of-`n` multi-signature scheme such as MuSig2 (see [BIP327](bip-0327.mediawiki)) instead of FROST avoids the need for an interactive DKG.
-The case `t = 1` can be realized by letting one signer generate an ordinary [BIP340](bip-0340.mediawiki) key pair and transmitting the key pair to every other signer, who can check its consistency and then simply use the ordinary [BIP340](bip-0340.mediawiki) signing algorithm.
-Signers still need to ensure that they agree on a key pair.
-
-[^nonce-serialization-detail]: We treat the _secnonce_ and _pubnonce_ as grammatically singular even though they include serializations of two scalars and two elliptic curve points, respectively. This treatment may be confusing for readers familiar with the MuSig2 paper. However, serialization is a technical detail that is irrelevant for users of MuSig2 interfaces.
-
-[^pubkey-gen-ecdsa]: The _PlainPubkeyGen_ algorithm matches the key generation procedure traditionally used for ECDSA in Bitcoin
-
-[^itertools-combinations]: This line represents a loop over every possible combination of `t` elements sourced from the `int_ids` array. This operation is equivalent to invoking the [`itertools.combinations(int_ids, t)`](https://docs.python.org/3/library/itertools.html#itertools.combinations) function call in Python.
-
-[^calc-signer-pubshares]: This _signer_pubshare<sub>1..t</sub>_ list can be computed from the input _pubshare<sub>1..u</sub>_ list.  
-Method 1 - use `itertools.combinations(zip(int_ids, pubshares), t)`  
-Method 2 - For _i = 1..t_ :  signer_pubshare<sub>i</sub> = pubshare<sub>signer_id<sub>i</sub></sub>
-
-[^arbitrary-tweaks]: It is an open question whether allowing arbitrary tweaks from an adversary affects the unforgeability of FROST.
-
-[^partialsig-forgery]: Assume a malicious participant intends to forge a partial signature for the participant with public share _P_. It participates in the signing session pretending to be two distinct signers: one with the public share _P_ and the other with its own public share. The adversary then sets the nonce for the second signer in such a way that allows it to generate a partial signature for _P_. As a side effect, it cannot generate a valid partial signature for its own public share. An explanation of the steps required to create a partial signature forgery can be found in [this document](docs/partialsig_forgery.md).
-
-[^liftx-soln]: Given a candidate X coordinate _x_ in the range _0..p-1_, there exist either exactly two or exactly zero valid Y coordinates. If no valid Y coordinate exists, then _x_ is not a valid X coordinate either, i.e., no point _P_ exists for which _x(P) = x_. The valid Y coordinates for a given candidate _x_ are the square roots of _c = x<sup>3</sup> + 7 mod p_ and they can be computed as _y = &plusmn;c<sup>(p+1)/4</sup> mod p_ (see [Quadratic residue](https://en.wikipedia.org/wiki/Quadratic_residue#Prime_or_prime_power_modulus)) if they exist, which can be checked by squaring and comparing with _c_.
-
-[^max-msg-len]: In theory, the allowed message size is restricted because SHA256 accepts byte strings only up to size of 2^61-1 bytes (and because of the 8-byte length encoding).
-
-[^sk-xor-rand]: The random data is hashed (with a unique tag) as a precaution against situations where the randomness may be correlated with the secret signing key itself. It is xored with the secret key (rather than combined with it in a hash) to reduce the number of operations exposed to the actual secret key.
-
-[^secnonce-ser]: The algorithms as specified here assume that the _secnonce_ is stored as a 64-byte array using the serialization _secnonce = bytes(32, k<sub>1</sub>) || bytes(32, k<sub>2</sub>)_. The same format is used in the reference implementation and in the test vectors. However, since the _secnonce_ is (obviously) not meant to be sent over the wire, compatibility between implementations is not a concern, and this method of storing the _secnonce_ is merely a suggestion.<br />
-The _secnonce_ is effectively a local data structure of the signer which comprises the value triple _(k<sub>1</sub>, k<sub>2</sub>)_, and implementations may choose any suitable method to carry it from _NonceGen_ (first communication round) to _Sign_ (second communication round). In particular, implementations may choose to hide the _secnonce_ in internal state without exposing it in an API explicitly, e.g., in an effort to prevent callers from reusing a _secnonce_ accidentally.
-
-[^why-verify-partialsig]: Verifying the signature before leaving the signer prevents random or adversarially provoked computation errors. This prevents publishing invalid signatures which may leak information about the secret key. It is recommended but can be omitted if the computation cost is prohibitive.
-
-[^lambda-cant-fail]: _GetSessionInterpolatingValue(session_ctx, my_id)_ cannot fail when called from _PartialSigVerifyInternal_.
-
