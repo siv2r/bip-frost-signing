@@ -3,21 +3,9 @@ name: Claude Code Review
 on:
   pull_request:
     types: [opened, synchronize, reopened]
-    # Optional: Only run on specific file changes
-    # paths:
-    #   - "src/**/*.ts"
-    #   - "src/**/*.tsx"
-    #   - "src/**/*.js"
-    #   - "src/**/*.jsx"
 
 jobs:
   claude-review:
-    # Optional: Filter by PR author
-    # if: |
-    #   github.event.pull_request.user.login == 'external-contributor' ||
-    #   github.event.pull_request.user.login == 'new-developer' ||
-    #   github.event.pull_request.author_association == 'FIRST_TIME_CONTRIBUTOR'
-
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -29,90 +17,151 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          fetch-depth: 1
+          fetch-depth: 0
+
+      - name: Setup MCP configuration
+        run: |
+          mkdir -p ~/.claude
+          cat > ~/.mcp.json << 'EOF'
+          {
+            "mcpServers": {
+              "sequential-thinking": {
+                "command": "npx",
+                "args": ["-y", "@modelcontextprotocol/server-sequential-thinking"]
+              },
+              "context7": {
+                "command": "npx",
+                "args": ["-y", "@upstash/context7-mcp"]
+              }
+            }
+          }
+          EOF
 
       - name: Run Claude Code Review
         id: claude-review
         uses: anthropics/claude-code-action@v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+
+          settings: |
+            {
+              "permissions": {
+                "allow": [
+                  "mcp__sequential-thinking__*",
+                  "mcp__context7__*"
+                ]
+              },
+              "enableAllProjectMcpServers": true
+            }
+
           prompt: |
             REPO: ${{ github.repository }}
             PR NUMBER: ${{ github.event.pull_request.number }}
 
-            You are reviewing a pull request for a Bitcoin Improvement Proposal (BIP) implementing FROST threshold signatures. This is a cryptographic protocol where correctness and security are paramount.
+            You are reviewing a pull request for a **reference implementation** of FROST threshold signatures (BIP-draft). This code prioritizes educational clarity over production security.
 
             ## Review Protocol
 
             1. **Gather context:**
-               - Run: `gh pr view ${{ github.event.pull_request.number }} --json title,body,files`
-               - Run: `gh pr diff ${{ github.event.pull_request.number }}`
-               - Read `CLAUDE.md` for project-specific requirements
+               - Run: gh pr view ${{ github.event.pull_request.number }} --json title,body,files
+               - Run: gh pr diff ${{ github.event.pull_request.number }}
+               - Read CLAUDE.md for project-specific requirements
+               - Use Context7 MCP to fetch documentation for any libraries used
 
-            2. **Analyze for high-severity issues (max 6 findings):**
+            2. **Use Sequential Thinking for complex analysis:**
+               When analyzing architecture or multi-file changes, use the sequential-thinking MCP tool to:
+               - Break down the analysis into clear steps
+               - Track your reasoning across files
+               - Revise conclusions as you learn more
 
-               **Focus on:**
-               - Correctness bugs in FROST signing algorithms
-               - Security vulnerabilities (nonce reuse, timing attacks, key leakage)
-               - Logic errors in BIP340 signature compatibility
-               - Missing test coverage for critical protocol steps
-               - Arithmetic errors in cryptographic operations
+            3. **Review Focus Areas (max 6 findings total):**
+
+               **Python Code Quality:**
+               - Clear, self-documenting function/variable names
+               - Appropriate abstraction levels
+               - Consistent patterns across the codebase
+               - Proper error handling with informative messages
+               - Type hints where they aid comprehension
+               - Docstrings that explain "why" not just "what"
+
+               **Architecture & Design:**
+               - Single responsibility principle
+               - Clear module boundaries and interfaces
+               - Appropriate use of classes vs functions
+               - Data flow clarity
+               - Testability of the design
+
+               **README & Documentation:**
+               - Clear explanations accessible to developers (not academic papers)
+               - Practical examples that demonstrate usage
+               - Correct balance: precise enough to be accurate, simple enough to understand
+               - Logical flow from overview to details to examples
 
                **Explicitly skip:**
+               - Security/timing attacks (this is reference code with disclaimers)
                - Style nitpicks and formatting
-               - Minor refactoring opportunities
-               - Documentation typos
-               - Obvious issues the author likely knows about
+               - Performance micro-optimizations
+               - Obvious WIP items the author knows about
 
-            3. **Format each finding:**
-               ```
-               **[Severity]** File: `path/to/file.py:123-125`
+            4. **Categorize your findings:**
 
-               Code:
-               ```python
-               [exact code snippet showing the issue]
-               ```
+               **INLINE findings** (post as inline PR comments):
+               - Issues tied to specific lines of code
+               - Function/variable naming suggestions
+               - Docstring improvements
+               - Error handling at specific locations
+               - Code clarity issues in specific blocks
 
-               Issue: [Technical description of the problem]
-               Fix: [Specific, actionable recommendation]
-               ```
+               **ARCHITECTURAL findings** (post as single PR comment):
+               - Module organization suggestions
+               - Design pattern recommendations
+               - Cross-file structural issues
+               - Overall API design feedback
+               - README structure/flow suggestions that span multiple sections
 
-            4. **Submit review via GitHub API:**
+            5. **Submit review:**
 
-               First, create a pending review:
-               ```bash
-               REVIEW_ID=$(gh api repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}/reviews \
-                 -X POST \
-                 -f event="PENDING" \
-                 -f body="## Code Review Summary
+               **Step A: Post inline comments (if any)**
 
-               Found X issues requiring attention. See inline comments for details." \
-                 --jq '.id')
-               ```
+               For each INLINE finding, create individual review comments using this exact command format:
+                 ```
+                 gh api repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}/comments -X POST -f commit_id="${{ github.event.pull_request.head.sha }}" -f path="FILE_PATH" -f line=LINE_NUMBER -f body="**[Severity]** Issue description"
+                 ```
+                 Replace FILE_PATH, LINE_NUMBER, and the body content with actual values.
 
-               For each finding, add an inline comment:
-               ```bash
-               gh api repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}/reviews/$REVIEW_ID/comments \
-                 -X POST \
-                 -f path="FILE_PATH" \
-                 -f line=LINE_NUMBER \
-                 -f body="[Your formatted finding from step 3]"
-               ```
+               **Step B: Post architectural comment (only if you have ARCHITECTURAL findings)**
 
-               Finally, submit the review:
-               ```bash
-               gh api repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}/reviews/$REVIEW_ID/events \
-                 -X POST \
-                 -f event="COMMENT"
-               ```
+               If and only if you have architectural/design suggestions that don't fit on specific lines:
+                 ```
+                 gh api repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}/comments -X POST -f body="## Architecture & Design Suggestions ..."
+                 ```
+               **Step C: If no findings at all**
+
+               Do NOT post any comment. Simply end your work silently.
+
+            ## Critical Rules
+            - Do NOT post a summary comment like "Added X inline comments" - this is redundant
+            - Do NOT post a comment just to say "no issues found" - silence is approval
+            - Only post a PR comment (Step B) if you have genuine architectural feedback
+            - Inline comments stand on their own - no summary needed
+
+            ## Comment Format
+
+            For inline comments use this structure in the body:
+            - Start with severity in bold: **[HIGH]**, **[MEDIUM]**, or **[LOW]**
+            - Brief issue title on the same line
+            - 1-2 sentence explanation of why this hurts clarity
+            - "Suggestion:" followed by a code block with concrete improvement
+
+            For architectural comment (if needed):
+            - Title: ## Architecture & Design Suggestions
+            - Each topic as ### heading
+            - Issue description and concrete recommendation for each
 
             ## Communication Style
-            - Senior engineer voice: technical, precise, objective
-            - No restating what the diff shows
-            - Every critique includes a concrete fix
-            - If no high-severity issues: "No blocking issues found. [Optional 1-sentence note on minor observations.]"
+            - Senior engineer voice: constructive, clear, educational
+            - Focus on "how to make this clearer" not "what's wrong"
+            - Every suggestion includes a concrete improvement
+            - Be concise - developers are busy
 
-          # See https://github.com/anthropics/claude-code-action/blob/main/docs/usage.md
-          # or https://docs.claude.com/en/docs/claude-code/cli-reference for available options
-          claude_args: '--allowed-tools "Bash(gh pr diff:*),Bash(gh pr view:*),Bash(gh api:*)"'
-
+          claude_args: '--mcp-config ~/.mcp.json --model claude-sonnet-4-5-20250929 --max-turns 15 --allowedTools "Bash(gh pr diff:*),Bash(gh pr view:*),Bash(gh api:*),Read,View,mcp__sequential-thinking__sequentialthinking,mcp__context7__resolve-library-id,mcp__context7__get-library-docs"'
