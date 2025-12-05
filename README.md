@@ -780,3 +780,20 @@ We thank Jonas Nick, Tim Ruffing, Jesse Posner, and Sebastian Falbesoner for the
 [olaf]: https://eprint.iacr.org/2023/899
 [roast]: https://eprint.iacr.org/2022/550
 [thresh-with-dkg]: https://link.springer.com/chapter/10.1007/3-540-36563-x_26
+
+```html
+<pre>
+with_even_y(Q_v) - g_v·tacc_v·G
+    = g_v·gacc_v·Q_0
+    = g_v·gacc_v·(... P_i ...) 
+    = ... *G 
+</pre>
+
+```math
+\begin{aligned}
+ \textit{with\_even\_y}(Q_v) - g_v\,tacc_v\,G 
+   &= g_v\,gacc_v\,Q_0 \\
+   &= g_v\,gacc_v\,(\lambda_{1,U}P_1 + \dots + \lambda_{u,U}P_u) \\
+   &= g_v\,gacc_v\,(\lambda_{1,U}d'_1G + \dots + \lambda_{u,U}d'_uG) \\
+   &= \sum_{i=1}^u g_v\,gacc_v\,\lambda_{i,U}d'_i\,G~.
+\end{aligned}
