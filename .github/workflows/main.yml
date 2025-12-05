@@ -1,6 +1,15 @@
 name: Tests
 on: [push, pull_request]
 jobs:
+  markdownlint_checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: DavidAnson/markdownlint-cli2-action@v21
+        with:
+          config: ./.markdownlint.json
+          globs: |
+            ./README.md
   ruff_checks:
     runs-on: ubuntu-latest
     steps:

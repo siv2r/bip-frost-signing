@@ -190,7 +190,6 @@ def get_plain_pk(tweak_ctx: TweakContext) -> PlainPk:
     return PlainPk(cbytes(Q))
 
 
-# nit: switch the args ordering
 def derive_thresh_pubkey(signers: SignersContext) -> PlainPk:
     ids, pubshares = get_signing_participants(signers)
     # assert COORDINATOR_ID not in ids
