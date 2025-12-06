@@ -514,10 +514,10 @@ Algorithm *Sign(secnonce, secshare, my_id, session_ctx)*:
 - Let *P = d'⋅G*
 - Let *pubshare = cbytes(P)*
 - Fail if *SessionHasSignerPubshare(session_ctx, pubshare) = False*
-- Let *λ = GetSessionInterpolatingValue(session_ctx, my_id)*; fail if that fails
+- Let *&lambda; = GetSessionInterpolatingValue(session_ctx, my_id)*; fail if that fails
 - Let *g = 1* if *has_even_y(Q)*, otherwise let *g = -1 mod n*
 - Let *d = g⋅gacc⋅d' mod n* (See [*Negation of Secret Share When Signing*](./README.md#negation-of-the-secret-share-when-signing))
-- Let *s = (k<sub>1</sub> + b⋅k<sub>2</sub> + e⋅λ⋅d) mod n*
+- Let *s = (k<sub>1</sub> + b⋅k<sub>2</sub> + e⋅&lambda;⋅d) mod n*
 - Let *psig = bytes(32, s)*
 - Let *pubnonce = cbytes(k<sub>1</sub>'⋅G) || cbytes(k<sub>2</sub>'⋅G)*
 - If *PartialSigVerifyInternal(psig, my_id, pubnonce, pubshare, session_ctx)* (see below) returns failure, fail[^why-verify-partialsig]
@@ -554,10 +554,10 @@ Internal Algorithm *PartialSigVerifyInternal(psig, my_id, pubnonce, pubshare, se
 - Let *Re<sub>⁎</sub>' = R<sub>⁎,1</sub> + b⋅R<sub>⁎,2</sub>*
 - Let effective nonce *Re<sub>⁎</sub> = Re<sub>⁎</sub>'* if *has_even_y(R)*, otherwise let *Re<sub>⁎</sub> = -Re<sub>⁎</sub>'*
 - Let *P = cpoint(pubshare)*; fail if that fails
-- Let *λ = GetSessionInterpolatingValue(session_ctx, my_id)*[^lambda-cant-fail]
+- Let *&lambda; = GetSessionInterpolatingValue(session_ctx, my_id)*[^lambda-cant-fail]
 - Let *g = 1* if *has_even_y(Q)*, otherwise let *g = -1 mod n*
 - Let *g' = g⋅gacc mod n* (See [*Negation of Pubshare When Partially Verifying*](./README.md#negation-of-the-pubshare-when-partially-verifying))
-- Fail if *s⋅G ≠ Re<sub>⁎</sub> + e⋅λ⋅g'⋅P*
+- Fail if *s⋅G ≠ Re<sub>⁎</sub> + e⋅&lambda;⋅g'⋅P*
 - Return success iff no failure occurred before reaching this point.
 
 
@@ -650,15 +650,15 @@ Algorithm *DeterministicSign(secshare, my_id, aggothernonce, signers, tweak<sub>
 
 Two modes of tweaking the threshold public key are supported. They correspond to the following algorithms:
 
-Algorithm *ApplyPlainTweak(P, t)*:
+Algorithm *ApplyPlainTweak(P, twk)*:
 - Inputs:
   - *P*: a point
   - The tweak *twk*: an integer with *0 ≤ twk < curve_order*
 - Return *P + twk⋅G*
 
-Algorithm *ApplyXonlyTweak(P, t)*:
+Algorithm *ApplyXonlyTweak(P, twk)*:
+
 - Return *with_even_y(P) + t⋅G*
-- 
 <!-- TODO: we could simply point to BIP327 for this proof. Unless we use agnostic tweaking -->
 ### Negation of the Secret Share when Signing
 
@@ -666,64 +666,88 @@ During the signing process, the *[Sign](./README.md#signing)* algorithm might ha
 
 The following elliptic curve points arise as intermediate steps when creating a signature:<br>
 - *P<sub>i</sub>* as computed in any compatible key generation method is the point corresponding to the *i*-th signer's public share. Defining *d<sub>i</sub>'* to be the *i*-th signer's secret share as an integer, i.e., the *d’* value as computed in the *Sign* algorithm of the *i*-th signer, we have:<br>
-&emsp;&ensp;*P<sub>i</sub> = d<sub>i</sub>'⋅G*<br>
+<pre>
+    P<sub>i</sub> = d<sub>i</sub>'⋅G
+</pre>
 - *Q<sub>0</sub>* is the threshold public key derived from the signer’s public shares. It is identical to the value *Q* computed in *DeriveThreshPubkey* and therefore defined as:<br>
-&emsp;&ensp;_Q<sub>0</sub> = &lambda;<sub>1, U</sub>⋅P<sub>1</sub> + &lambda;<sub>2, U</sub>⋅P<sub>2</sub> + ... + &lambda;<sub>u, U</sub>⋅P<sub>u</sub>_<br>
+<pre>
+    Q<sub>0</sub> = &lambda;<sub>1, U</sub>⋅P<sub>1</sub> + &lambda;<sub>2, U</sub>⋅P<sub>2</sub> + ... + &lambda;<sub>u, U</sub>⋅P<sub>u</sub>
+</pre>
 - *Q<sub>i</sub>* is the tweaked threshold public key after the *i*-th execution of *ApplyTweak* for *1 ≤ i ≤ v*. It holds that<br>
-&emsp;&ensp;*Q<sub>i</sub> = f(i-1) + t<sub>i</sub>⋅G* for *i = 1, ..., v* where<br>
-&emsp;&ensp;&emsp;&ensp;*f(i-1) := with_even_y(Q<sub>i-1</sub>)* if *is_xonly_t<sub>i</sub>* and<br>
-&emsp;&ensp;&emsp;&ensp;*f(i-1) := Q<sub>i-1</sub>* otherwise.<br>
+<pre>
+    Q<sub>i</sub> = f(i-1) + t<sub>i</sub>⋅G for i = 1, ..., v where
+        f(i-1) := with_even_y(Q<sub>i-1</sub>) if is_xonly_t<sub>i</sub> and
+        f(i-1) := Q<sub>i-1</sub> otherwise.
+</pre>
 - *with_even_y(Q*<sub>v</sub>*)* is the final result of the threshold public key derivation and tweaking operations. It corresponds to the output of *GetXonlyPubkey* applied on the final Tweak Context.
 
 The signer's goal is to produce a partial signature corresponding to the final result of threshold pubkey derivation and tweaking, i.e., the X-only public key *with_even_y(Q<sub>v</sub>)*.
 
-For *1 ≤ i ≤ v*, we denote the value *g* computed in the *i*-th execution of *ApplyTweak* by *g<sub>i-1</sub>*. Therefore, *g<sub>i-1</sub>* is *-1 mod n* if and only if *is_xonly_t<sub>i</sub>* is true and *Q<sub>i-1</sub>* has an odd Y coordinate. In other words, *g<sub>i-1</sub>* indicates whether *Q<sub>i-1</sub>* needed to be negated to apply an X-only tweak:<br>
-&emsp;&ensp;*f(i-1) = g<sub>i-1</sub>⋅Q<sub>i-1</sub>* for *1 ≤ i ≤ v*.<br>
-Furthermore, the *Sign* and *PartialSigVerify* algorithms set value *g* depending on whether Q<sub>v</sub> needed to be negated to produce the (X-only) final output. For consistency, this value *g* is referred to as *g<sub>v</sub>* in this section.<br>
-&emsp;&ensp;*with_even_y(Q<sub>v</sub>) = g<sub>v</sub>⋅Q<sub>v</sub>*.
+For *1 ≤ i ≤ v*, we denote the value *g* computed in the *i*-th execution of *ApplyTweak* by *g<sub>i-1</sub>*. Therefore, *g<sub>i-1</sub>* is *-1 mod n* if and only if *is_xonly_t<sub>i</sub>* is true and *Q<sub>i-1</sub>* has an odd Y coordinate. In other words, *g<sub>i-1</sub>* indicates whether *Q<sub>i-1</sub>* needed to be negated to apply an X-only tweak:
+<pre>
+    f(i-1) = g<sub>i-1</sub>⋅Q<sub>i-1</sub> for 1 ≤ i ≤ v.
+</pre>
+Furthermore, the *Sign* and *PartialSigVerify* algorithms set value *g* depending on whether Q<sub>v</sub> needed to be negated to produce the (X-only) final output. For consistency, this value *g* is referred to as *g<sub>v</sub>* in this section.
+<pre>
+    with_even_y(Q<sub>v</sub>) = g<sub>v</sub>⋅Q<sub>v</sub>.
+</pre>
 
-So, the (X-only) final public key is<br>
-&emsp;&ensp;*with_even_y(Q<sub>v</sub>)*<br>
-&emsp;&ensp;&emsp;&ensp;= *g<sub>v</sub>⋅Q<sub>v</sub>*<br>
-&emsp;&ensp;&emsp;&ensp;= *g<sub>v</sub>⋅(f(v-1)* + *t<sub>v</sub>⋅G)*<br>
-&emsp;&ensp;&emsp;&ensp;= *g<sub>v</sub>⋅(g<sub>v-1</sub>⋅(f(v-2)* + *t<sub>v-1</sub>⋅G)* + *t<sub>v</sub>⋅G)*<br>
-&emsp;&ensp;&emsp;&ensp;= *g<sub>v</sub>⋅g<sub>v-1</sub>⋅f(v-2)* + *g<sub>v</sub>⋅(t<sub>v</sub>* + *g<sub>v-1</sub>⋅t<sub>v-1</sub>)⋅G*<br>
-&emsp;&ensp;&emsp;&ensp;= *g<sub>v</sub>⋅g<sub>v-1</sub>⋅f(v-2)* + *(sum<sub>i=v-1..v</sub> t<sub>i</sub>⋅prod<sub>j=i..v</sub> g<sub>j</sub>)⋅G*<br>
-&emsp;&ensp;&emsp;&ensp;= *g<sub>v</sub>⋅g<sub>v-1</sub>⋅...⋅g<sub>1</sub>⋅f(0)* + *(sum<sub>i=1..v</sub> t<sub>i</sub>⋅prod<sub>j=i..v</sub> g<sub>j</sub>)⋅G*<br>
-&emsp;&ensp;&emsp;&ensp;= *g<sub>v</sub>⋅...⋅g<sub>0</sub>⋅Q<sub>0</sub>* + *g<sub>v</sub>⋅tacc<sub>v</sub>⋅G*<br> 
-&emsp;&ensp;where *tacc<sub>i</sub>* is computed by *TweakCtxInit* and *ApplyTweak* as follows:<br>
-&emsp;&ensp;&emsp;&ensp;*tacc<sub>0</sub>* = *0*<br>
-&emsp;&ensp;&emsp;&ensp;*tacc<sub>i</sub>* = *t<sub>i</sub>* + *g<sub>i-1</sub>⋅tacc<sub>i-1</sub> for i=1..v mod n*<br>
-&emsp;&ensp;for which it holds that *g<sub>v</sub>⋅tacc<sub>v</sub>* = *sum<sub>i=1..v</sub> t<sub>i</sub>⋅prod<sub>j=i..v</sub> g<sub>j</sub>*.
+So, the (X-only) final public key is
+<pre>
+    with_even_y(Q<sub>v</sub>)
+        = g<sub>v</sub>⋅Q<sub>v</sub>
+        = g<sub>v</sub>⋅(f(v-1)* + *t<sub>v</sub>⋅G)
+        = g<sub>v</sub>⋅(g<sub>v-1</sub>⋅(f(v-2) + t<sub>v-1</sub>⋅G) + t<sub>v</sub>⋅G)
+        = g<sub>v</sub>⋅g<sub>v-1</sub>⋅f(v-2) + g<sub>v</sub>⋅(t<sub>v</sub>* + g<sub>v-1</sub>⋅t<sub>v-1</sub>)⋅G
+        = g<sub>v</sub>⋅g<sub>v-1</sub>⋅f(v-2) + (sum<sub>i=v-1..v</sub> t<sub>i</sub>⋅prod<sub>j=i..v</sub> g<sub>j</sub>)⋅G
+        = g<sub>v</sub>⋅g<sub>v-1</sub>⋅...⋅g<sub>1</sub>⋅f(0) + (sum<sub>i=1..v</sub> t<sub>i</sub>⋅prod<sub>j=i..v</sub> g<sub>j</sub>)⋅G
+        = g<sub>v</sub>⋅...⋅g<sub>0</sub>⋅Q<sub>0</sub> + g<sub>v</sub>⋅tacc<sub>v</sub>⋅G 
+    where tacc<sub>i</sub> is computed by TweakCtxInit and ApplyTweak as follows:
+        tacc<sub>0</sub> = 0
+        tacc<sub>i</sub> = t<sub>i</sub> + g<sub>i-1</sub>⋅tacc<sub>i-1</sub> for i=1..v mod n
+    for which it holds that g<sub>v</sub>⋅tacc<sub>v</sub> = sum<sub>i=1..v</sub> t<sub>i</sub>⋅prod<sub>j=i..v</sub> g<sub>j</sub>.
+</pre>
 
-*TweakCtxInit* and *ApplyTweak* compute<br>
-&emsp;&ensp;*gacc<sub>0</sub>* = 1<br>
-&emsp;&ensp;*gacc<sub>i</sub>* = *g<sub>i-1</sub>⋅gacc<sub>i-1</sub> for i=1..v mod n*<br>
-So we can rewrite above equation for the final public key as<br>
-&emsp;&ensp;*with_even_y(Q<sub>v</sub>)* = *g<sub>v</sub>⋅gacc<sub>v</sub>⋅Q<sub>0</sub>* + *g<sub>v</sub>⋅tacc<sub>v</sub>⋅G.*
+*TweakCtxInit* and *ApplyTweak* compute
+<pre>
+    gacc<sub>0</sub> = 1
+    gacc<sub>i</sub> = g<sub>i-1</sub>⋅gacc<sub>i-1</sub> for i=1..v mod n
+</pre>
+So we can rewrite above equation for the final public key as
+<pre>
+    with_even_y(Q<sub>v</sub>) = g<sub>v</sub>⋅gacc<sub>v</sub>⋅Q<sub>0</sub> + g<sub>v</sub>⋅tacc<sub>v</sub>⋅G.
+</pre>
 
-Then we have<br>
-&emsp;&ensp;*with_even_y(Q<sub>v</sub>)* - *g<sub>v</sub>⋅tacc<sub>v</sub>⋅G*<br>
-&emsp;&ensp;&emsp;&ensp;= *g<sub>v</sub>⋅gacc<sub>v</sub>⋅Q<sub>0</sub>*<br>
-&emsp;&ensp;&emsp;&ensp;= *g<sub>v</sub>⋅gacc<sub>v</sub>⋅(&lambda;<sub>1, U</sub>⋅P<sub>1</sub> + ... + &lambda;<sub>u, U</sub>⋅P<sub>u</sub>)*<br>
-&emsp;&ensp;&emsp;&ensp;= *g<sub>v</sub>⋅gacc<sub>v</sub>⋅(&lambda;<sub>1, U</sub>⋅d<sub>1</sub>'⋅G + ... + &lambda;<sub>u, U</sub>⋅d<sub>u</sub>'⋅G)*<br>
-&emsp;&ensp;&emsp;&ensp;= *sum<sub>i=1..u</sub>(g<sub>v</sub>⋅gacc<sub>v</sub>⋅&lambda;<sub>i, U</sub>⋅d<sub>i</sub>')\*G.*<br>
+Then we have
+<pre>
+    with_even_y(Q<sub>v</sub>) - g<sub>v</sub>⋅tacc<sub>v</sub>⋅G
+        = g<sub>v</sub>⋅gacc<sub>v</sub>⋅Q<sub>0</sub>
+        = g<sub>v</sub>⋅gacc<sub>v</sub>⋅(&lambda;<sub>1, U</sub>⋅P<sub>1</sub> + ... + &lambda;<sub>u, U</sub>⋅P<sub>u</sub>)
+        = g<sub>v</sub>⋅gacc<sub>v</sub>⋅(&lambda;<sub>1, U</sub>⋅d<sub>1</sub>'⋅G + ... + &lambda;<sub>u, U</sub>⋅d<sub>u</sub>'⋅G)
+        = sum<sub>i=1..u</sub>(g<sub>v</sub>⋅gacc<sub>v</sub>⋅&lambda;<sub>i, U</sub>⋅d<sub>i</sub>')⋅G
+</pre>
 
 Intuitively, *gacc<sub>i</sub>* tracks accumulated sign flipping and *tacc<sub>i</sub>* tracks the accumulated tweak value after applying the first *i* individual tweaks. Additionally, *g<sub>v</sub>* indicates whether *Q<sub>v</sub>* needed to be negated to produce the final X-only result. Thus, signer *i* multiplies its secret share *d<sub>i</sub>'* with *g<sub>v</sub>⋅gacc<sub>v</sub>* in the [*Sign*](./README.md#signing) algorithm.
 
 #### Negation of the Pubshare when Partially Verifying
 
-As explained in [Negation Of The Secret Share When Signing](./README.md#negation-of-the-secret-share-when-signing) the signer uses a possibly negated secret share<br>
-&emsp;&ensp;*d = g<sub>v</sub>⋅gacc<sub>v</sub>⋅d' mod n*<br>
+As explained in [Negation Of The Secret Share When Signing](./README.md#negation-of-the-secret-share-when-signing) the signer uses a possibly negated secret share
+<pre>
+    d = g<sub>v</sub>⋅gacc<sub>v</sub>⋅d' mod n<br>
+</pre>
 when producing a partial signature to ensure that the aggregate signature will correspond to a threshold public key with even Y coordinate.
 
-The [*PartialSigVerifyInternal*](./README.md#partial-signature-verification) algorithm is supposed to check<br>
-&emsp;&ensp;*s⋅G = Re<sub>⁎</sub> + e⋅λ⋅d⋅G*.
+The [*PartialSigVerifyInternal*](./README.md#partial-signature-verification) algorithm is supposed to check
+<pre>
+    s⋅G = Re<sub>⁎</sub> + e⋅&lambda;⋅d⋅G.
+</pre>
 
-The verifier doesn't have access to *d⋅G* but can construct it using the participant public share *pubshare* as follows:<br>
-*d⋅G*<br>
-&emsp;&ensp;*= g<sub>v</sub>⋅gacc<sub>v</sub>⋅d'⋅G*<br>
-&emsp;&ensp;*= g<sub>v</sub>⋅gacc<sub>v</sub>⋅cpoint(pubshare)*<br>
+The verifier doesn't have access to *d⋅G* but can construct it using the participant public share *pubshare* as follows:
+<pre>
+d⋅G
+    = g<sub>v</sub>⋅gacc<sub>v</sub>⋅d'⋅G
+    = g<sub>v</sub>⋅gacc<sub>v</sub>⋅cpoint(pubshare)
+</pre>
 Note that the threshold public key and list of tweaks are inputs to partial signature verification, so the verifier can also construct *g<sub>v</sub>* and *gacc<sub>v</sub>*.
 
 ### Dealing with Infinity in Nonce Aggregation
