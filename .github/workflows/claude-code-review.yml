@@ -164,4 +164,4 @@ jobs:
             - Every suggestion includes a concrete improvement
             - Be concise - developers are busy
 
-          claude_args: '--mcp-config ~/.mcp.json --model claude-sonnet-4-5-20250929 --max-turns 15 --allowedTools "Bash(gh pr diff:*),Bash(gh pr view:*),Bash(gh api:*),Read,View,mcp__sequential-thinking__sequentialthinking,mcp__context7__resolve-library-id,mcp__context7__get-library-docs"'
+          claude_args: '--mcp-config $HOME/.mcp.json --model claude-sonnet-4-5-20250929 --max-turns 15 --allowedTools "Bash(gh pr diff:*),Bash(gh pr view:*),Bash(gh api:*),Read,View,mcp__sequential-thinking__sequentialthinking,mcp__context7__resolve-library-id,mcp__context7__get-library-docs"'
