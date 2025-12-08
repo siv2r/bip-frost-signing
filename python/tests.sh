@@ -1,7 +1,6 @@
 #!/bin/sh
 set -e
 
-# Check that mypy is available
 check_availability() {
   command -v "$1" > /dev/null 2>&1 || {
     echo >&2 "$1 is required but it's not installed. Aborting.";
