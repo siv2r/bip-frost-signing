@@ -17,154 +17,56 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0
-
-      - name: Setup MCP configuration (project scope)
-        run: |
-          cat > .mcp.json << 'EOF'
-          {
-            "mcpServers": {
-              "sequential-thinking": {
-                "command": "npx",
-                "args": ["-y", "@modelcontextprotocol/server-sequential-thinking"]
-              },
-              "context7": {
-                "command": "npx",
-                "args": ["-y", "@upstash/context7-mcp"]
-              }
-            }
-          }
-          EOF
+          fetch-depth: 1
 
       - name: Run Claude Code Review
         id: claude-review
         uses: anthropics/claude-code-action@v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
-
-          settings: |
-            {
-              "permissions": {
-                "allow": [
-                  "mcp__sequential-thinking__*",
-                  "mcp__context7__*"
-                ]
-              },
-              "enableAllProjectMcpServers": true
-            }
-
           prompt: |
+            /review
             REPO: ${{ github.repository }}
             PR NUMBER: ${{ github.event.pull_request.number }}
 
-            You are reviewing a pull request for a **reference implementation** of FROST threshold signatures (BIP-draft). This code prioritizes educational clarity over production security.
+            You are reviewing a pull request for a **reference implementation** of FROST threshold signatures (BIP-draft). This code prioritizes educational/specification clarity over production security.
 
-            ## Review Protocol
+            1. Review the pull request
 
-            1. **Gather context:**
-               - Run: gh pr view ${{ github.event.pull_request.number }} --json title,body,files
-               - Run: gh pr diff ${{ github.event.pull_request.number }}
-               - Read CLAUDE.md for project-specific requirements
-               - Use Context7 MCP to fetch documentation for any libraries used
+            2. Categorize your findings:
+               2.1 INLINE findings (post as inline PR comments):
+                - Issues tied to specific lines of code
+                - Error handling at specific locations
+                - Code clarity issues in specific blocks
+                - Logical errors in functions/methods
+                - Documentation inaccuracies in specific sections
+                - NOTE: each of these should be posted as separate inline comments.
 
-            2. **Use Sequential Thinking for complex analysis:**
-               When analyzing architecture or multi-file changes, use the sequential-thinking MCP tool to:
-               - Break down the analysis into clear steps
-               - Track your reasoning across files
-               - Revise conclusions as you learn more
+               2.2 ARCHITECTURAL findings (post as single PR comment):
+                - Module organization suggestions
+                - Design pattern recommendations
+                - Cross-file structural issues
+                - Overall code change design feedback
 
-            3. **Review Focus Areas (max 6 findings total):**
+            3. Submit review:
+              3.1 Inline comments (if any):
+                 gh api repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}/comments \
+                   -X POST \
+                   -f commit_id="${{ github.event.pull_request.head.sha }}" \
+                   -f path="FILE_PATH" \
+                   -f line=LINE_NUMBER \
+                   -f body="**[Severity]** Inline comment description here ..."
 
-               **Python Code Quality:**
-               - Clear, self-documenting function/variable names
-               - Appropriate abstraction levels
-               - Consistent patterns across the codebase
-               - Proper error handling with informative messages
-               - Type hints where they aid comprehension
-               - Docstrings that explain "why" not just "what"
+              3.2 IMPORTANT: Repeat 3.1.for every inline finding
 
-               **Architecture & Design:**
-               - Single responsibility principle
-               - Clear module boundaries and interfaces
-               - Appropriate use of classes vs functions
-               - Data flow clarity
-               - Testability of the design
+              3.3 Architectural comment (only if needed):
+                 gh api repos/${{ github.repository }}/issues/${{ github.event.pull_request.number }}/comments \
+                   -X POST \
+                   -f body="Architecture comment description here ..."
 
-               **README & Documentation:**
-               - Clear explanations accessible to developers (not academic papers)
-               - Practical examples that demonstrate usage
-               - Correct balance: precise enough to be accurate, simple enough to understand
-               - Logical flow from overview to details to examples
-
-               **Explicitly skip:**
-               - Security/timing attacks (this is reference code with disclaimers)
-               - Style nitpicks and formatting
-               - Performance micro-optimizations
-               - Obvious WIP items the author knows about
-
-            4. **Categorize your findings:**
-
-               **INLINE findings** (post as inline PR comments):
-               - Issues tied to specific lines of code
-               - Function/variable naming suggestions
-               - Docstring improvements
-               - Error handling at specific locations
-               - Code clarity issues in specific blocks
-
-               **ARCHITECTURAL findings** (post as single PR comment):
-               - Module organization suggestions
-               - Design pattern recommendations
-               - Cross-file structural issues
-               - Overall API design feedback
-               - README structure/flow suggestions that span multiple sections
-
-            5. **Submit review:**
-
-               **Step A: Post inline comments (if any)**
-
-               For each INLINE finding, create individual review comments using this exact command format:
-                 ```
-                 gh api repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}/comments -X POST -f commit_id="${{ github.event.pull_request.head.sha }}" -f path="FILE_PATH" -f line=LINE_NUMBER -f body="**[Severity]** Issue description"
-                 ```
-                 Replace FILE_PATH, LINE_NUMBER, and the body content with actual values.
-
-               **Step B: Post architectural comment (only if you have ARCHITECTURAL findings)**
-
-               If and only if you have architectural/design suggestions that don't fit on specific lines:
-                 ```
-                 gh api repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}/comments -X POST -f body="## Architecture & Design Suggestions ..."
-                 ```
-               **Step C: If no findings at all**
-
-               Do NOT post any comment. Simply end your work silently.
-
-            ## Critical Rules
-            - Do NOT post a summary comment like "Added X inline comments" - this is redundant
-            - Do NOT post a comment just to say "no issues found" - silence is approval
-            - Only post a PR comment (Step B) if you have genuine architectural feedback
-            - Inline comments stand on their own - no summary needed
-
-            ## Comment Format
-
-            For inline comments use this structure in the body:
-            - Start with severity in bold: **[HIGH]**, **[MEDIUM]**, or **[LOW]**
-            - Brief issue title on the same line
-            - 1-2 sentence explanation of why this hurts clarity
-            - "Suggestion:" followed by a code block with concrete improvement
-
-            For architectural comment (if needed):
-            - Title: ## Architecture & Design Suggestions
-            - Each topic as ### heading
-            - Issue description and concrete recommendation for each
-
-            ## Communication Style
-            - Senior engineer voice: constructive, clear, educational
-            - Focus on "how to make this clearer" not "what's wrong"
-            - Every suggestion includes a concrete improvement
-            - Be concise - developers are busy
+              3.4 If no findings, post nothing.
 
           claude_args: |
-            --mcp-config ${{ github.workspace }}/.mcp.json
             --model claude-sonnet-4-5-20250929
-            --max-turns 15
-            --allowedTools "Bash(gh pr diff:*),Bash(gh pr view:*),Bash(gh api:*),Read,View,mcp__sequential-thinking__sequentialthinking,mcp__context7__resolve-library-id,mcp__context7__get-library-docs
+            --max-turns 50
+            --allowedTools "Read,Grep,Glob,WebSearch,WebFetch,Bash(gh pr diff:*),Bash(gh pr view:*),Bash(gh api:*),Bash(git log:*),Bash(git show:*)"
