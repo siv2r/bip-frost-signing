@@ -98,7 +98,7 @@ The choice depends on the deployment's trust assumptions and operational require
 This protocol distinguishes between two public key formats: *plain public keys* are 33-byte compressed public keys traditionally used in Bitcoin, while *X-only public keys* are 32-byte keys defined in [BIP340][bip340].
 Key generation protocols produce *public shares* and *threshold public keys* in the plain format. During signing, we conditionally negates *secret shares* to ensure the resulting threshold-signature verifies under the corresponding *X-only threshold public key*.
 
-> [!WARN]
+> [!WARNING]
 > Key generation protocols must commit the *threshold public key* to an unspendable script path as recommended in [BIP341](https://github.com/bitcoin/bips/blob/master/bip-0341.mediawiki#cite_note-23). This prevents a malicious party from embedding a hidden script path during key generation that would allow them to bypass the `t`-of-`n` threshold policy.
 
 #### Protocol Parties and Network Setup
@@ -115,9 +115,8 @@ Each signing session requires two inputs: a participant's long-term *secret shar
 [^signers-ctx-struct]: The *Signers Context* represents the public data of signing participants: their identifiers (*id<sub>1..u</sub>*) and public shares (*pubshare<sub>1..u</sub>*).
 Implementations may represent this as simply as two separate lists passed to signing APIs.
 The threshold public key *thresh_pk* can be stored for efficiency or recomputed when needed using *DeriveThreshPubkey*.
-Similarly, the values *n* and *t* are used only for validation only, and can be omitted if validation is not performed.
+Similarly, the values *n* and *t* are used only for validation, and can be omitted if validation is not performed.
 
-<!-- REVIEW: can threshold pubkey be of type *PlanPk* here? -->
 This signing protocol is compatible with any key generation protocol that produces valid FROST keys.
 Valid keys satisfy: (1) each *secret share* is a Shamir share of the *threshold secret key*, and (2) each *public share* equals the scalar multiplication `secshare * G`.
 Implementations may **optionally** validate key compatibility for a signing session using the *ValidateSignersCtx* function.
