@@ -9,7 +9,6 @@
 # for example.
 
 from typing import List, Optional, Tuple, NewType, NamedTuple, Sequence, Literal
-import itertools
 import secrets
 
 from secp256k1lab.keys import pubkey_gen_plain
@@ -77,17 +76,8 @@ def individual_pk(seckey: bytes) -> PlainPk:
     return PlainPk(pubkey_gen_plain(seckey))
 
 
-# TODO: add my_id < n check
 def derive_interpolating_value(ids: List[int], my_id: int) -> Scalar:
-    if my_id not in ids:
-        raise ValueError(
-            "The signer's id must be present in the participant identifier list."
-        )
-    if not all(ids.count(my_id) <= 1 for my_id in ids):
-        raise ValueError(
-            "The participant identifier list must contain unique elements."
-        )
-    # todo: turn this into raise ValueError?
+    assert my_id in ids
     assert 0 <= my_id < 2**32
     num, deno = 1, 1
     for curr_id in ids:
@@ -98,101 +88,7 @@ def derive_interpolating_value(ids: List[int], my_id: int) -> Scalar:
     return Scalar.from_int_wrapping(num * pow(deno, GE.ORDER - 2, GE.ORDER))
 
 
-def check_pubshares_correctness(
-    secshares: List[bytes], pubshares: List[PlainPk]
-) -> bool:
-    assert len(secshares) == len(pubshares)
-    for secshare, pubshare in zip(secshares, pubshares):
-        if not individual_pk(secshare) == pubshare:
-            return False
-    return True
-
-
-def check_thresh_pubkey_correctness(
-    t: int, thresh_pk: PlainPk, ids: List[int], pubshares: List[PlainPk]
-) -> bool:
-    assert len(ids) == len(pubshares)
-    assert len(ids) >= t
-
-    n = len(ids)
-    # loop through all possible number of signers
-    for signer_count in range(t, n + 1):
-        # loop through all possible signer sets with length `signer_count`
-        for signer_set in itertools.combinations(zip(ids, pubshares), signer_count):
-            signer_ids = [pid for pid, pubshare in signer_set]
-            signer_pubshares = [pubshare for pid, pubshare in signer_set]
-            signer_signers = SignersContext(n, t, signer_ids, signer_pubshares)
-            expected_pk = derive_thresh_pubkey(signer_signers)
-            if expected_pk != thresh_pk:
-                return False
-    return True
-
-
-def check_frost_key_compatibility(
-    n: int,
-    t: int,
-    thresh_pk: PlainPk,
-    ids: List[int],
-    secshares: List[bytes],
-    pubshares: List[PlainPk],
-) -> bool:
-    if not n >= t > 1:
-        return False
-    if not len(ids) == len(secshares) == len(pubshares) == n:
-        return False
-    pubshare_check = check_pubshares_correctness(secshares, pubshares)
-    thresh_pk_check = check_thresh_pubkey_correctness(t, thresh_pk, ids, pubshares)
-    return pubshare_check and thresh_pk_check
-
-
-# think: should we remove n and t from this struct?
-class SignersContext(NamedTuple):
-    n: int
-    t: int
-    ids: List[int]
-    pubshares: List[PlainPk]
-
-
-def get_signing_participants(
-    signers: SignersContext,
-) -> Tuple[List[int], List[PlainPk]]:
-    n, t, ids, pubshares = signers
-    if not t <= len(ids) <= n:
-        raise ValueError("The number of signers must be between t and n.")
-    if len(pubshares) != len(ids):
-        raise ValueError("The pubshares and ids arrays must have the same length.")
-    for i, pubshare in zip(ids, pubshares):
-        if not 0 <= i < n:
-            raise ValueError(f"The participant identifier {i} is out of range.")
-        try:
-            _ = GE.from_bytes_compressed(pubshare)
-        except ValueError:
-            raise InvalidContributionError(i, "pubshare")
-    return ids, pubshares
-
-
-class TweakContext(NamedTuple):
-    Q: GE
-    gacc: Scalar
-    tacc: Scalar
-
-
-COORDINATOR_ID = None
-
-
-def get_xonly_pk(tweak_ctx: TweakContext) -> XonlyPk:
-    Q, _, _ = tweak_ctx
-    return XonlyPk(xbytes(Q))
-
-
-def get_plain_pk(tweak_ctx: TweakContext) -> PlainPk:
-    Q, _, _ = tweak_ctx
-    return PlainPk(cbytes(Q))
-
-
-def derive_thresh_pubkey(signers: SignersContext) -> PlainPk:
-    ids, pubshares = get_signing_participants(signers)
-    # assert COORDINATOR_ID not in ids
+def derive_thresh_pubkey(ids: List[int], pubshares: List[PlainPk]) -> PlainPk:
     Q = GE()
     for my_id, pubshare in zip(ids, pubshares):
         try:
@@ -206,8 +102,54 @@ def derive_thresh_pubkey(signers: SignersContext) -> PlainPk:
     return PlainPk(cbytes(Q))
 
 
-def tweak_ctx_init(signers: SignersContext) -> TweakContext:
-    thresh_pk = derive_thresh_pubkey(signers)
+# REVIEW: should we remove n and t from this struct?
+class SignersContext(NamedTuple):
+    n: int
+    t: int
+    ids: List[int]
+    pubshares: List[PlainPk]
+    thresh_pk: PlainPk
+
+
+def validate_signers_ctx(signers_ctx: SignersContext) -> None:
+    n, t, ids, pubshares, thresh_pk = signers_ctx
+    assert t <= n
+    if not t <= len(ids) <= n:
+        raise ValueError("The number of signers must be between t and n.")
+    if len(pubshares) != len(ids):
+        raise ValueError("The pubshares and ids arrays must have the same length.")
+    for i, pubshare in zip(ids, pubshares):
+        if not 0 <= i <= n - 1:
+            raise ValueError(f"The participant identifier {i} is out of range.")
+        try:
+            _ = GE.from_bytes_compressed(pubshare)
+        except ValueError:
+            raise InvalidContributionError(i, "pubshare")
+    if len(set(ids)) != len(ids):
+        raise ValueError(
+            "The participant identifier list must contain unique elements."
+        )
+    if derive_thresh_pubkey(ids, pubshares) != thresh_pk:
+        raise ValueError("The provided key material is incorrect.")
+
+
+class TweakContext(NamedTuple):
+    Q: GE
+    gacc: Scalar
+    tacc: Scalar
+
+
+def get_xonly_pk(tweak_ctx: TweakContext) -> XonlyPk:
+    Q, _, _ = tweak_ctx
+    return XonlyPk(xbytes(Q))
+
+
+def get_plain_pk(tweak_ctx: TweakContext) -> PlainPk:
+    Q, _, _ = tweak_ctx
+    return PlainPk(cbytes(Q))
+
+
+def tweak_ctx_init(thresh_pk: PlainPk) -> TweakContext:
     Q = cpoint(thresh_pk)
     gacc = Scalar(1)
     tacc = Scalar(0)
@@ -350,18 +292,18 @@ def nonce_agg(pubnonces: List[bytes], ids: Sequence[Optional[int]]) -> bytes:
 
 class SessionContext(NamedTuple):
     aggnonce: bytes
-    signers: SignersContext
+    signers_ctx: SignersContext
     tweaks: List[bytes]
     is_xonly: List[bool]
     msg: bytes
 
 
 def thresh_pubkey_and_tweak(
-    signers: SignersContext, tweaks: List[bytes], is_xonly: List[bool]
+    thresh_pk: PlainPk, tweaks: List[bytes], is_xonly: List[bool]
 ) -> TweakContext:
     if len(tweaks) != len(is_xonly):
         raise ValueError("The tweaks and is_xonly arrays must have the same length.")
-    tweak_ctx = tweak_ctx_init(signers)
+    tweak_ctx = tweak_ctx_init(thresh_pk)
     v = len(tweaks)
     for i in range(v):
         tweak_ctx = apply_tweak(tweak_ctx, tweaks[i], is_xonly[i])
@@ -370,10 +312,11 @@ def thresh_pubkey_and_tweak(
 
 def get_session_values(
     session_ctx: SessionContext,
-) -> Tuple[GE, Scalar, Scalar, Scalar, GE, Scalar]:
-    (aggnonce, signers, tweaks, is_xonly, msg) = session_ctx
-    ids, _ = get_signing_participants(signers)
-    Q, gacc, tacc = thresh_pubkey_and_tweak(signers, tweaks, is_xonly)
+) -> Tuple[GE, Scalar, Scalar, List[int], List[PlainPk], Scalar, GE, Scalar]:
+    (aggnonce, signers_ctx, tweaks, is_xonly, msg) = session_ctx
+    validate_signers_ctx(signers_ctx)
+    _, _, ids, pubshares, thresh_pk = signers_ctx
+    Q, gacc, tacc = thresh_pubkey_and_tweak(thresh_pk, tweaks, is_xonly)
     # sort the ids before serializing because ROAST paper considers them as a set
     ser_ids = serialize_ids(ids)
     b = Scalar.from_bytes_wrapping(
@@ -391,7 +334,7 @@ def get_session_values(
     e = Scalar.from_bytes_wrapping(
         tagged_hash("BIP0340/challenge", xbytes(R) + xbytes(Q) + msg)
     )
-    return (Q, gacc, tacc, b, R, e)
+    return (Q, gacc, tacc, ids, pubshares, b, R, e)
 
 
 def serialize_ids(ids: List[int]) -> bytes:
@@ -401,26 +344,10 @@ def serialize_ids(ids: List[int]) -> bytes:
     return ser_ids
 
 
-def get_session_interpolating_value(session_ctx: SessionContext, my_id: int) -> Scalar:
-    (_, signers, _, _, _) = session_ctx
-    ids, _ = get_signing_participants(signers)
-    return derive_interpolating_value(ids, my_id)
-
-
-def session_has_signer_pubshare(session_ctx: SessionContext, pubshare: bytes) -> bool:
-    (_, signers, _, _, _) = session_ctx
-    _, pubshares_list = get_signing_participants(signers)
-    return pubshare in pubshares_list
-
-
 def sign(
     secnonce: bytearray, secshare: bytes, my_id: int, session_ctx: SessionContext
 ) -> bytes:
-    # do we really need the below check?
-    # add test vector for this check if confirmed
-    if not 0 <= my_id < 2**32:
-        raise ValueError("The signer's participant identifier is out of range")
-    (Q, gacc, _, b, R, e) = get_session_values(session_ctx)
+    (Q, gacc, _, ids, pubshares, b, R, e) = get_session_values(session_ctx)
     try:
         k_1_ = Scalar.from_bytes_nonzero_checked(bytes(secnonce[0:32]))
     except ValueError:
@@ -439,12 +366,21 @@ def sign(
         raise ValueError("The signer's secret share value is out of range.")
     P = d_ * G
     assert not P.infinity
-    pubshare = cbytes(P)
-    if not session_has_signer_pubshare(session_ctx, pubshare):
+    my_pubshare = cbytes(P)
+    # REVIEW: do we actually need this check? Musig2 embeds pk in secnonce to prevent
+    # the wagner's attack related to tweaked pubkeys, but here we don't have that issue.
+    # If we don't need to worry about that attack, we remove pubshare from get_session_values
+    # return values
+    if my_pubshare not in pubshares:
         raise ValueError(
             "The signer's pubshare must be included in the list of pubshares."
         )
-    a = get_session_interpolating_value(session_ctx, my_id)
+    # REVIEW: do we actually need this check?
+    if my_id not in ids:
+        raise ValueError(
+            "The signer's id must be present in the participant identifier list."
+        )
+    a = derive_interpolating_value(ids, my_id)
     g = Scalar(1) if Q.has_even_y() else Scalar(-1)
     d = g * gacc * d_
     s = k_1 + b * k_2 + e * a * d
@@ -455,7 +391,7 @@ def sign(
     assert not R_s2.infinity
     pubnonce = cbytes(R_s1) + cbytes(R_s2)
     # Optional correctness check. The result of signing should pass signature verification.
-    assert partial_sig_verify_internal(psig, my_id, pubnonce, pubshare, session_ctx)
+    assert partial_sig_verify_internal(psig, my_id, pubnonce, my_pubshare, session_ctx)
     return psig
 
 
@@ -473,11 +409,14 @@ def det_nonce_hash(
     return int_from_bytes(tagged_hash("FROST/deterministic/nonce", buf))
 
 
+COORDINATOR_ID = None
+
+
 def deterministic_sign(
     secshare: bytes,
     my_id: int,
     aggothernonce: bytes,
-    signers: SignersContext,
+    signers_ctx: SignersContext,
     tweaks: List[bytes],
     is_xonly: List[bool],
     msg: bytes,
@@ -487,8 +426,10 @@ def deterministic_sign(
         secshare_ = bytes_xor(secshare, tagged_hash("FROST/aux", rand))
     else:
         secshare_ = secshare
-
-    tweaked_tpk = get_xonly_pk(thresh_pubkey_and_tweak(signers, tweaks, is_xonly))
+    # REVIEW: do we need to add any check for ids & pubshares (in signers_ctx context) here?
+    validate_signers_ctx(signers_ctx)
+    _, _, _, _, thresh_pk = signers_ctx
+    tweaked_tpk = get_xonly_pk(thresh_pubkey_and_tweak(thresh_pk, tweaks, is_xonly))
 
     k_1 = Scalar.from_int_wrapping(
         det_nonce_hash(secshare_, aggothernonce, tweaked_tpk, msg, 0)
@@ -512,7 +453,7 @@ def deterministic_sign(
         # Since `pubnonce` can never be invalid, blame coordinator's pubnonce.
         # REVIEW: should we introduce an unknown participant or coordinator error?
         raise InvalidContributionError(COORDINATOR_ID, "aggothernonce")
-    session_ctx = SessionContext(aggnonce, signers, tweaks, is_xonly, msg)
+    session_ctx = SessionContext(aggnonce, signers_ctx, tweaks, is_xonly, msg)
     psig = sign(secnonce, secshare, my_id, session_ctx)
     return (pubnonce, psig)
 
@@ -520,25 +461,26 @@ def deterministic_sign(
 def partial_sig_verify(
     psig: bytes,
     pubnonces: List[bytes],
-    signers: SignersContext,
+    signers_ctx: SignersContext,
     tweaks: List[bytes],
     is_xonly: List[bool],
     msg: bytes,
     i: int,
 ) -> bool:
-    ids, pubshares = get_signing_participants(signers)
+    validate_signers_ctx(signers_ctx)
+    _, _, ids, pubshares, _ = signers_ctx
     if len(pubnonces) != len(ids):
         raise ValueError("The pubnonces and ids arrays must have the same length.")
     if len(tweaks) != len(is_xonly):
         raise ValueError("The tweaks and is_xonly arrays must have the same length.")
     aggnonce = nonce_agg(pubnonces, ids)
-    session_ctx = SessionContext(aggnonce, signers, tweaks, is_xonly, msg)
+    session_ctx = SessionContext(aggnonce, signers_ctx, tweaks, is_xonly, msg)
     return partial_sig_verify_internal(
         psig, ids[i], pubnonces[i], pubshares[i], session_ctx
     )
 
 
-# todo: catch `cpoint`` ValueError and return false
+# REVIEW: catch `cpoint` ValueError and return false
 def partial_sig_verify_internal(
     psig: bytes,
     my_id: int,
@@ -546,12 +488,14 @@ def partial_sig_verify_internal(
     pubshare: bytes,
     session_ctx: SessionContext,
 ) -> bool:
-    (Q, gacc, _, b, R, e) = get_session_values(session_ctx)
+    (Q, gacc, _, ids, pubshares, b, R, e) = get_session_values(session_ctx)
     try:
         s = Scalar.from_bytes_checked(psig)
     except ValueError:
         return False
-    if not session_has_signer_pubshare(session_ctx, pubshare):
+    if pubshare not in pubshares:
+        return False
+    if my_id not in ids:
         return False
     R_s1 = cpoint(pubnonce[0:33])
     R_s2 = cpoint(pubnonce[33:66])
@@ -560,7 +504,7 @@ def partial_sig_verify_internal(
     P = cpoint(pubshare)
     if P is None:
         return False
-    a = get_session_interpolating_value(session_ctx, my_id)
+    a = derive_interpolating_value(ids, my_id)
     g = Scalar(1) if Q.has_even_y() else Scalar(-1)
     g_ = g * gacc
     return s * G == Re_s + (e * a * g_) * P
@@ -572,7 +516,7 @@ def partial_sig_agg(
     assert COORDINATOR_ID not in ids
     if len(psigs) != len(ids):
         raise ValueError("The psigs and ids arrays must have the same length.")
-    (Q, _, tacc, _, R, e) = get_session_values(session_ctx)
+    (Q, _, tacc, _, _, _, R, e) = get_session_values(session_ctx)
     s = Scalar(0)
     for my_id, psig in zip(ids, psigs):
         try:

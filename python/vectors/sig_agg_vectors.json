@@ -1,7 +1,7 @@
 {
     "n": 5,
     "t": 3,
-    "threshold_public_key": "03F9186397E61022663935B3FDFF7880A9F0EC288D8B054DF6AC2BC5777B5FBBB1",
+    "threshold_pubkey": "03F9186397E61022663935B3FDFF7880A9F0EC288D8B054DF6AC2BC5777B5FBBB1",
     "identifiers": [
         0,
         1,

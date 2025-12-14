@@ -1,7 +1,7 @@
 {
     "n": 5,
     "t": 3,
-    "threshold_public_key": "03F9186397E61022663935B3FDFF7880A9F0EC288D8B054DF6AC2BC5777B5FBBB1",
+    "threshold_pubkey": "03F9186397E61022663935B3FDFF7880A9F0EC288D8B054DF6AC2BC5777B5FBBB1",
     "secshare_p1": "6FF0F78C1F0E76C4AB67C1B32E0B4B1652120B794AC1AE7EC3992DE06092B566",
     "identifiers": [
         0,
@@ -286,7 +286,7 @@
             "signer_id": 0,
             "error": {
                 "type": "ValueError",
-                "message": "The signer's id must be present in the participant identifier list."
+                "message": "The provided key material is incorrect."
             },
             "comment": "The signer's id is not in the participant identifier list"
         },
@@ -334,7 +334,7 @@
             "signer_index": 0,
             "error": {
                 "type": "ValueError",
-                "message": "The signer's pubshare must be included in the list of pubshares."
+                "message": "The provided key material is incorrect."
             },
             "comment": "The signer's pubshare is not in the list of pubshares. This test case is optional: it can be skipped by implementations that do not check that the signer's pubshare is included in the list of pubshares."
         },
