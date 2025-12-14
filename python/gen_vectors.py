@@ -151,7 +151,7 @@ def generate_nonce_gen_vectors():
             "rand_": bytes_to_hex(rand),
             "secshare": bytes_to_hex(secshares[0]),
             "pubshare": bytes_to_hex(pubshares[0]),
-            "threshold_public_key": bytes_to_hex(xonly_thresh_pk),
+            "threshold_pubkey": bytes_to_hex(xonly_thresh_pk),
             "msg": bytes_to_hex(msg),
             "extra_in": bytes_to_hex(extra_in),
             "expected_secnonce": bytes_to_hex(secnonce),
@@ -169,7 +169,7 @@ def generate_nonce_gen_vectors():
             "rand_": bytes_to_hex(rand),
             "secshare": bytes_to_hex(secshares[0]),
             "pubshare": bytes_to_hex(pubshares[0]),
-            "threshold_public_key": bytes_to_hex(xonly_thresh_pk),
+            "threshold_pubkey": bytes_to_hex(xonly_thresh_pk),
             "msg": bytes_to_hex(empty_msg),
             "extra_in": bytes_to_hex(extra_in),
             "expected_secnonce": bytes_to_hex(secnonce),
@@ -189,7 +189,7 @@ def generate_nonce_gen_vectors():
             "rand_": bytes_to_hex(rand),
             "secshare": bytes_to_hex(secshares[0]),
             "pubshare": bytes_to_hex(pubshares[0]),
-            "threshold_public_key": bytes_to_hex(xonly_thresh_pk),
+            "threshold_pubkey": bytes_to_hex(xonly_thresh_pk),
             "msg": bytes_to_hex(long_msg),
             "extra_in": bytes_to_hex(extra_in),
             "expected_secnonce": bytes_to_hex(secnonce),
@@ -204,7 +204,7 @@ def generate_nonce_gen_vectors():
             "rand_": bytes_to_hex(rand),
             "secshare": None,
             "pubshare": None,
-            "threshold_public_key": None,
+            "threshold_pubkey": None,
             "msg": None,
             "extra_in": None,
             "expected_secnonce": bytes_to_hex(secnonce),
@@ -328,7 +328,7 @@ def generate_sign_verify_vectors():
 
     vectors["n"] = n
     vectors["t"] = t
-    vectors["threshold_public_key"] = bytes_to_hex(thresh_pk)
+    vectors["threshold_pubkey"] = bytes_to_hex(thresh_pk)
     vectors["secshare_p1"] = bytes_to_hex(secshare_p1)
     vectors["identifiers"] = ids
     pubshares.append(  # add an invalid pubshare at the end
@@ -500,7 +500,7 @@ def generate_sign_verify_vectors():
         curr_aggnonce = aggnonces[case["aggnonce"]]
         curr_msg = msgs[case["msg"]]
         my_id = curr_ids[case["signer"]]
-        curr_signers = SignersContext(n, t, curr_ids, curr_pubshares)
+        curr_signers = SignersContext(n, t, curr_ids, curr_pubshares, thresh_pk)
         session_ctx = SessionContext(curr_aggnonce, curr_signers, [], [], curr_msg)
         expected_psig = sign(
             bytearray(secnonces_p1[0]), secshare_p1, my_id, session_ctx
@@ -623,7 +623,7 @@ def generate_sign_verify_vectors():
             my_id = case["signer_id"]
         else:
             my_id = curr_ids[case["signer_idx"]]
-        curr_signers = SignersContext(n, t, curr_ids, curr_pubshares)
+        curr_signers = SignersContext(n, t, curr_ids, curr_pubshares, thresh_pk)
         session_ctx = SessionContext(curr_aggnonce, curr_signers, [], [], curr_msg)
         curr_secnonce = bytearray(secnonces_p1[case["secnonce"]])
         expected_error = (
@@ -667,7 +667,7 @@ def generate_sign_verify_vectors():
     curr_aggnonce = aggnonces[aggnonce_idx]
     curr_msg = msgs[msg_idx]
     my_id = curr_ids[signer_idx]
-    curr_signers = SignersContext(n, t, curr_ids, curr_pubshares)
+    curr_signers = SignersContext(n, t, curr_ids, curr_pubshares, thresh_pk)
     session_ctx = SessionContext(curr_aggnonce, curr_signers, [], [], curr_msg)
     curr_secnonce = bytearray(secnonces_p1[0])
     psig = sign(curr_secnonce, secshare_p1, my_id, session_ctx)
@@ -758,7 +758,7 @@ def generate_sign_verify_vectors():
         curr_pubnonces = [pubnonces[i] for i in case["pubnonces"]]
         msg = case["msg"]
         signer_idx = case["signer"]
-        curr_signers = SignersContext(n, t, curr_ids, curr_pubshares)
+        curr_signers = SignersContext(n, t, curr_ids, curr_pubshares, thresh_pk)
         expected_error = (
             ValueError if case["error"] == "value" else InvalidContributionError
         )
@@ -799,7 +799,7 @@ def generate_tweak_vectors():
 
     vectors["n"] = n
     vectors["t"] = t
-    vectors["threshold_public_key"] = bytes_to_hex(thresh_pk)
+    vectors["threshold_pubkey"] = bytes_to_hex(thresh_pk)
     vectors["secshare_p1"] = bytes_to_hex(secshare_p1)
     vectors["identifiers"] = ids
     pubshares.append(  # add an invalid pubshare at the end
@@ -906,7 +906,7 @@ def generate_tweak_vectors():
         signer_idx = 0
         my_id = curr_ids[signer_idx]
 
-        curr_signers = SignersContext(n, t, curr_ids, curr_pubshares)
+        curr_signers = SignersContext(n, t, curr_ids, curr_pubshares, thresh_pk)
         session_ctx = SessionContext(
             curr_aggnonce, curr_signers, curr_tweaks, curr_tweak_modes, msg
         )
@@ -951,7 +951,7 @@ def generate_tweak_vectors():
         signer_idx = 0
         my_id = curr_ids[signer_idx]
 
-        curr_signers = SignersContext(n, t, curr_ids, curr_pubshares)
+        curr_signers = SignersContext(n, t, curr_ids, curr_pubshares, thresh_pk)
         session_ctx = SessionContext(
             curr_aggnonce, curr_signers, curr_tweaks, curr_tweak_modes, msg
         )
@@ -989,7 +989,7 @@ def generate_det_sign_vectors():
 
     vectors["n"] = n
     vectors["t"] = t
-    vectors["threshold_public_key"] = bytes_to_hex(thresh_pk)
+    vectors["threshold_pubkey"] = bytes_to_hex(thresh_pk)
     vectors["secshare_p1"] = bytes_to_hex(secshare_p1)
     vectors["identifiers"] = ids
     pubshares.append(  # add an invalid pubshare at the end
@@ -1134,7 +1134,7 @@ def generate_det_sign_vectors():
             other_pubnonces.append(pub)
         curr_aggothernonce = nonce_agg(other_pubnonces, other_ids)
 
-        curr_signers = SignersContext(n, t, curr_ids, curr_pubshares)
+        curr_signers = SignersContext(n, t, curr_ids, curr_pubshares, thresh_pk)
         expected = deterministic_sign(
             secshare_p1,
             my_id,
@@ -1281,7 +1281,7 @@ def generate_det_sign_vectors():
         expected_exception = (
             ValueError if case["error"] == "value" else InvalidContributionError
         )
-        curr_signers = SignersContext(n, t, curr_ids, curr_pubshares)
+        curr_signers = SignersContext(n, t, curr_ids, curr_pubshares, thresh_pk)
         error = expect_exception(
             lambda: deterministic_sign(
                 secshare_p1,
@@ -1332,7 +1332,7 @@ def generate_sig_agg_vectors():
 
     vectors["n"] = n
     vectors["t"] = t
-    vectors["threshold_public_key"] = bytes_to_hex(thresh_pk)
+    vectors["threshold_pubkey"] = bytes_to_hex(thresh_pk)
     vectors["identifiers"] = ids
     vectors["pubshares"] = bytes_list_to_hex(pubshares)
 
@@ -1399,7 +1399,7 @@ def generate_sig_agg_vectors():
         curr_tweaks = [tweaks[i] for i in tweak_indices]
         curr_tweak_modes = case.get("is_xonly", [])
         psigs = []
-        curr_signers = SignersContext(n, t, curr_ids, curr_pubshares)
+        curr_signers = SignersContext(n, t, curr_ids, curr_pubshares, thresh_pk)
         session_ctx = SessionContext(
             curr_aggnonce,
             curr_signers,
@@ -1448,7 +1448,7 @@ def generate_sig_agg_vectors():
         curr_aggnonce = nonce_agg(curr_pubnonces, curr_ids)
         curr_msg = msg
         psigs = []
-        curr_signers = SignersContext(n, t, curr_ids, curr_pubshares)
+        curr_signers = SignersContext(n, t, curr_ids, curr_pubshares, thresh_pk)
         session_ctx = SessionContext(curr_aggnonce, curr_signers, [], [], curr_msg)
         for i in case["indices"]:
             my_id = ids[i]
