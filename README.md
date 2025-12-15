@@ -9,7 +9,7 @@ License: CC0-1.0
 License-Code: MIT
 Type: Informational
 Created:
-Post-History:
+Post-History: https://groups.google.com/g/bitcoindev/c/PeMp2HQl-H4/m/AcJtK0aKAwAJ
 Comments-URI:
 ```
 
@@ -790,11 +790,9 @@ This document proposes a standard for the FROST threshold signature scheme that 
 
 ## Changelog
 
-- *0.3.0* (2025-12-14): Introduces the following changes:
+- *0.3.0* (2025-12-15): Introduces the following changes:
   - Introduce *SignersContext* and define key material compatibility with *ValidateSignerCtx*.
-  - Rewrite the signing protocol assuming a coordinator and add sequence diagram
-  - Warn that key generation protocols must ensure the *threshold public key* output is Taproot-safe
-  - Add protocol sequence diagram
+  - Rewrite the signing protocol assuming a coordinator, add sequence diagram, and warn key generation protocols to output Taproot-safe *threshold public key*.
   - Remove *GetSessionInterpolatingValue*, *SessionHasSignerPubshare*, *ValidatePubshares*, and *ValidateThreshPubkey* algorithms
   - Revert back to initializing *TweakCtxInit* with threshold public key instead of *pubshares*
 - *0.2.3* (2025-11-25): Sync terminologies with the ChillDKG BIP.
