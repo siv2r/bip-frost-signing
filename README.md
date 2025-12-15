@@ -57,7 +57,7 @@ and also about the combination of security proofs. we can't randomly use combina
 ### Design
 
 - **Compatibility with BIP340**: The threshold public key and participant public shares produced by a compatible key generation algorithm MUST be *plain* public keys in compressed format. In this proposal, the signature output at the end of the signing protocol is a BIP340 signature, which passes BIP340 verification for the BIP340 X-only version of the threshold public key and a message.
-- **Tweaking for BIP32 derivations and Taproot**: This proposal supports tweaking threshold public key and signing for this tweaked threshold public key. We distinguish two modes of tweaking: *Plain* tweaking can be used to derive child threshold public keys per [BIP32][bip32].*X-only* tweaking, on the other hand, allows creating a [BIP341][bip341] tweak to add script paths to a Taproot output. See [tweaking the threshold public key](#tweaking-threshold-public-key) below for details.
+- **Tweaking for BIP32 derivations and Taproot**: This proposal supports tweaking threshold public key and signing for this tweaked threshold public key. We distinguish two modes of tweaking: *Plain* tweaking can be used to derive child threshold public keys per [BIP32][bip32].*X-only* tweaking, on the other hand, allows creating a [BIP341][bip341] tweak to add script paths to a Taproot output. See [tweaking the threshold public key](#tweaking-the-threshold-public-key) below for details.
 - **Non-interactive signing with preprocessing**: The first communication round, exchanging the nonces, can happen before the message or the exact set of signers is determined. Once the parameters of the signing session are finalized, the signers can send partial signatures without additional interaction.
 - **Partial signature independent of order**: The output of the signing algorithm remains consistent regardless of the order in which participant identifiers and public shares are used during the session context initialization. This property is inherent when combining Shamir shares to derive any value.
 - **Third-party nonce and partial signature aggregation**: Instead of every signer sending their nonce and partial signature to every other signer, it is possible to use an untrusted third-party *coordinator* to reduce the communication complexity from quadratic to linear in the number of signers. In each of the two rounds, the coordinator collects all signers' contributions (nonces or partial signatures), aggregates them, and broadcasts the aggregate back to the signers. A malicious coordinator can force the signing session to fail to produce a valid Schnorr signature but cannot negatively affect the unforgeability of the scheme.
@@ -82,9 +82,6 @@ If applicable, the corresponding algorithms should simply fail when encountering
 Similarly, the test vectors that exercise the unimplemented features should be re-interpreted to expect an error, or be skipped if appropriate.
 
 ### Key Material and Setup
-
-> [!NOTE]
-> The definitions for the secp256k1 curve and its order can be found in the [Notation section](#notation).
 
 <!-- REVIEW: should we use "identifiers `i`", secret share `secshare_i` style here? -->
 A key generation protocol establishes a group of `n` participants with a *threshold public key* (representing a `t`-of-`n` threshold policy).

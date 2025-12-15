@@ -14,11 +14,9 @@ from frost_ref.signing import (
     SessionContext,
     SignersContext,
     XonlyPk,
-    cbytes,
     deterministic_sign,
     get_xonly_pk,
     thresh_pubkey_and_tweak,
-    individual_pk,
     nonce_agg,
     nonce_gen,
     nonce_gen_internal,
@@ -27,6 +25,7 @@ from frost_ref.signing import (
     partial_sig_verify_internal,
     sign,
 )
+from secp256k1lab.keys import pubkey_gen_plain
 from secp256k1lab.secp256k1 import G, Scalar
 from secp256k1lab.bip340 import schnorr_verify
 from secp256k1lab.util import bytes_from_int, int_from_bytes
@@ -85,11 +84,13 @@ def generate_frost_keys(
     secret = Scalar.from_bytes_wrapping(secrets.token_bytes(32))
     P, secshares, pubshares = trusted_dealer_keygen(secret, n, t)
 
-    thresh_pk = PlainPk(cbytes(P))
+    thresh_pk = PlainPk(P.to_bytes_compressed())
     # we need decrement by one, since our identifiers represent integer indices
     identifiers = [int(secshare_i[0] - 1) for secshare_i in secshares]
     ser_secshares = [bytes_from_int(secshare_i[1]) for secshare_i in secshares]
-    ser_pubshares = [PlainPk(cbytes(pubshare_i)) for pubshare_i in pubshares]
+    ser_pubshares = [
+        PlainPk(pubshare_i.to_bytes_compressed()) for pubshare_i in pubshares
+    ]
     return (thresh_pk, identifiers, ser_secshares, ser_pubshares)
 
 
@@ -162,7 +163,7 @@ def test_sign_verify_vectors():
     pubshares = fromhex_all(test_data["pubshares"])
     thresh_pk = bytes.fromhex(test_data["threshold_pubkey"])
     # The public key corresponding to the first participant (secshare_p1) is at index 0
-    assert pubshares[0] == individual_pk(secshare_p1)
+    assert pubshares[0] == PlainPk(pubkey_gen_plain(secshare_p1))
 
     secnonces_p1 = fromhex_all(test_data["secnonces_p1"])
     pubnonces = fromhex_all(test_data["pubnonces"])
@@ -172,7 +173,7 @@ def test_sign_verify_vectors():
     R_s1 = k_1 * G
     R_s2 = k_2 * G
     assert not R_s1.infinity and not R_s2.infinity
-    assert pubnonces[0] == cbytes(R_s1) + cbytes(R_s2)
+    assert pubnonces[0] == R_s1.to_bytes_compressed() + R_s2.to_bytes_compressed()
 
     aggnonces = fromhex_all(test_data["aggnonces"])
     msgs = fromhex_all(test_data["msgs"])
@@ -271,7 +272,7 @@ def test_tweak_vectors():
     ids = test_data["identifiers"]
     pubshares = fromhex_all(test_data["pubshares"])
     # The public key corresponding to the first participant (secshare_p1) is at index 0
-    assert pubshares[0] == individual_pk(secshare_p1)
+    assert pubshares[0] == PlainPk(pubkey_gen_plain(secshare_p1))
     thresh_pk = bytes.fromhex(test_data["threshold_pubkey"])
 
     secnonce_p1 = bytearray(bytes.fromhex(test_data["secnonce_p1"]))
@@ -282,7 +283,7 @@ def test_tweak_vectors():
     R_s1 = k_1 * G
     R_s2 = k_2 * G
     assert not R_s1.infinity and not R_s2.infinity
-    assert pubnonces[0] == cbytes(R_s1) + cbytes(R_s2)
+    assert pubnonces[0] == R_s1.to_bytes_compressed() + R_s2.to_bytes_compressed()
 
     aggnonces = fromhex_all(test_data["aggnonces"])
     tweaks = fromhex_all(test_data["tweaks"])
@@ -355,7 +356,7 @@ def test_det_sign_vectors():
     ids = test_data["identifiers"]
     pubshares = fromhex_all(test_data["pubshares"])
     # The public key corresponding to the first participant (secshare_p1) is at index 0
-    assert pubshares[0] == individual_pk(secshare_p1)
+    assert pubshares[0] == PlainPk(pubkey_gen_plain(secshare_p1))
 
     thresh_pk = bytes.fromhex(test_data["threshold_pubkey"])
     msgs = fromhex_all(test_data["msgs"])

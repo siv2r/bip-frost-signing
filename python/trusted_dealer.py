@@ -38,14 +38,6 @@ ECPoint = GE
 PlainPk = NewType("PlainPk", bytes)
 
 
-def xbytes(P: GE) -> bytes:
-    return P.to_bytes_xonly()
-
-
-def cbytes(P: GE) -> bytes:
-    return P.to_bytes_compressed()
-
-
 def derive_interpolating_value_internal(L: List[int], x_i: int) -> Scalar:
     num, deno = 1, 1
     for x_j in L:
