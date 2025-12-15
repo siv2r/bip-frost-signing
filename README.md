@@ -57,7 +57,7 @@ and also about the combination of security proofs. we can't randomly use combina
 ### Design
 
 - **Compatibility with BIP340**: The threshold public key and participant public shares produced by a compatible key generation algorithm MUST be *plain* public keys in compressed format. In this proposal, the signature output at the end of the signing protocol is a BIP340 signature, which passes BIP340 verification for the BIP340 X-only version of the threshold public key and a message.
-- **Tweaking for BIP32 derivations and Taproot**: This proposal supports tweaking threshold public key and signing for this tweaked threshold public key. We distinguish two modes of tweaking: *Plain* tweaking can be used to derive child threshold public keys per [BIP32][bip32].*X-only* tweaking, on the other hand, allows creating a [BIP341][bip341] tweak to add script paths to a Taproot output. See [tweaking the threshold public key](./README.md#tweaking-threshold-public-key) below for details.
+- **Tweaking for BIP32 derivations and Taproot**: This proposal supports tweaking threshold public key and signing for this tweaked threshold public key. We distinguish two modes of tweaking: *Plain* tweaking can be used to derive child threshold public keys per [BIP32][bip32].*X-only* tweaking, on the other hand, allows creating a [BIP341][bip341] tweak to add script paths to a Taproot output. See [tweaking the threshold public key](#tweaking-threshold-public-key) below for details.
 - **Non-interactive signing with preprocessing**: The first communication round, exchanging the nonces, can happen before the message or the exact set of signers is determined. Once the parameters of the signing session are finalized, the signers can send partial signatures without additional interaction.
 - **Partial signature independent of order**: The output of the signing algorithm remains consistent regardless of the order in which participant identifiers and public shares are used during the session context initialization. This property is inherent when combining Shamir shares to derive any value.
 - **Third-party nonce and partial signature aggregation**: Instead of every signer sending their nonce and partial signature to every other signer, it is possible to use an untrusted third-party *coordinator* to reduce the communication complexity from quadratic to linear in the number of signers. In each of the two rounds, the coordinator collects all signers' contributions (nonces or partial signatures), aggregates them, and broadcasts the aggregate back to the signers. A malicious coordinator can force the signing session to fail to produce a valid Schnorr signature but cannot negatively affect the unforgeability of the scheme.
@@ -84,7 +84,7 @@ Similarly, the test vectors that exercise the unimplemented features should be r
 ### Key Material and Setup
 
 > [!NOTE]
-> The definitions for the secp256k1 curve and its order can be found in the [Notation section](./README.md#notation).
+> The definitions for the secp256k1 curve and its order can be found in the [Notation section](#notation).
 
 <!-- REVIEW: should we use "identifiers `i`", secret share `secshare_i` style here? -->
 A key generation protocol establishes a group of `n` participants with a *threshold public key* (representing a `t`-of-`n` threshold policy).
@@ -110,7 +110,7 @@ If there is no dedicated coordinator, one of the participants can act as the coo
 
 #### Signing Inputs and Outputs
 
-Each signing session requires two inputs: a participant's long-term *secret share* `secshare_i` (individual to each participant, not shared with the coordinator) and a [*Signers Context*](./README.md#signers-context)[^signers-ctx-struct] data structure (common to all participants and the coordinator).
+Each signing session requires two inputs: a participant's long-term *secret share* `secshare_i` (individual to each participant, not shared with the coordinator) and a [*Signers Context*](#signers-context)[^signers-ctx-struct] data structure (common to all participants and the coordinator).
 
 [^signers-ctx-struct]: The *Signers Context* represents the public data of signing participants: their identifiers (*id<sub>1..u</sub>*) and public shares (*pubshare<sub>1..u</sub>*).
 Implementations may represent this as simply as two separate lists passed to signing APIs.
@@ -129,11 +129,11 @@ The output of the FROST signing protocol is a BIP340 Schnorr signature that veri
 
 ### General Signing Flow
 
-We assume that the coordinator and the signing participants (in the algorithms specified below, is stored in a data structure called [Signers Context](./README.md#signers-context)) are selected externally to the signing protocol before it is initiated. They could also optionally tweak the *threshold public key* now, by initializing [Tweak Context](./README.md#tweak-context) with it.
+We assume that the coordinator and the signing participants (in the algorithms specified below, is stored in a data structure called [Signers Context](#signers-context)) are selected externally to the signing protocol before it is initiated. They could also optionally tweak the *threshold public key* now, by initializing [Tweak Context](#tweak-context) with it.
 
 The coordinator and signing participants must be determined before initiating the signing protocol.
-This information is stored in a [*Signers Context*](./README.md#signers-context) data structure.
-The *threshold public key* may optionally be tweaked by initializing a [*Tweak Context*](./README.md#tweak-context) at this stage.
+This information is stored in a [*Signers Context*](#signers-context) data structure.
+The *threshold public key* may optionally be tweaked by initializing a [*Tweak Context*](#tweak-context) at this stage.
 
 Whenever the signing participants want to sign a message, the basic order of operations to create a threshold-signature is as follows:
 
@@ -146,7 +146,7 @@ This treatment may be confusing for readers familiar with the MuSig2 paper.
 However, serialization is a technical detail that is irrelevant for users of MuSig2 interfaces.
 
 **Second broadcast round:**
-At this point, every signer has the required data to sign, which, in the algorithms specified below, is stored in a data structure called [Session Context](./README.md#session-context).
+At this point, every signer has the required data to sign, which, in the algorithms specified below, is stored in a data structure called [Session Context](#session-context).
 Every signer computes a partial signature by running *Sign* with their long-term *secret share*, *secnonce* and the session context.
 Then, the signers broadcast their partial signatures to the coordinator, who runs *PartialSigAgg* to produce the final signature.
 If all parties behaved honestly, the result passes [BIP340][bip340] verification.
@@ -163,7 +163,7 @@ A malicious coordinator can cause the signing session to fail but cannot comprom
 
 To simplify the specification of the algorithms, some intermediary values are unnecessarily recomputed from scratch, e.g., when executing *GetSessionValues* multiple times.
 Actual implementations can cache these values.
-As a result, the [Session Context](./README.md#session-context) may look very different in implementations or may not exist at all.
+As a result, the [Session Context](#session-context) may look very different in implementations or may not exist at all.
 However, computation of *GetSessionValues* and storage of the result must be protected against modification from an untrusted third party.
 This party would have complete control over the aggregate public key and message to be signed.
 
@@ -196,7 +196,7 @@ FROST signers are typically stateful: they generate *secnonce*, store it, and la
 However, stateless signing is possible under specific conditions.
 In coordinator-less setups, any one signer can operate statelessly. In coordinator-based setups, only a signer who is also acting as the coordinator can be stateless; if the coordinator is a separate non-signing entity, stateless signing is not possible.
 A stateless signer waits to receive all other signers' *pubnonces* and for the session parameters (*Signers Context*, message, and optional tweaks) to be determined. It then runs *NonceGen*, *NonceAgg*, and *Sign* in sequence, sending its *pubnonce* and partial signature simultaneously.
-Stateless signers may want to consider signing deterministically (see [Modifications to Nonce Generation](./README.md#modifications-to-nonce-generation)) to remove the reliance on the random number generator in the *NonceGen* algorithm.
+Stateless signers may want to consider signing deterministically (see [Modifications to Nonce Generation](#modifications-to-nonce-generation)) to remove the reliance on the random number generator in the *NonceGen* algorithm.
 
 <!-- TODO: rewrite it for coordinator setup -->
 ### Identifying Disruptive Signers
@@ -228,7 +228,7 @@ However, if *PartialSigVerify* succeeds for all partial signatures then *Partial
 
 ### Tweaking the Threshold Public Key
 
-The threshold public key can be *tweaked*, which modifies the key as defined in the [Tweaking Definition](./README.md#tweaking-definition) subsection.
+The threshold public key can be *tweaked*, which modifies the key as defined in the [Tweaking Definition](#tweaking-definition) subsection.
 In order to apply a tweak, the Tweak Context output by *TweakCtxInit* is provided to the *ApplyTweak* algorithm with the *is_xonly_t* argument set to false for plain tweaking and true for X-only tweaking.
 The resulting Tweak Context can be used to apply another tweak with *ApplyTweak* or obtain the threshold public key with *GetXonlyPubkey* or *GetPlainPubkey*.
 
@@ -250,7 +250,7 @@ The bit can be obtained with `GetPlainPubkey(tweak_ctx)[0] & 1`.
 
 ## Algorithms
 
-The following specification of the algorithms has been written with a focus on clarity. As a result, the specified algorithms are not always optimal in terms of computation and space. In particular, some values are recomputed but can be cached in actual implementations (see [General Signing Flow](./README.md#general-signing-flow)).
+The following specification of the algorithms has been written with a focus on clarity. As a result, the specified algorithms are not always optimal in terms of computation and space. In particular, some values are recomputed but can be cached in actual implementations (see [General Signing Flow](#general-signing-flow)).
 
 ### Notation
 <!-- TODO: remove this section (add a small note) as we're using secp256k1lab python library for scalar and group operations. Also, remove these wrapper functions from python code. -->
@@ -397,7 +397,7 @@ Algorithm *GetPlainPubkey(tweak_ctx)*:
 Algorithm *ApplyTweak(tweak_ctx, tweak, is_xonly_t)*:
 
 - Inputs:
-  - The *tweak_ctx*: a [Tweak Context](./README.md#tweak-context) data structure
+  - The *tweak_ctx*: a [Tweak Context](#tweak-context) data structure
   - The *tweak*: a 32-byte array
   - The tweak mode *is_xonly_t*: a boolean
 - Let *(Q, gacc, tacc) = tweak_ctx*
@@ -492,7 +492,7 @@ Algorithm *GetSessionValues(session_ctx)*:
 - Let *R' = R<sub>1</sub> + b &middot; R<sub>2</sub>*
 - Let *R' = R<sub>1</sub> + b  &middot;  R<sub>2</sub>*
 - If *is_infinite(R'):*
-  - Let final nonce *R = G* ([see Dealing with Infinity in Nonce Aggregation](./README.md#dealing-with-infinity-in-nonce-aggregation))
+  - Let final nonce *R = G* ([see Dealing with Infinity in Nonce Aggregation](#dealing-with-infinity-in-nonce-aggregation))
 - Else:
   - Let final nonce *R = R'*
 - Let *e = int(hash<sub>BIP0340/challenge</sub>((xbytes(R) || xbytes(Q) || m))) mod n*
@@ -513,7 +513,7 @@ Algorithm *Sign(secnonce, secshare, my_id, session_ctx)*:
   - The secret nonce *secnonce* that has never been used as input to *Sign* before: a 64-byte array[^secnonce-ser]
   - The long-term secret share *secshare*: a 32-byte array
   - The identifier of the signing participant *my_id*: an integer with *0 ≤ my_id ≤ n-1*
-  - The *session_ctx*: a [Session Context](./README.md#session-context) data structure
+  - The *session_ctx*: a [Session Context](#session-context) data structure
 - Let *(Q, gacc, _, id<sub>1..u</sub>, pubshare<sub>1..u</sub>, b, R, e) = GetSessionValues(session_ctx)*; fail if that fails
 - Let *k<sub>1</sub>' = int(secnonce[0:32]), k<sub>2</sub>' = int(secnonce[32:64])*
 - Fail if *k<sub>i</sub>' = 0* or *k<sub>i</sub>' ≥ n* for *i = 1..2*
@@ -526,7 +526,7 @@ Algorithm *Sign(secnonce, secshare, my_id, session_ctx)*:
 - Fail if *my_id* not in *id<sub>1..u</sub>*
 - Let *&lambda; = DeriveInterpolatingValue(id<sub>1..u</sub>, my_id)*; fail if that fails
 - Let *g = 1* if *has_even_y(Q)*, otherwise let *g = -1 mod n*
-- Let *d = g &middot; gacc &middot; d' mod n* (See [*Negation of Secret Share When Signing*](./README.md#negation-of-the-secret-share-when-signing))
+- Let *d = g &middot; gacc &middot; d' mod n* (See [*Negation of Secret Share When Signing*](#negation-of-the-secret-share-when-signing))
 - Let *s = (k<sub>1</sub> + b &middot; k<sub>2</sub> + e &middot; &lambda; &middot; d) mod n*
 - Let *psig = bytes(32, s)*
 - Let *pubnonce = cbytes(k<sub>1</sub>' &middot; G) || cbytes(k<sub>2</sub>' &middot; G)*
@@ -566,7 +566,7 @@ Internal Algorithm *PartialSigVerifyInternal(psig, my_id, pubnonce, pubshare, se
 - Let *P = cpoint(pubshare)*; fail if that fails
 - Let *&lambda; = DeriveInterpolatingValue(id<sub>1..u</sub>, my_id)*[^lambda-cant-fail]
 - Let *g = 1* if *has_even_y(Q)*, otherwise let *g = -1 mod n*
-- Let *g' = g &middot; gacc mod n* (See [*Negation of Pubshare When Partially Verifying*](./README.md#negation-of-the-pubshare-when-partially-verifying))
+- Let *g' = g &middot; gacc mod n* (See [*Negation of Pubshare When Partially Verifying*](#negation-of-the-pubshare-when-partially-verifying))
 - Fail if *s &middot; G ≠ Re<sub>⁎</sub> + e &middot; &lambda; &middot; g' &middot; P*
 - Return success iff no failure occurred before reaching this point.
 
@@ -580,7 +580,7 @@ Algorithm *PartialSigAgg(psig<sub>1..u</sub>, id<sub>1..u</sub>, session_ctx)*:
   - The number *u* of signatures with *t ≤ u ≤ n*
   - The partial signatures *psig<sub>1..u</sub>*: *u* 32-byte arrays
   - The participant identifiers *id<sub>1..u</sub>*: *u* distinct integers, each with *0 ≤ id<sub>i</sub> ≤ n-1*
-  - The *session_ctx*: a [Session Context](./README.md#session-context) data structure
+  - The *session_ctx*: a [Session Context](#session-context) data structure
 - Let *(Q, _, tacc, _, _, _, R, e) = GetSessionValues(session_ctx)*; fail if that fails
 - For *i = 1 .. u*:
   - Let *s<sub>i</sub> = int(psig<sub>i</sub>)*; fail if *s<sub>i</sub> ≥ n* and blame signer *id<sub>i</sub>* for invalid partial signature.
@@ -619,7 +619,7 @@ Second, if there is a unique signer who is supposed to send the *pubnonce* last,
 Such a nonce generation algorithm *DeterministicSign* is specified below.
 Note that the only optional argument is *rand*, which can be omitted if randomness is entirely unavailable.
 *DeterministicSign* requires the argument *aggothernonce* which should be set to the output of *NonceAgg* run on the *pubnonce* value of **all** other signers (but can be provided by an untrusted party).
-Hence, using *DeterministicSign* is only possible for the last signer to generate a nonce and makes the signer stateless, similar to the stateless signer described in the [Nonce Generation](./README.md#nonce-generation) section.
+Hence, using *DeterministicSign* is only possible for the last signer to generate a nonce and makes the signer stateless, similar to the stateless signer described in the [Nonce Generation](#nonce-generation) section.
 <!-- REVIEW just say n is < 2^32 during intro, than mentioning it everywhere -->
 
 #### Deterministic and Stateless Signing for a Single Signer
@@ -629,7 +629,7 @@ Algorithm *DeterministicSign(secshare, my_id, aggothernonce, signers, tweak<sub>
 - Inputs:
   - The secret share *secshare*: a 32-byte array
   - The identifier of the signing participant *my_id*: an integer with 0 *≤ my_id < n*
-  - The aggregate public nonce *aggothernonce* (see [above](./README.md#modifications-to-nonce-generation)): a 66-byte array
+  - The aggregate public nonce *aggothernonce* (see [above](#modifications-to-nonce-generation)): a 66-byte array
   - The *signers_ctx*: a [Signers Context](#signers-context) data structure
   - The number *v* of tweaks with *0 ≤ v < 2^32*
   - The tweaks *tweak<sub>1..v</sub>*: *v* 32-byte arrays
@@ -678,7 +678,7 @@ Algorithm *ApplyXonlyTweak(P, twk)*:
 <!-- TODO: we could simply point to BIP327 for this proof. Unless we use agnostic tweaking -->
 ### Negation of the Secret Share when Signing
 
-During the signing process, the *[Sign](./README.md#signing)* algorithm might have to negate the secret share in order to produce a partial signature for an X-only threshold public key. This public key is derived from *u* public shares and *u* participant identifiers (denoted by the signer set *U*) and then tweaked *v* times (X-only or plain).
+During the signing process, the *[Sign](#signing)* algorithm might have to negate the secret share in order to produce a partial signature for an X-only threshold public key. This public key is derived from *u* public shares and *u* participant identifiers (denoted by the signer set *U*) and then tweaked *v* times (X-only or plain).
 
 The following elliptic curve points arise as intermediate steps when creating a signature:
 
@@ -744,17 +744,17 @@ Then we have
         = sum<sub>i=1..u</sub>(g<sub>v</sub> &middot; gacc<sub>v</sub> &middot; &lambda;<sub>i, U</sub> &middot; d<sub>i</sub>') &middot; G
 </pre>
 
-Intuitively, *gacc<sub>i</sub>* tracks accumulated sign flipping and *tacc<sub>i</sub>* tracks the accumulated tweak value after applying the first *i* individual tweaks. Additionally, *g<sub>v</sub>* indicates whether *Q<sub>v</sub>* needed to be negated to produce the final X-only result. Thus, signer *i* multiplies its secret share *d<sub>i</sub>'* with *g<sub>v</sub> &middot; gacc<sub>v</sub>* in the [*Sign*](./README.md#signing) algorithm.
+Intuitively, *gacc<sub>i</sub>* tracks accumulated sign flipping and *tacc<sub>i</sub>* tracks the accumulated tweak value after applying the first *i* individual tweaks. Additionally, *g<sub>v</sub>* indicates whether *Q<sub>v</sub>* needed to be negated to produce the final X-only result. Thus, signer *i* multiplies its secret share *d<sub>i</sub>'* with *g<sub>v</sub> &middot; gacc<sub>v</sub>* in the [*Sign*](#signing) algorithm.
 
 #### Negation of the Pubshare when Partially Verifying
 
-As explained in [Negation Of The Secret Share When Signing](./README.md#negation-of-the-secret-share-when-signing) the signer uses a possibly negated secret share
+As explained in [Negation Of The Secret Share When Signing](#negation-of-the-secret-share-when-signing) the signer uses a possibly negated secret share
 <pre>
     d = g<sub>v</sub> &middot; gacc<sub>v</sub> &middot; d' mod n
 </pre>
 when producing a partial signature to ensure that the aggregate signature will correspond to a threshold public key with even Y coordinate.
 
-The [*PartialSigVerifyInternal*](./README.md#partial-signature-verification) algorithm is supposed to check
+The [*PartialSigVerifyInternal*](#partial-signature-verification) algorithm is supposed to check
 <pre>
     s &middot; G = Re<sub>⁎</sub> + e &middot; &lambda; &middot; d &middot; G.
 </pre>
