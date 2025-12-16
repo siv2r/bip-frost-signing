@@ -250,50 +250,56 @@ The bit can be obtained with `GetPlainPubkey(tweak_ctx)[0] & 1`.
 The following specification of the algorithms has been written with a focus on clarity. As a result, the specified algorithms are not always optimal in terms of computation and space. In particular, some values are recomputed but can be cached in actual implementations (see [General Signing Flow](#general-signing-flow)).
 
 ### Notation
-<!-- TODO: remove this section (add a small note) as we're using secp256k1lab python library for scalar and group operations. Also, remove these wrapper functions from python code. -->
-<!-- Should we just use the secp256k1lab's variable, or function calls here? For defining the curve order? -->
-The following conventions are used, with constants as defined for [secp256k1](https://www.secg.org/sec2-v2.pdf). We note that adapting this proposal to other elliptic curves is not straightforward and can result in an insecure scheme.
 
-- Lowercase variables represent integers or byte arrays.
-  - The constant *p* refers to the field size, *0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFFC2F*.
-  - The constant *curve_order* refers to the curve order, *0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141*.
-- Uppercase variables refer to points on the curve with equation *y<sup>2</sup> = x<sup>3</sup> + 7* over the integers modulo *p*.
-  - *is_infinite(P)* returns whether *P* is the point at infinity.
-  - *x(P)* and *y(P)* are integers in the range *0..p-1* and refer to the X and Y coordinates of a point *P* (assuming it is not infinity).
-  - The constant *G* refers to the base point, for which *x(G) = 0x79BE667EF9DCBBAC55A06295CE870B07029BFCDB2DCE28D959F2815B16F81798* and *y(G) = 0x483ADA7726A3C4655DA4FBFC0E1108A8FD17B448A68554199C47D08FFB10D4B8*.
-  - Addition of points refers to the usual [elliptic curve group operation](https://en.wikipedia.org/wiki/Elliptic_curve#The_group_law).
-  - [Multiplication ( &middot; ) of an integer and a point](https://en.wikipedia.org/wiki/Elliptic_curve_point_multiplication) refers to the repeated application of the group operation.
-- Functions and operations:
-  - *||* refers to byte array concatenation.
-  - The function *x[i:j]*, where *x* is a byte array and *i, j ≥ 0*, returns a *(j - i)*-byte array with a copy of the *i*th byte (inclusive) to the *j*th byte (exclusive) of *x*.
-  - The function *bytes(n, x)*, where *x* is an integer, returns the n-byte encoding of *x*, most significant byte first.
-  - The constant *empty_bytestring* refers to the empty byte array. It holds that *len(empty_bytestring) = 0*.
-  - The function *xbytes(P)*, where *P* is a point for which *not is_infinite(P)*, returns *bytes(32, x(P))*.
-  - The function *len(x)* where *x* is a byte array returns the length of the array.
-  - The function *has_even_y(P)*, where *P* is a point for which *not is_infinite(P)*, returns *y(P) mod 2 == 0*.
-  - The function *with_even_y(P)*, where *P* is a point, returns *P* if *is_infinite(P)* or *has_even_y(P)*. Otherwise, *with_even_y(P)* returns *-P*.
-  - The function *cbytes(P)*, where *P* is a point for which *not is_infinite(P)*, returns *a || xbytes(P)* where *a* is a byte that is *2* if *has_even_y(P)* and *3* otherwise.
-  - The function *cbytes_ext(P)*, where *P* is a point, returns *bytes(33, 0)* if *is_infinite(P)*. Otherwise, it returns *cbytes(P)*.
-  - The function *int(x)*, where *x* is a 32-byte array, returns the 256-bit unsigned integer whose most significant byte first encoding is *x*.
-  - The function *lift_x(x)*, where *x* is an integer in range *0..2<sup>256</sup>-1*, returns the point *P* for which *x(P) = x*[^liftx-soln] and *has_even_y(P)*, or fails if *x* is greater than *p-1* or no such point exists. The function *lift_x(x)* is equivalent to the following pseudocode:
-    - Fail if *x > p-1*.
-    - Let *c = x<sup>3</sup> + 7 mod p*.
-    - Let *y' = c<sup>(p+1)/4</sup> mod p*.
-    - Fail if *c ≠ y'<sup>2</sup> mod p*.
-    - Let *y = y'* if *y' mod 2 = 0*, otherwise let *y = p - y'* .
-    - Return the unique point *P* such that *x(P) = x* and *y(P) = y*.
-  - The function *cpoint(x)*, where *x* is a 33-byte array (compressed serialization), sets *P = lift_x(int(x[1:33]))* and fails if that fails. If *x[0] = 2* it returns *P* and if *x[0] = 3* it returns *-P*. Otherwise, it fails.
-  - The function *cpoint_ext(x)*, where *x* is a 33-byte array (compressed serialization), returns the point at infinity if *x = bytes(33, 0)*. Otherwise, it returns *cpoint(x)* and fails if that fails.
-  - The function *hash<sub>tag</sub>(x)* where *tag* is a UTF-8 encoded tag name and *x* is a byte array returns the 32-byte hash *SHA256(SHA256(tag) || SHA256(tag) || x)*.
-  - The function *count(lst, x)*, where *lst* is a list of integers containing *x*, returns the number of times *x* appears in *lst*.
-  - The function *has_unique_elements(lst)*, where *lst* is a list of integers, returns True if *count(lst, x)* returns 1 for all *x* in *lst*. Otherwise returns False. The function *has_unique_elements(lst)* is equivalent to the following pseudocode:
-    - For *x* in *lst*:
-          - if *count(lst, x)* > 1:
-      - Return False
-    - Return True
-  - The function *sorted(lst)*, where *lst* is a list of integers, returns a new list of integers in ascending order.
-- Other:
-  - Tuples are written by listing the elements within parentheses and separated by commas. For example, *(2, 3, 1)* is a tuple.
+The algorithms are defined over the **[secp256k1](https://www.secg.org/sec2-v2.pdf) group and its associated scalar field**. We note that adapting this proposal to other elliptic curves is not straightforward and can result in an insecure scheme.
+
+#### Cryptographic Types and Operations
+
+We rely on the following types and conventions throughout this document:
+
+- **Types:** Group elements are represented by the object `GE`, and field elements are represented by `Scalar`.
+- **Naming:** Group elements are denoted using uppercase letters (e.g., P, Q), while scalars are denoted using lowercase letters (e.g., r, s).
+- **Arithmetic:** The operators +, -, and &middot; are overloaded depending on their operands:
+  - **Scalar Arithmetic:** When applied to two `Scalar` operands, +, -, and &middot; denote integer addition, subtraction, and multiplication modulo the group order.
+  - **Group Addition:** When applied to two `GE` operands, + denotes the [group addition operation](https://en.wikipedia.org/wiki/Elliptic_curve#The_group_law).
+  - **Scalar Multiplication:** The notation r &middot; P denotes [scalar multiplication](https://en.wikipedia.org/wiki/Elliptic_curve_point_multiplication) (the repeated group addition of element P, r times).
+
+The reference code vendors the secp256k1lab library to handle underlying arithmetic, serialization, deserialization, and auxiliary functions. To improve the readability of this specification, we utilize simplified notation aliases for the library's internal methods, as mapped below:
+
+| Notation | Description | secp256k1lab Equivalent |
+| --- | --- | --- |
+| *p* | Field element size | *FE.SIZE* |
+| *order* | Group order | *GE.ORDER* |
+| *G* | The secp256k1 generator point | *G* |
+| *is_infinity(P)* | Returns whether the element *P* is the point at infinity | *P.infinity()* |
+| *x(P)* | Returns the x-coordinate of the element *P*, in the range *[0, p−1]* | *P.x* |
+| *y(P)* | Returns the y-coordinate of the element *P*, in the range *[0, p-1]* | *P.y* |
+| *xbytes(P)* | Returns the 32-byte big-endian encoding of the x-coordinate of a non-infinity point *P* | *P.to_bytes_xonly()* |
+| *has_even_y(P)* | Returns *True* if the y-coordinate of a non-infinity point *P* is even, *False* otherwise. | *P.has_even_y()* |
+| *with_even_y(P)* | Returns the version of point *P* that has an even y-coordinate. If *P* already has an even y-coordinate (or is infinity), it is returned unchanged. Otherwise, its negation *-P* is returned | Not Implemented |
+| *cbytes(P)* | Returns 33-byte compressed serialization of a non-infinity point *P* | *P.to_bytes_compressed()* |
+| *cbytes_ext(P)* | Returns a 33-byte array of zeros if *P* is the point at infinity. Otherwise, it returns the result of *cbytes(P)* | *P.to_bytes_compressed_with_infinity()* |
+| *lift_x(x)*[^liftx-soln] | Returns the point *P* with *x* as x-coordinate and an even y-coordinate | *GE.lift_x(x)* |
+| *cpoint(b)* | Decodes a 33-byte compressed serialization *b* into a non-infinity point | *GE.from_bytes_compressed(b)* |
+| *cpoint_ext(b)* | Decodes a 33-byte compressed serialization *b* into a point. If *b* is a 33-byte array of zeros, it returns the infinity point | *GE.from_bytes_compressed_with_infinity(b)* |
+| *hash<sub>tag</sub>(x)* | Computes a 32-byte domain-separated hash of the byte array *x*. The output is *SHA256(SHA256(tag) \|\| SHA256(tag) \|\| x)*, where *tag* is UTF-8 encoded string unique to the context | Not Implemented |
+
+#### Auxiliary and Byte-string Operations
+
+The following helper functions and notation are used for operations on standard integers and byte arrays, independent of curve arithmetic. Note that like Scalars, these variables are denoted by lowercase letters (e.g., *x*, *n*); the intended type is implied by context.
+
+| Notation | Description |
+| --- | --- |
+|  *\|\|* | Refers to byte array concatenation |
+| *len(x)* | Returns the length of the byte array *x* in bytes |
+| *x[i:j]* | Returns the sub-array of the byte array *x* starting at index *i* (inclusive) and ending at *j* (exclusive). The result has length *j - i* |
+| *empty_bytestring* | A constant representing an empty byte array where length is 0 |
+| *bytes(n, x)* | Returns the big-endian *n*-byte encoding of the integer *x* |
+| *int(x)* | Interpret the 32-byte array *x* as a big-endian unsigned integer |
+| *count(x, lst)* | Returns the number of times the element *x* is occurred in the list *lst* |
+| *has_unique_elements(lst)* | Returns *True* if every element in *lst* is distinct (i.e., *count()* is 1 for all elements), otherwise *False* |
+| *sorted(lst)* | Returns a new list containing the elements of *lst* arranged in ascending order. |
+| *(a, b, ...)* | Refers to a tuple containing the listed elements |
 
 [^liftx-soln]: Given a candidate X coordinate *x* in the range *0..p-1*, there exist either exactly two or exactly zero valid Y coordinates. If no valid Y coordinate exists, then *x* is not a valid X coordinate either, i.e., no point *P* exists for which *x(P) = x*. The valid Y coordinates for a given candidate *x* are the square roots of *c = x<sup>3</sup> + 7 mod p* and they can be computed as *y = ±c<sup>(p+1)/4</sup> mod p* (see [Quadratic residue](https://en.wikipedia.org/wiki/Quadratic_residue#Prime_or_prime_power_modulus)) if they exist, which can be checked by squaring and comparing with *c*.
 
@@ -374,7 +380,7 @@ Algorithm *TweakCtxInit(thresh_pk):*
 - Input:
   - The threshold public key *thresh_pk*: a 33-byte array
 - Let *Q = cpoint(thresh_pk)*
-- Fail if *is_infinite(Q)*.
+- Fail if *is_infinity(Q)*.
 - Let *gacc = 1*
 - Let *tacc = 0*
 - Return *tweak_ctx = (Q, gacc, tacc)*.
@@ -404,7 +410,7 @@ Algorithm *ApplyTweak(tweak_ctx, tweak, is_xonly_t)*:
   - Let *g = 1*
 - Let *t = int(tweak)*; fail if *t ≥ n*
 - Let *Q' = g &middot; Q + t &middot; G*
-  - Fail if *is_infinite(Q')*
+  - Fail if *is_infinity(Q')*
 - Let *gacc' = g &middot; gacc mod n*
 - Let *tacc' = t + g &middot; tacc mod n*
 - Return *tweak_ctx' = (Q', gacc', tacc')*
@@ -488,7 +494,7 @@ Algorithm *GetSessionValues(session_ctx)*:
 - Let *R<sub>1</sub> = cpoint_ext(aggnonce[0:33]), R<sub>2</sub> = cpoint_ext(aggnonce[33:66])*; fail if that fails and blame nonce coordinator for invalid *aggnonce*.
 - Let *R' = R<sub>1</sub> + b &middot; R<sub>2</sub>*
 - Let *R' = R<sub>1</sub> + b  &middot;  R<sub>2</sub>*
-- If *is_infinite(R'):*
+- If *is_infinity(R'):*
   - Let final nonce *R = G* ([see Dealing with Infinity in Nonce Aggregation](#dealing-with-infinity-in-nonce-aggregation))
 - Else:
   - Let final nonce *R = R'*
@@ -662,14 +668,14 @@ Algorithm *ApplyPlainTweak(P, twk)*:
 
 - Inputs:
   - *P*: a point
-  - The tweak *twk*: an integer with *0 ≤ twk < curve_order*
+  - The tweak *twk*: an integer with *0 ≤ twk < h*
 - Return *P + twk &middot; G*
 
 Algorithm *ApplyXonlyTweak(P, twk)*:
 
 - Inputs:
   - *P*: a point
-  - The tweak *twk*: an integer with *0 ≤ twk < curve_order*
+  - The tweak *twk*: an integer with *0 ≤ twk < h*
 - Return *with_even_y(P) + twk &middot; G*
 
 <!-- TODO: we could simply point to BIP327 for this proof. Unless we use agnostic tweaking -->
