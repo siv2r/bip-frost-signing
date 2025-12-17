@@ -257,12 +257,15 @@ The algorithms are defined over the **[secp256k1](https://www.secg.org/sec2-v2.p
 
 We rely on the following types and conventions throughout this document:
 
-- **Types:** Group elements are represented by the object `GE`, and field elements are represented by `Scalar`.
-- **Naming:** Group elements are denoted using uppercase letters (e.g., P, Q), while scalars are denoted using lowercase letters (e.g., r, s).
+- **Types:** Points on the curve are represented by the object *GE*, and scalars are represented by *Scalar*.
+- **Naming:** Points are denoted using uppercase letters (e.g., *P*, *Q*), while scalars are denoted using lowercase letters (e.g., *r*, *s*).
+- **Mathematical Context:** Points are group elements under elliptic curve addition. The group includes all points on the secp256k1 curve plus the point at infinity (the identity element).
 - **Arithmetic:** The operators +, -, and &middot; are overloaded depending on their operands:
-  - **Scalar Arithmetic:** When applied to two `Scalar` operands, +, -, and &middot; denote integer addition, subtraction, and multiplication modulo the group order.
-  - **Group Addition:** When applied to two `GE` operands, + denotes the [group addition operation](https://en.wikipedia.org/wiki/Elliptic_curve#The_group_law).
-  - **Scalar Multiplication:** The notation r &middot; P denotes [scalar multiplication](https://en.wikipedia.org/wiki/Elliptic_curve_point_multiplication) (the repeated group addition of element P, r times).
+  - **Scalar Arithmetic:**[^implicit-mod] When applied to two *Scalar* operands, +, -, and &middot; denote integer addition, subtraction, and multiplication modulo the group order.
+  - **Point Addition:** When applied to two *GE* operands, + denotes the elliptic curve [group addition operation](https://en.wikipedia.org/wiki/Elliptic_curve#The_group_law).
+  - **Scalar Multiplication:** The notation r &middot; P denotes [scalar multiplication](https://en.wikipedia.org/wiki/Elliptic_curve_point_multiplication) (the repeated addition of point P, r times).
+
+[^implicit-mod]: The algorithms in upcoming sections, when a scalar arithmetic is performed, the *mod order* is implicit. They don't spell it out. For example, no a &middot; b mod order, they just say a &middot; b.
 
 The reference code vendors the secp256k1lab library to handle underlying arithmetic, serialization, deserialization, and auxiliary functions. To improve the readability of this specification, we utilize simplified notation aliases for the library's internal methods, as mapped below:
 
@@ -271,18 +274,27 @@ The reference code vendors the secp256k1lab library to handle underlying arithme
 | *p* | Field element size | *FE.SIZE* |
 | *order* | Group order | *GE.ORDER* |
 | *G* | The secp256k1 generator point | *G* |
-| *is_infinity(P)* | Returns whether the element *P* is the point at infinity | *P.infinity()* |
-| *x(P)* | Returns the x-coordinate of the element *P*, in the range *[0, p−1]* | *P.x* |
-| *y(P)* | Returns the y-coordinate of the element *P*, in the range *[0, p-1]* | *P.y* |
-| *xbytes(P)* | Returns the 32-byte big-endian encoding of the x-coordinate of a non-infinity point *P* | *P.to_bytes_xonly()* |
-| *has_even_y(P)* | Returns *True* if the y-coordinate of a non-infinity point *P* is even, *False* otherwise. | *P.has_even_y()* |
-| *with_even_y(P)* | Returns the version of point *P* that has an even y-coordinate. If *P* already has an even y-coordinate (or is infinity), it is returned unchanged. Otherwise, its negation *-P* is returned | Not Implemented |
-| *cbytes(P)* | Returns 33-byte compressed serialization of a non-infinity point *P* | *P.to_bytes_compressed()* |
-| *cbytes_ext(P)* | Returns a 33-byte array of zeros if *P* is the point at infinity. Otherwise, it returns the result of *cbytes(P)* | *P.to_bytes_compressed_with_infinity()* |
-| *lift_x(x)*[^liftx-soln] | Returns the point *P* with *x* as x-coordinate and an even y-coordinate | *GE.lift_x(x)* |
+| *inf_point* | The infinity point | *GE()* |
+| *is_infinity(P)* | Returns whether *P* is the point at infinity | *P.infinity()* |
+| *x(P)* | Returns the x-coordinate of a non-infinity point *P*, in the range *[0, p−1]* | *P.x* |
+| *y(P)* | Returns the y-coordinate of a non-infinity point *P*, in the range *[0, p-1]* | *P.y* |
+| *has_even_y(P)* | Returns whether *P* has an even y-coordinate | *P.has_even_y()* |
+| *with_even_y(P)* | Returns the version of point *P* that has an even y-coordinate. If *P* already has an even y-coordinate (or is infinity), it is returned unchanged. Otherwise, its negation *-P* is returned | - |
+| *xbytes(P)* | Returns the 32-byte x-only serialization of a non-infinity point *P* | *P.to_bytes_xonly()* |
+| *cbytes(P)* | Returns the 33-byte compressed serialization of a non-infinity point *P* | *P.to_bytes_compressed()* |
+| *cbytes_ext(P)* | Returns the 33-byte compressed serialization of a point *P*. If *P* is the point at infinity, it is encoded as a 33-byte array of zeros. | *P.to_bytes_compressed_with_infinity()* |
+| *lift_x(x)*[^liftx-soln] | Decodes a 32-byte x-only serialization *x* into a non-infinity point P. The resulting point always has an even y-coordinate. | *GE.lift_x(x)* |
 | *cpoint(b)* | Decodes a 33-byte compressed serialization *b* into a non-infinity point | *GE.from_bytes_compressed(b)* |
-| *cpoint_ext(b)* | Decodes a 33-byte compressed serialization *b* into a point. If *b* is a 33-byte array of zeros, it returns the infinity point | *GE.from_bytes_compressed_with_infinity(b)* |
-| *hash<sub>tag</sub>(x)* | Computes a 32-byte domain-separated hash of the byte array *x*. The output is *SHA256(SHA256(tag) \|\| SHA256(tag) \|\| x)*, where *tag* is UTF-8 encoded string unique to the context | Not Implemented |
+| *cpoint_ext(b)* | Decodes a 33-byte compressed serialization *b* into a point. If *b* is a 33-byte array of zeros, it returns the point at infinity | *GE.from_bytes_compressed_with_infinity(b)* |
+| *scalar_from_bytes_checked(b)* | Deserializes a 32-byte array *b* to a scalar, fails if the value is ≥ *order* | *Scalar.from_bytes_checked(b)* |
+| *scalar_from_bytes_nonzero_checked(b)* | Deserializes a 32-byte array *b* to a scalar, fails if the value is zero or ≥ *order* | *Scalar.from_bytes_nonzero_checked(b)* |
+| *scalar_from_bytes_wrapping(b)* | Deserializes a 32-byte array *b* to a scalar, reducing the value modulo *order* | *Scalar.from_bytes_wrapping(b)* |
+| *scalar_to_bytes(s)* | Returns the 32-byte serialization of a scalar *s* | *s.to_bytes()* |
+| *hash<sub>tag</sub>(x)* | Computes a 32-byte domain-separated hash of the byte array *x*. The output is *SHA256(SHA256(tag) \|\| SHA256(tag) \|\| x)*, where *tag* is UTF-8 encoded string unique to the context | *tagged_hash(x)* |
+| *random_bytes(n)* | Returns *n* bytes, sampled uniformly at random using a cryptographically secure pseudorandom number generator (CSPRNG) | - |
+| *xor_bytes(a, b)* | Returns byte-wise xor of *a* and *b* | *xor_bytes(a, b)* |
+
+[^liftx-soln]: Given a candidate X coordinate *x* in the range *0..p-1*, there exist either exactly two or exactly zero valid Y coordinates. If no valid Y coordinate exists, then *x* is not a valid X coordinate either, i.e., no point *P* exists for which *x(P) = x*. The valid Y coordinates for a given candidate *x* are the square roots of *c = x<sup>3</sup> + 7 mod p* and they can be computed as *y = ±c<sup>(p+1)/4</sup> mod p* (see [Quadratic residue](https://en.wikipedia.org/wiki/Quadratic_residue#Prime_or_prime_power_modulus)) if they exist, which can be checked by squaring and comparing with *c*.
 
 #### Auxiliary and Byte-string Operations
 
@@ -290,78 +302,70 @@ The following helper functions and notation are used for operations on standard 
 
 | Notation | Description |
 | --- | --- |
-|  *\|\|* | Refers to byte array concatenation |
+| *\|\|* | Refers to byte array concatenation |
 | *len(x)* | Returns the length of the byte array *x* in bytes |
 | *x[i:j]* | Returns the sub-array of the byte array *x* starting at index *i* (inclusive) and ending at *j* (exclusive). The result has length *j - i* |
 | *empty_bytestring* | A constant representing an empty byte array where length is 0 |
 | *bytes(n, x)* | Returns the big-endian *n*-byte encoding of the integer *x* |
-| *int(x)* | Interpret the 32-byte array *x* as a big-endian unsigned integer |
 | *count(x, lst)* | Returns the number of times the element *x* is occurred in the list *lst* |
-| *has_unique_elements(lst)* | Returns *True* if every element in *lst* is distinct (i.e., *count()* is 1 for all elements), otherwise *False* |
-| *sorted(lst)* | Returns a new list containing the elements of *lst* arranged in ascending order. |
+| *has_unique_elements(lst)* | Returns whether every element in *lst* is distinct (i.e., *count()* is 1 for all elements) |
+| *sorted(lst)* | Returns a new list containing the elements of *lst* arranged in ascending order |
 | *(a, b, ...)* | Refers to a tuple containing the listed elements |
 
-[^liftx-soln]: Given a candidate X coordinate *x* in the range *0..p-1*, there exist either exactly two or exactly zero valid Y coordinates. If no valid Y coordinate exists, then *x* is not a valid X coordinate either, i.e., no point *P* exists for which *x(P) = x*. The valid Y coordinates for a given candidate *x* are the square roots of *c = x<sup>3</sup> + 7 mod p* and they can be computed as *y = ±c<sup>(p+1)/4</sup> mod p* (see [Quadratic residue](https://en.wikipedia.org/wiki/Quadratic_residue#Prime_or_prime_power_modulus)) if they exist, which can be checked by squaring and comparing with *c*.
+> [!NOTE]
+> In the following algorithms, all scalar arithmetic is understood to be modulo the group order. For example, *a &middot; b* implicitly means *a &middot; b mod order*
 
 ### Key Material and Setup
-
-Internal Algorithm *PlainPubkeyGen(sk):*[^pubkey-gen-ecdsa]
-
-- Input:
-  - The secret key *sk*: a 32-byte array, freshly generated uniformly at random
-- Let *d' = int(sk)*.
-- Fail if *d' = 0* or *d' ≥ n*.
-- Return *cbytes(d' &middot; G)*.
-
-[^pubkey-gen-ecdsa]: The *PlainPubkeyGen* algorithm matches the key generation procedure traditionally used for ECDSA in Bitcoin
 
 #### Signers Context
 
 The Signers Context is a data structure consisting of the following elements:
 
 - The total number *n* of participants involved in key generation: an integer with *2 ≤ n < 2<sup>32</sup>*
-- The threshold number *t* of participants required to issue a signature: a positive integer with *t ≤ n*
-- The number *u* of participants available in the signing session with *t ≤ u ≤ n*
-- The participant identifiers *id<sub>1..u</sub>*: *u* distinct integers, each with 0 ≤ *id<sub>i</sub>* ≤ *n - 1*
-- The individual public shares *pubshare<sub>1..u</sub>*: *u* 33-byte arrays
-- The threshold public key *thresh_pk*: a 33-byte array
+- The threshold number *t* of participants required to issue a signature: an integer with *1 ≤ t ≤ n*
+- The number *u* of signing participants: an integer with *t ≤ u ≤ n*
+- The list of participant identifiers *id<sub>1..u</sub>*: *u* distinct integers, each with *0 ≤ id<sub>i</sub> ≤ n - 1*
+- The list of participant public shares *pubshare<sub>1..u</sub>*: *u* 33-byte arrays, each a compressed serialized point
+- The threshold public key *thresh_pk*: a 33-byte array, compressed serialized point
 
 We write "Let *(n, t, u, id<sub>1..u</sub>, pubshare<sub>1..u</sub>, thresh_pk) = signers_ctx*" to assign names to the elements of Signers Context.
 
 Algorithm *ValidateSignersCtx(signers_ctx)*:
 
+- Inputs:
+  - The *signers_ctx*: a [Signers Context](#signers-context) data structure
 - *(n, t, u, id<sub>1..u</sub>, pubshare<sub>1..u</sub>, thresh_pk) = signers_ctx*
-- Fail if *t* > *n*
-- Fail if not *t* ≤ *u* ≤ *n*
+- Fail if *t > n*
+- Fail if not *t ≤ u ≤ n*
 - For *i = 1 .. u*:
-  - Fail if not 0 ≤ *id<sub>i</sub>* ≤ *n - 1*
+  - Fail if not *0 ≤ id<sub>i</sub> ≤ n - 1*
   - Fail if *cpoint(pubshare<sub>i</sub>)* fails
 - Fail if not *has_unique_elements(id<sub>1..u</sub>)*
-- Fail if *DeriveThreshPubkey(id<sub>1..u</sub>, pubshare<sub>1..u</sub>)* ≠ *thresh_pk*
+- Fail if *DeriveThreshPubkey(id<sub>1..u</sub>, pubshare<sub>1..u</sub>) ≠ thresh_pk*
 - No return
 
-Internal Algorithm *DeriveThreshPubkey(id<sub>1..u</sub>,  pubshare<sub>1..u</sub>)*
+Internal Algorithm *DeriveThreshPubkey(id<sub>1..u</sub>,  pubshare<sub>1..u</sub>)*[^derive-thresh-no-validate-inputs]
 
-- *inf_point = bytes(33, 0)*
-- *Q = cpoint_ext(inf_point)*
-- For *i* = *1..u*:
-  - *P* = *cpoint(pubshare<sub>i</sub>)*; fail if that fails
-  - *&lambda;* = *DeriveInterpolatingValue(id<sub>1..u</sub>, id<sub>i</sub>)*
-  - *Q* = *Q* + *&lambda; &middot; P*
+- *Q = inf_point*
+- For *i = 1..u*:
+  - *&lambda; = DeriveInterpolatingValue(id<sub>1..u</sub>, id<sub>i</sub>)*
+  - *Q = Q + &lambda; &middot; P*
 - Return *cbytes(Q)*
+
+[^derive-thresh-no-validate-inputs]: *DeriveThreshPubkey* does not check that its inputs are in range. This validation is performed by *ValidateSignersCtx*, which is its only caller.
 
 Internal Algorithm *DeriveInterpolatingValue(id<sub>1..u</sub>, my_id):*
 
 - Fail if *my_id* not in *id<sub>1..u</sub>*
 - Fail if not *has_unique_elements(id<sub>1..u</sub>)*
-- Let *num = 1*
-- Let *denom = 1*
+- Let *num = Scalar(1)*
+- Let *deno = Scalar(1)*
 - For *i = 1..u*:
-  - If *id<sub>i</sub>* ≠ *my_id*:
-    - Let *num* = *num &middot; (id<sub>i</sub>* + 1)
-    - Let *denom* = *denom &middot; (id<sub>i</sub> - my_id)*
-- *lambda* = *num &middot; denom<sup>-1</sup> mod n*
-- Return *lambda*
+  - If *id<sub>i</sub> ≠ my_id*:
+    - Let *num = num &middot; Scalar(id<sub>i</sub> + 1)*
+    - Let *deno = deno &middot; Scalar(id<sub>i</sub> - my_id)*
+- *&lambda; = num &middot; deno<sup>-1</sup>*
+- Return *&lambda;*
 
 ### Tweaking the Threshold Public Key
 
@@ -369,29 +373,33 @@ Internal Algorithm *DeriveInterpolatingValue(id<sub>1..u</sub>, my_id):*
 
 The Tweak Context is a data structure consisting of the following elements:
 
-- The point *Q* representing the potentially tweaked threshold public key: an elliptic curve point
-- The accumulated tweak *tacc*: an integer with *0 ≤ tacc < n*
-- The value *gacc*: 1 or -1 mod n
+- The point *Q* representing the potentially tweaked threshold public key: a *GE*
+- The accumulated tweak *tacc*: a *Scalar*
+- The value *gacc*: *Scalar(1)* or *Scalar(-1)*
 
 We write "Let *(Q, gacc, tacc) = tweak_ctx*" to assign names to the elements of a Tweak Context.
 
 Algorithm *TweakCtxInit(thresh_pk):*
 
 - Input:
-  - The threshold public key *thresh_pk*: a 33-byte array
-- Let *Q = cpoint(thresh_pk)*
-- Fail if *is_infinity(Q)*.
-- Let *gacc = 1*
-- Let *tacc = 0*
-- Return *tweak_ctx = (Q, gacc, tacc)*.
+  - The threshold public key *thresh_pk*: a 33-byte array, compressed serialized point
+- Let *Q = cpoint(thresh_pk)*; fail if that fails
+- Fail if *is_infinity(Q)*
+- Let *gacc = Scalar(1)*
+- Let *tacc = Scalar(0)*
+- Return *tweak_ctx = (Q, gacc, tacc)*
 
 Algorithm *GetXonlyPubkey(tweak_ctx)*:
 
+- Inputs:
+  - The *tweak_ctx*: a [Tweak Context](#tweak-context) data structure
 - Let *(Q, _, _) = tweak_ctx*
 - Return *xbytes(Q)*
 
 Algorithm *GetPlainPubkey(tweak_ctx)*:
 
+- Inputs:
+  - The *tweak_ctx*: a [Tweak Context](#tweak-context) data structure
 - Let *(Q, _, _) = tweak_ctx*
 - Return *cbytes(Q)*
 
@@ -401,18 +409,18 @@ Algorithm *ApplyTweak(tweak_ctx, tweak, is_xonly_t)*:
 
 - Inputs:
   - The *tweak_ctx*: a [Tweak Context](#tweak-context) data structure
-  - The *tweak*: a 32-byte array
+  - The *tweak*: a 32-byte array, serialized scalar
   - The tweak mode *is_xonly_t*: a boolean
 - Let *(Q, gacc, tacc) = tweak_ctx*
-- If *is_xonly_t* and *not has_even_y(Q)*:
-  - Let *g = -1 mod n*
+- If *is_xonly_t* and not *has_even_y(Q)*:
+  - Let *g = Scalar(-1)*
 - Else:
-  - Let *g = 1*
-- Let *t = int(tweak)*; fail if *t ≥ n*
+  - Let *g = Scalar(1)*
+- Let *t = scalar_from_bytes_nonzero_checked(tweak)*; fail if that fails
 - Let *Q' = g &middot; Q + t &middot; G*
   - Fail if *is_infinity(Q')*
-- Let *gacc' = g &middot; gacc mod n*
-- Let *tacc' = t + g &middot; tacc mod n*
+- Let *gacc' = g &middot; gacc*
+- Let *tacc' = t + g &middot; tacc*
 - Return *tweak_ctx' = (Q', gacc', tacc')*
 
 ### Nonce Generation
@@ -420,14 +428,15 @@ Algorithm *ApplyTweak(tweak_ctx, tweak, is_xonly_t)*:
 Algorithm *NonceGen(secshare, pubshare, thresh_pk, m, extra_in)*:
 
 - Inputs:
-  - The participant’s secret share *secshare*: a 32-byte array (optional argument)
-  - The corresponding public share *pubshare*: a 33-byte array (optional argument)
-  - The x-only threshold public key *thresh_pk*: a 32-byte array (optional argument)
+  - The participant secret signing share *secshare*: a 32-byte array, serialized scalar (optional argument)
+  - The participant public share *pubshare*: a 33-byte array, compressed serialized point (optional argument)
+  <!-- REVIEW: why is this xonly? why not include the 33-bytes serialization? -->
+  - The x-only threshold public key *thresh_pk*: a 32-byte array, X-only serialized point (optional argument)
   - The message *m*: a byte array (optional argument)[^max-msg-len]
   - The auxiliary input *extra_in*: a byte array with *0 ≤ len(extra_in) ≤ 2<sup>32</sup>-1* (optional argument)
-- Let *rand'* be a 32-byte array freshly drawn uniformly at random
+- Let *rand' = random_bytes(32)*
 - If the optional argument *secshare* is present:
-  - Let *rand* be the byte-wise xor of *secshare* and *hash<sub>FROST/aux</sub>(rand')*[^sk-xor-rand]
+  - Let *rand = xor_bytes(secshare, hash<sub>FROST/aux</sub>(rand'))*[^sk-xor-rand]
 - Else:
   - Let *rand = rand'*
 - If the optional argument *pubshare* is not present:
@@ -440,16 +449,16 @@ Algorithm *NonceGen(secshare, pubshare, thresh_pk, m, extra_in)*:
   - Let *m_prefixed = bytes(1, 1) || bytes(8, len(m)) || m*
 - If the optional argument *extra_in* is not present:
   - Let *extra_in = empty_bytestring*
-- Let *k<sub>i</sub> = int(hash<sub>FROST/nonce</sub>(rand || bytes(1, len(pubshare)) || pubshare || bytes(1, len(thresh_pk)) || thresh_pk || m_prefixed || bytes(4, len(extra_in)) || extra_in || bytes(1, i - 1))) mod n* for *i = 1,2*
-- Fail if *k<sub>1</sub> = 0* or *k<sub>2</sub> = 0*
-- Let *R<sub>⁎,1</sub> = k<sub>1</sub> &middot; G, R<sub>⁎,2</sub> = k<sub>2</sub> &middot; G*
-- Let *pubnonce = cbytes(R<sub>,1</sub>) || cbytes(R<sub>⁎,2</sub>)*
+- Let *k<sub>i</sub> = scalar_from_bytes_wrapping(hash<sub>FROST/nonce</sub>(rand || bytes(1, len(pubshare)) || pubshare || bytes(1, len(thresh_pk)) || thresh_pk || m_prefixed || bytes(4, len(extra_in)) || extra_in || bytes(1, i - 1)))* for *i = 1,2*
+- Fail if *k<sub>1</sub> = Scalar(0)* or *k<sub>2</sub> = Scalar(0)*
+- Let *R<sub>\*,1</sub> = k<sub>1</sub> &middot; G*, *R<sub>\*,2</sub> = k<sub>2</sub> &middot; G*
+- Let *pubnonce = cbytes(R<sub>\*,1</sub>) || cbytes(R<sub>\*,2</sub>)*
 - Let *secnonce = bytes(32, k<sub>1</sub>) || bytes(32, k<sub>2</sub>)*[^secnonce-ser]
 - Return *(secnonce, pubnonce)*
 
-[^sk-xor-rand]: The random data is hashed (with a unique tag) as a precaution against situations where the randomness may be correlated with the secret signing key itself. It is xored with the secret key (rather than combined with it in a hash) to reduce the number of operations exposed to the actual secret key.
+[^sk-xor-rand]: The random data is hashed (with a unique tag) as a precaution against situations where the randomness may be correlated with the secret signing share itself. It is xored with the secret share (rather than combined with it in a hash) to reduce the number of operations exposed to the actual secret share.
 
-[^secnonce-ser]: The algorithms as specified here assume that the *secnonce* is stored as a 64-byte array using the serialization *secnonce = bytes(32, k<sub>1</sub>) || bytes(32, k<sub>2</sub>)*. The same format is used in the reference implementation and in the test vectors. However, since the *secnonce* is (obviously) not meant to be sent over the wire, compatibility between implementations is not a concern, and this method of storing the *secnonce* is merely a suggestion.    The *secnonce* is effectively a local data structure of the signer which comprises the value triple *(k<sub>1</sub>, k<sub>2</sub>)*, and implementations may choose any suitable method to carry it from *NonceGen* (first communication round) to *Sign* (second communication round). In particular, implementations may choose to hide the *secnonce* in internal state without exposing it in an API explicitly, e.g., in an effort to prevent callers from reusing a *secnonce* accidentally.
+[^secnonce-ser]: The algorithms as specified here assume that the *secnonce* is stored as a 64-byte array using the serialization *secnonce = bytes(32, k<sub>1</sub>) || bytes(32, k<sub>2</sub>)*. The same format is used in the reference implementation and in the test vectors. However, since the *secnonce* is (obviously) not meant to be sent over the wire, compatibility between implementations is not a concern, and this method of storing the *secnonce* is merely a suggestion. The *secnonce* is effectively a local data structure of the signer which comprises the value triple *(k<sub>1</sub>, k<sub>2</sub>)*, and implementations may choose any suitable method to carry it from *NonceGen* (first communication round) to *Sign* (second communication round). In particular, implementations may choose to hide the *secnonce* in internal state without exposing it in an API explicitly, e.g., in an effort to prevent callers from reusing a *secnonce* accidentally.
 
 [^max-msg-len]: In theory, the allowed message size is restricted because SHA256 accepts byte strings only up to size of 2^61-1 bytes (and because of the 8-byte length encoding).
 
@@ -458,12 +467,12 @@ Algorithm *NonceGen(secshare, pubshare, thresh_pk, m, extra_in)*:
 Algorithm *NonceAgg(pubnonce<sub>1..u</sub>, id<sub>1..u</sub>)*:
 
 - Inputs:
-  - The number of signers *u*: an integer with *t ≤ u ≤ n*
-  - The public nonces *pubnonce<sub>1..u</sub>*: *u* 66-byte arrays
-  - The participant identifiers *id<sub>1..u</sub>*: *u* integers, each with 0 ≤ *id<sub>i</sub>* < *n*
+  - The number *u* of signing participants: an integer with *t ≤ u ≤ n*
+  - The list of participant public nonces *pubnonce<sub>1..u</sub>*: *u* 66-byte array, each an output of *NonceGen*
+  - The list of participant identifiers *id<sub>1..u</sub>*: *u* integers, each with 0 ≤ *id<sub>i</sub>* < *n*
 - For *j = 1 .. 2*:
   - For *i = 1 .. u*:
-    - Let *R<sub>i,j</sub> = cpoint(pubnonce<sub>i</sub>[(j-1)*33:j*33])*; fail if that fails and blame signer *id<sub>i</sub>* for invalid *pubnonce*.
+    - Let *R<sub>i,j</sub> = cpoint(pubnonce<sub>i</sub>[(j-1)*33:j*33])*; fail if that fails and blame signer *id<sub>i</sub>* for invalid *pubnonce*
   - Let *R<sub>j</sub> = R<sub>1,j</sub> + R<sub>2,j</sub> + ... + R<sub>u,j</sub>*
 - Return *aggnonce = cbytes_ext(R<sub>1</sub>) || cbytes_ext(R<sub>2</sub>)*
 
@@ -472,10 +481,10 @@ Algorithm *NonceAgg(pubnonce<sub>1..u</sub>, id<sub>1..u</sub>)*:
 The Session Context is a data structure consisting of the following elements:
 
 - The *signers_ctx*: a [Signers Context](#signers-context) data structure
-- The aggregate public nonce of signers *aggnonce*: a 66-byte array
+- The aggregate public nonce *aggnonce*: a 66-byte array, output of *NonceAgg*
 - The number *v* of tweaks with *0 ≤ v < 2^32*
-- The tweaks *tweak<sub>1..v</sub>*: *v* 32-byte arrays
-- The tweak modes *is_xonly_t<sub>1..v</sub>* : *v* booleans
+- The list of tweaks *tweak<sub>1..v</sub>*: *v* 32-byte arrays, each a serialized scalar
+- The list of tweak modes *is_xonly_t<sub>1..v</sub>* : *v* booleans
 - The message *m*: a byte array[^max-msg-len]
 
 We write "Let *(signers_ctx, aggnonce, v, tweak<sub>1..v</sub>, is_xonly_t<sub>1..v</sub>, m) = session_ctx*" to assign names to the elements of a Session Context.
@@ -490,15 +499,17 @@ Algorithm *GetSessionValues(session_ctx)*:
   - Let *tweak_ctx<sub>i</sub> = ApplyTweak(tweak_ctx<sub>i-1</sub>, tweak<sub>i</sub>, is_xonly_t<sub>i</sub>)*; fail if that fails
 - Let *(Q, gacc, tacc) = tweak_ctx<sub>v</sub>*
 - Let *ser_ids* = *SerializeIds(id<sub>1..u</sub>)*
-- Let *b* = *int(hash<sub>FROST/noncecoef</sub>(ser_ids || aggnonce || xbytes(Q) || m)) mod n*
-- Let *R<sub>1</sub> = cpoint_ext(aggnonce[0:33]), R<sub>2</sub> = cpoint_ext(aggnonce[33:66])*; fail if that fails and blame nonce coordinator for invalid *aggnonce*.
+- Let *b* = *scalar_from_bytes_wrapping(hash<sub>FROST/noncecoef</sub>(ser_ids || aggnonce || xbytes(Q) || m))*
+- Fail if *b = Scalar(0)*
+- Let *R<sub>1</sub> = cpoint_ext(aggnonce[0:33]), R<sub>2</sub> = cpoint_ext(aggnonce[33:66])*; fail if that fails and blame the coordinator for invalid *aggnonce*.
 - Let *R' = R<sub>1</sub> + b &middot; R<sub>2</sub>*
 - Let *R' = R<sub>1</sub> + b  &middot;  R<sub>2</sub>*
 - If *is_infinity(R'):*
   - Let final nonce *R = G* ([see Dealing with Infinity in Nonce Aggregation](#dealing-with-infinity-in-nonce-aggregation))
 - Else:
   - Let final nonce *R = R'*
-- Let *e = int(hash<sub>BIP0340/challenge</sub>((xbytes(R) || xbytes(Q) || m))) mod n*
+- Let *e = scalar_from_bytes_wrapping(hash<sub>BIP0340/challenge</sub>((xbytes(R) || xbytes(Q) || m)))*
+- Fail if *e = Scalar(0)*
 - Return (Q, gacc, tacc, id<sub>1..u</sub>, pubshare<sub>1..u</sub>, b, R, e)
 
 Internal Algorithm *SerializeIds(id<sub>1..u</sub>)*:
@@ -514,41 +525,40 @@ Algorithm *Sign(secnonce, secshare, my_id, session_ctx)*:
 
 - Inputs:
   - The secret nonce *secnonce* that has never been used as input to *Sign* before: a 64-byte array[^secnonce-ser]
-  - The long-term secret share *secshare*: a 32-byte array
-  - The identifier of the signing participant *my_id*: an integer with *0 ≤ my_id ≤ n-1*
+  - The participant secret signing share *secshare*: a 32-byte array, serialized scalar
+  - The participant identifier *my_id*: an integer with *0 ≤ my_id ≤ n-1*
   - The *session_ctx*: a [Session Context](#session-context) data structure
 - Let *(Q, gacc, _, id<sub>1..u</sub>, pubshare<sub>1..u</sub>, b, R, e) = GetSessionValues(session_ctx)*; fail if that fails
-- Let *k<sub>1</sub>' = int(secnonce[0:32]), k<sub>2</sub>' = int(secnonce[32:64])*
-- Fail if *k<sub>i</sub>' = 0* or *k<sub>i</sub>' ≥ n* for *i = 1..2*
-- Let *k<sub>1</sub> = k<sub>1</sub>', k<sub>2</sub> = k<sub>2</sub>'* if *has_even_y(R)*, otherwise let *k<sub>1</sub> = n - k<sub>1</sub>', k<sub>2</sub> = n - k<sub>2</sub>'*
-- Let *d' = int(secshare)*
-- Fail if *d' = 0* or *d' ≥ n*
+- Let *k<sub>1</sub>' = scalar_from_bytes_nonzero_checked(secnonce[0:32])*; fail if that fails
+- Let *k<sub>2</sub>' = scalar_from_bytes_nonzero_checked(secnonce[32:64])*; fail if that fails
+- Let *k<sub>1</sub> = k<sub>1</sub>', k<sub>2</sub> = k<sub>2</sub>'* if *has_even_y(R)*, otherwise let *k<sub>1</sub> = -k<sub>1</sub>', k<sub>2</sub> = -k<sub>2</sub>'*
+- Let *d' = scalar_from_bytes_nonzero_checked(secshare)*; fail if that fails
 - Let *P = d' &middot; G*
 - Let *pubshare = cbytes(P)*
 - Fail if *pubshare* not in *pubshare<sub>1..u</sub>*
 - Fail if *my_id* not in *id<sub>1..u</sub>*
 - Let *&lambda; = DeriveInterpolatingValue(id<sub>1..u</sub>, my_id)*; fail if that fails
-- Let *g = 1* if *has_even_y(Q)*, otherwise let *g = -1 mod n*
-- Let *d = g &middot; gacc &middot; d' mod n* (See [*Negation of Secret Share When Signing*](#negation-of-the-secret-share-when-signing))
-- Let *s = (k<sub>1</sub> + b &middot; k<sub>2</sub> + e &middot; &lambda; &middot; d) mod n*
-- Let *psig = bytes(32, s)*
+- Let *g = Scalar(1)* if *has_even_y(Q)*, otherwise let *g = Scalar(-1)*
+- Let *d = g &middot; gacc &middot; d'* (See [*Negation of Secret Share When Signing*](#negation-of-the-secret-share-when-signing))
+- Let *s = k<sub>1</sub> + b &middot; k<sub>2</sub> + e &middot; &lambda; &middot; d*
+- Let *psig = scalar_to_bytes(s)*
 - Let *pubnonce = cbytes(k<sub>1</sub>' &middot; G) || cbytes(k<sub>2</sub>' &middot; G)*
 - If *PartialSigVerifyInternal(psig, my_id, pubnonce, pubshare, session_ctx)* (see below) returns failure, fail[^why-verify-partialsig]
 - Return partial signature *psig*
 
-[^why-verify-partialsig]: Verifying the signature before leaving the signer prevents random or adversarially provoked computation errors. This prevents publishing invalid signatures which may leak information about the secret key. It is recommended but can be omitted if the computation cost is prohibitive.
+[^why-verify-partialsig]: Verifying the signature before leaving the signer prevents random or adversarially provoked computation errors. This prevents publishing invalid signatures which may leak information about the secret share. It is recommended but can be omitted if the computation cost is prohibitive.
 
 ### Partial Signature Verification
 
 Algorithm *PartialSigVerify(psig, pubnonce<sub>1..u</sub>, signers_ctx, tweak<sub>1..v</sub>, is_xonly_t<sub>1..v</sub>, m, i)*:
 
 - Inputs:
-  - The partial signature *psig*: a 32-byte array
-  - The public nonces *pubnonce<sub>1..u</sub>*: *u* 66-byte arrays
+  - The partial signature *psig*: a 32-byte array, serialized scalar
+  - The list public nonces *pubnonce<sub>1..u</sub>*: *u* 66-byte arrays, each an output of *NonceGen*
   - The *signers_ctx*: a [Signers Context](#signers-context) data structure
   - The number *v* of tweaks with *0 ≤ v < 2^32*
-  - The tweaks *tweak<sub>1..v</sub>*: *v* 32-byte arrays
-  - The tweak modes *is_xonly_t<sub>1..v</sub>* : *v* booleans
+  - The list of tweaks *tweak<sub>1..v</sub>*: *v* 32-byte arrays, each a serialized scalar
+  - The list of tweak modes *is_xonly_t<sub>1..v</sub>* : *v* booleans
   - The message *m*: a byte array[^max-msg-len]
   - The index *i* of the signer in the list of public nonces where *0 < i ≤ u*
 - Let *(_, _, u, id<sub>1..u</sub>, pubshare<sub>1..u</sub>, thresh_pk) = signers_ctx*
@@ -560,17 +570,17 @@ Algorithm *PartialSigVerify(psig, pubnonce<sub>1..u</sub>, signers_ctx, tweak<su
 Internal Algorithm *PartialSigVerifyInternal(psig, my_id, pubnonce, pubshare, session_ctx)*:
 
 - Let *(Q, gacc, _, id<sub>1..u</sub>, pubshare<sub>1..u</sub>, b, R, e) = GetSessionValues(session_ctx)*; fail if that fails
-- Let *s = int(psig)*; fail if *s ≥ n*
+- Let *s = scalar_from_bytes_nonzero_checked(psig)*; fail if that fails
 - Fail if *pubshare* not in *pubshare<sub>1..u</sub>*
 - Fail if *my_id* not in *id<sub>1..u</sub>*
-- Let *R<sub>⁎,1</sub> = cpoint(pubnonce[0:33]), R<sub>⁎,2</sub> = cpoint(pubnonce[33:66])*
-- Let *Re<sub>⁎</sub>' = R<sub>⁎,1</sub> + b &middot; R<sub>⁎,2</sub>*
-- Let effective nonce *Re<sub>⁎</sub> = Re<sub>⁎</sub>'* if *has_even_y(R)*, otherwise let *Re<sub>⁎</sub> = -Re<sub>⁎</sub>'*
+- Let *R<sub>\*,1</sub> = cpoint(pubnonce[0:33]), R<sub>\*,2</sub> = cpoint(pubnonce[33:66])*
+- Let *Re<sub>\*</sub>' = R<sub>\*,1</sub> + b &middot; R<sub>\*,2</sub>*
+- Let effective nonce *Re<sub>\*</sub> = Re<sub>\*</sub>'* if *has_even_y(R)*, otherwise let *Re<sub>\*</sub> = -Re<sub>\*</sub>'*
 - Let *P = cpoint(pubshare)*; fail if that fails
 - Let *&lambda; = DeriveInterpolatingValue(id<sub>1..u</sub>, my_id)*[^lambda-cant-fail]
-- Let *g = 1* if *has_even_y(Q)*, otherwise let *g = -1 mod n*
-- Let *g' = g &middot; gacc mod n* (See [*Negation of Pubshare When Partially Verifying*](#negation-of-the-pubshare-when-partially-verifying))
-- Fail if *s &middot; G ≠ Re<sub>⁎</sub> + e &middot; &lambda; &middot; g' &middot; P*
+- Let *g = Scalar(1)* if *has_even_y(Q)*, otherwise let *g = Scalar(-1)*
+- Let *g' = g &middot; gacc* (See [*Negation of Pubshare When Partially Verifying*](#negation-of-the-pubshare-when-partially-verifying))
+- Fail if *s &middot; G ≠ Re<sub>\*</sub> + e &middot; &lambda; &middot; g' &middot; P*
 - Return success iff no failure occurred before reaching this point.
 
 [^lambda-cant-fail]: *DeriveInterpolatingValue(id<sub>1..u</sub>, my_id)* cannot fail when called from *PartialSigVerifyInternal* as *PartialSigVerify* picks *my_id* from *id<sub>1..u</sub>*
@@ -581,15 +591,15 @@ Algorithm *PartialSigAgg(psig<sub>1..u</sub>, id<sub>1..u</sub>, session_ctx)*:
 
 - Inputs:
   - The number *u* of signatures with *t ≤ u ≤ n*
-  - The partial signatures *psig<sub>1..u</sub>*: *u* 32-byte arrays
-  - The participant identifiers *id<sub>1..u</sub>*: *u* distinct integers, each with *0 ≤ id<sub>i</sub> ≤ n-1*
+  - The list of partial signatures *psig<sub>1..u</sub>*: *u* 32-byte arrays, each an output of *Sign*
+  - The list of participant identifiers *id<sub>1..u</sub>*: *u* distinct integers, each with *0 ≤ id<sub>i</sub> ≤ n-1*
   - The *session_ctx*: a [Session Context](#session-context) data structure
 - Let *(Q, _, tacc, _, _, _, R, e) = GetSessionValues(session_ctx)*; fail if that fails
 - For *i = 1 .. u*:
-  - Let *s<sub>i</sub> = int(psig<sub>i</sub>)*; fail if *s<sub>i</sub> ≥ n* and blame signer *id<sub>i</sub>* for invalid partial signature.
-- Let *g = 1* if *has_even_y(Q)*, otherwise let *g = -1 mod n*
-- Let *s = s<sub>1</sub> + ... + s<sub>u</sub> + e &middot; g &middot; tacc mod n*
-- Return *sig =* xbytes(R) || bytes(32, s)
+  - Let *s<sub>i</sub> = scalar_from_bytes_nonzero_checked(psig<sub>i</sub>)*; fail if that fails and blame signer *id<sub>i</sub>* for invalid partial signature.
+- Let *g = Scalar(1)* if *has_even_y(Q)*, otherwise let *g = Scalar(-1)*
+- Let *s = s<sub>1</sub> + ... + s<sub>u</sub> + e &middot; g &middot; tacc*
+- Return *sig = xbytes(R) || scalar_to_bytes(s)*
 
 ### Test Vectors & Reference Code
 
@@ -630,17 +640,17 @@ Hence, using *DeterministicSign* is only possible for the last signer to generat
 Algorithm *DeterministicSign(secshare, my_id, aggothernonce, signers, tweak<sub>1..v</sub>, is_xonly_t<sub>1..v</sub>, m, rand)*:
 
 - Inputs:
-  - The secret share *secshare*: a 32-byte array
-  - The identifier of the signing participant *my_id*: an integer with 0 *≤ my_id < n*
-  - The aggregate public nonce *aggothernonce* (see [above](#modifications-to-nonce-generation)): a 66-byte array
+  - The participant secret signing share *secshare*: a 32-byte array, serialized scalar
+  - The participant identifier *my_id*: an integer with *0 ≤ my_id ≤ n-1*
+  - The aggregate public nonce *aggothernonce* (see [above](#modifications-to-nonce-generation)): a 66-byte array, output of *NonceAgg*
   - The *signers_ctx*: a [Signers Context](#signers-context) data structure
   - The number *v* of tweaks with *0 ≤ v < 2^32*
-  - The tweaks *tweak<sub>1..v</sub>*: *v* 32-byte arrays
-  - The tweak methods *is_xonly_t<sub>1..v</sub>*: *v* booleans
+  - The list of tweaks *tweak<sub>1..v</sub>*: *v* 32-byte arrays, each a serialized scalar
+  - The list of tweak methods *is_xonly_t<sub>1..v</sub>*: *v* booleans
   - The message *m*: a byte array[^max-msg-len]
-  - The auxiliary randomness *rand*: a 32-byte array (optional argument)
+  - The auxiliary randomness *rand*: a 32-byte array, serialized scalar (optional argument)
 - If the optional argument *rand* is present:
-  - Let *secshare'* be the byte-wise xor of *secshare* and *hash<sub>FROST/aux</sub>(rand)*
+  - Let *secshare' = xor_bytes(secshare, hash<sub>FROST/aux</sub>(rand))*
 - Else:
   - Let *secshare' = secshare*
 - Let *(_, _, u, id<sub>1..u</sub>, pubshare<sub>1..u</sub>, thresh_pk) = signers_ctx*
@@ -648,16 +658,15 @@ Algorithm *DeterministicSign(secshare, my_id, aggothernonce, signers, tweak<sub>
 - For *i = 1 .. v*:
   - Let *tweak_ctx<sub>i</sub> = ApplyTweak(tweak_ctx<sub>i-1</sub>, tweak<sub>i</sub>, is_xonly_t<sub>i</sub>)*; fail if that fails
 - Let *tweaked_tpk = GetXonlyPubkey(tweak_ctx<sub>v</sub>)*
-- Let *k<sub>i</sub> = int(hash<sub>FROST/deterministic/nonce</sub>(secshare' || aggothernonce || tweaked_tpk || bytes(8, len(m)) || m || bytes(1, i - 1))) mod n* for *i = 1,2*
-- Fail if *k<sub>1</sub> = 0* or *k<sub>2</sub> = 0*
+- Let *k<sub>i</sub> = scalar_from_bytes_wrapping(hash<sub>FROST/deterministic/nonce</sub>(secshare' || aggothernonce || tweaked_tpk || bytes(8, len(m)) || m || bytes(1, i - 1)))* for *i = 1,2*
+- Fail if *k<sub>1</sub> = Scalar(0)* or *k<sub>2</sub> = Scalar(0)*
 - Let *R<sub>⁎,1</sub> = k<sub>1</sub> &middot; G, R<sub>⁎,2</sub> = k<sub>2</sub> &middot; G*
 - Let *pubnonce = cbytes(R<sub>⁎,2</sub>) || cbytes(R<sub>⁎,2</sub>)*
-- Let *d = int(secshare)*
-- Fail if *d = 0* or *d ≥ n*
-- Let *signer_pubshare = cbytes(d &middot; G)*
-- Fail if *signer_pubshare* is not present in *pubshare<sub>1..u</sub>*
-- Let *secnonce = bytes(32, k<sub>1</sub>) || bytes(32, k<sub>2</sub>)*
-- Let *aggnonce = NonceAgg((pubnonce, aggothernonce), (my_id, COORDINATOR*ID))*; fail if that fails and blame coordinator for invalid *aggothernonce*.
+- Let *d = scalar_from_bytes_nonzero_checked(secshare')*; fail if that fails
+- Let *my_pubshare = cbytes(d &middot; G)*
+- Fail if *my_pubshare* is not present in *pubshare<sub>1..u</sub>*
+- Let *secnonce = scalar_to_bytes(k<sub>1</sub>) || scalar_to_bytes(k<sub>2</sub>)*
+- Let *aggnonce = NonceAgg((pubnonce, aggothernonce), (my_id, COORDINATOR_ID))*; fail if that fails and blame coordinator for invalid *aggothernonce*.
 - Let *session_ctx = (signers_ctx, aggnonce, v, tweak<sub>1..v</sub>, is_xonly_t<sub>1..v</sub>, m)*
 
 ### Tweaking Definition
@@ -667,18 +676,18 @@ Two modes of tweaking the threshold public key are supported. They correspond to
 Algorithm *ApplyPlainTweak(P, twk)*:
 
 - Inputs:
-  - *P*: a point
-  - The tweak *twk*: an integer with *0 ≤ twk < h*
+  - *P*: a Point
+  - The tweak *twk*: a Scalar
 - Return *P + twk &middot; G*
 
 Algorithm *ApplyXonlyTweak(P, twk)*:
 
 - Inputs:
-  - *P*: a point
-  - The tweak *twk*: an integer with *0 ≤ twk < h*
+  - *P*: a Point
+  - The tweak *twk*: a Scalar
 - Return *with_even_y(P) + twk &middot; G*
 
-<!-- TODO: we could simply point to BIP327 for this proof. Unless we use agnostic tweaking -->
+<!-- REVIEW: Should we point to BIP327 for this proof? Unless we use agnostic tweaking -->
 ### Negation of the Secret Share when Signing
 
 During the signing process, the *[Sign](#signing)* algorithm might have to negate the secret share in order to produce a partial signature for an X-only threshold public key. This public key is derived from *u* public shares and *u* participant identifiers (denoted by the signer set *U*) and then tweaked *v* times (X-only or plain).
@@ -794,7 +803,7 @@ This document proposes a standard for the FROST threshold signature scheme that 
 ## Changelog
 
 - *0.3.0* (2025-12-15): Introduces the following changes:
-  - Introduce *SignersContext* and define key material compatibility with *ValidateSignerCtx*.
+  - Introduce *SignersContext* and define key material compatibility with *ValidateSignersCtx*.
   - Rewrite the signing protocol assuming a coordinator, add sequence diagram, and warn key generation protocols to output Taproot-safe *threshold public key*.
   - Remove *GetSessionInterpolatingValue*, *SessionHasSignerPubshare*, *ValidatePubshares*, and *ValidateThreshPubkey* algorithms
   - Revert back to initializing *TweakCtxInit* with threshold public key instead of *pubshares*

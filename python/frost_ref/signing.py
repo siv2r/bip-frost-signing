@@ -198,11 +198,11 @@ def nonce_gen_internal(
     # k_1 == 0 or k_2 == 0 cannot occur except with negligible probability.
     assert k_1 != 0
     assert k_2 != 0
-    R_s1 = k_1 * G
-    R_s2 = k_2 * G
-    assert not R_s1.infinity
-    assert not R_s2.infinity
-    pubnonce = R_s1.to_bytes_compressed() + R_s2.to_bytes_compressed()
+    R1_partial = k_1 * G
+    R2_partial = k_2 * G
+    assert not R1_partial.infinity
+    assert not R2_partial.infinity
+    pubnonce = R1_partial.to_bytes_compressed() + R2_partial.to_bytes_compressed()
     # use mutable `bytearray` since secnonce need to be replaced with zeros during signing.
     secnonce = bytearray(k_1.to_bytes() + k_2.to_bytes())
     return secnonce, pubnonce
@@ -286,18 +286,20 @@ def get_session_values(
     b = Scalar.from_bytes_wrapping(
         tagged_hash("FROST/noncecoef", ser_ids + aggnonce + Q.to_bytes_xonly() + msg)
     )
+    assert b != 0
     try:
-        R_1 = GE.from_bytes_compressed_with_infinity(aggnonce[0:33])
-        R_2 = GE.from_bytes_compressed_with_infinity(aggnonce[33:66])
+        R1 = GE.from_bytes_compressed_with_infinity(aggnonce[0:33])
+        R2 = GE.from_bytes_compressed_with_infinity(aggnonce[33:66])
     except ValueError:
-        # Nonce coordinator sent invalid nonces
+        # coordinator sent invalid aggnonce
         raise InvalidContributionError(None, "aggnonce")
-    R_ = R_1 + b * R_2
+    R_ = R1 + b * R2
     R = R_ if not R_.infinity else G
     assert not R.infinity
     e = Scalar.from_bytes_wrapping(
         tagged_hash("BIP0340/challenge", R.to_bytes_xonly() + Q.to_bytes_xonly() + msg)
     )
+    assert e != 0
     return (Q, gacc, tacc, ids, pubshares, b, R, e)
 
 
@@ -349,11 +351,11 @@ def sign(
     d = g * gacc * d_
     s = k_1 + b * k_2 + e * a * d
     psig = s.to_bytes()
-    R_s1 = k_1_ * G
-    R_s2 = k_2_ * G
-    assert not R_s1.infinity
-    assert not R_s2.infinity
-    pubnonce = R_s1.to_bytes_compressed() + R_s2.to_bytes_compressed()
+    R1_partial = k_1_ * G
+    R2_partial = k_2_ * G
+    assert not R1_partial.infinity
+    assert not R2_partial.infinity
+    pubnonce = R1_partial.to_bytes_compressed() + R2_partial.to_bytes_compressed()
     # Optional correctness check. The result of signing should pass signature verification.
     assert partial_sig_verify_internal(psig, my_id, pubnonce, my_pubshare, session_ctx)
     return psig
@@ -405,11 +407,11 @@ def deterministic_sign(
     assert k_1 != 0
     assert k_2 != 0
 
-    R_s1 = k_1 * G
-    R_s2 = k_2 * G
-    assert not R_s1.infinity
-    assert not R_s2.infinity
-    pubnonce = R_s1.to_bytes_compressed() + R_s2.to_bytes_compressed()
+    R1_partial = k_1 * G
+    R2_partial = k_2 * G
+    assert not R1_partial.infinity
+    assert not R2_partial.infinity
+    pubnonce = R1_partial.to_bytes_compressed() + R2_partial.to_bytes_compressed()
     secnonce = bytearray(k_1.to_bytes() + k_2.to_bytes())
     try:
         aggnonce = nonce_agg([pubnonce, aggothernonce], [my_id, COORDINATOR_ID])
@@ -454,16 +456,16 @@ def partial_sig_verify_internal(
 ) -> bool:
     (Q, gacc, _, ids, pubshares, b, R, e) = get_session_values(session_ctx)
     try:
-        s = Scalar.from_bytes_checked(psig)
+        s = Scalar.from_bytes_nonzero_checked(psig)
     except ValueError:
         return False
     if pubshare not in pubshares:
         return False
     if my_id not in ids:
         return False
-    R_s1 = GE.from_bytes_compressed(pubnonce[0:33])
-    R_s2 = GE.from_bytes_compressed(pubnonce[33:66])
-    Re_s_ = R_s1 + b * R_s2
+    R1_partial = GE.from_bytes_compressed(pubnonce[0:33])
+    R2_partial = GE.from_bytes_compressed(pubnonce[33:66])
+    Re_s_ = R1_partial + b * R2_partial
     Re_s = Re_s_ if R.has_even_y() else -Re_s_
     P = GE.from_bytes_compressed(pubshare)
     if P is None:
