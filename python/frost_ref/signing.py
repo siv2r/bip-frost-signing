@@ -47,13 +47,14 @@ class InvalidContributionError(Exception):
 def derive_interpolating_value(ids: List[int], my_id: int) -> Scalar:
     assert my_id in ids
     assert 0 <= my_id < 2**32
-    num, deno = 1, 1
+    num = Scalar(1)
+    deno = Scalar(1)
     for curr_id in ids:
         if curr_id == my_id:
             continue
-        num *= curr_id + 1
-        deno *= curr_id - my_id
-    return Scalar.from_int_wrapping(num * pow(deno, GE.ORDER - 2, GE.ORDER))
+        num *= Scalar(curr_id + 1)
+        deno *= Scalar(curr_id - my_id)
+    return num / deno
 
 
 def derive_thresh_pubkey(ids: List[int], pubshares: List[PlainPk]) -> PlainPk:
@@ -151,7 +152,7 @@ def nonce_hash(
     i: int,
     msg_prefixed: bytes,
     extra_in: bytes,
-) -> int:
+) -> bytes:
     buf = b""
     buf += rand
     buf += len(pubshare).to_bytes(1, "big")
@@ -162,7 +163,7 @@ def nonce_hash(
     buf += len(extra_in).to_bytes(4, "big")
     buf += extra_in
     buf += i.to_bytes(1, "big")
-    return int_from_bytes(tagged_hash("FROST/nonce", buf))
+    return tagged_hash("FROST/nonce", buf)
 
 
 def nonce_gen_internal(
@@ -189,10 +190,10 @@ def nonce_gen_internal(
         msg_prefixed += msg
     if extra_in is None:
         extra_in = b""
-    k_1 = Scalar.from_int_wrapping(
+    k_1 = Scalar.from_bytes_wrapping(
         nonce_hash(rand, pubshare, thresh_pk, 0, msg_prefixed, extra_in)
     )
-    k_2 = Scalar.from_int_wrapping(
+    k_2 = Scalar.from_bytes_wrapping(
         nonce_hash(rand, pubshare, thresh_pk, 1, msg_prefixed, extra_in)
     )
     # k_1 == 0 or k_2 == 0 cannot occur except with negligible probability.
@@ -364,7 +365,7 @@ def sign(
 # REVIEW should we hash the signer set (or pubshares) too? Otherwise same nonce will be generate even if the signer set changes
 def det_nonce_hash(
     secshare_: bytes, aggothernonce: bytes, tweaked_tpk: bytes, msg: bytes, i: int
-) -> int:
+) -> bytes:
     buf = b""
     buf += secshare_
     buf += aggothernonce
@@ -372,7 +373,7 @@ def det_nonce_hash(
     buf += len(msg).to_bytes(8, "big")
     buf += msg
     buf += i.to_bytes(1, "big")
-    return int_from_bytes(tagged_hash("FROST/deterministic/nonce", buf))
+    return tagged_hash("FROST/deterministic/nonce", buf)
 
 
 COORDINATOR_ID = None
@@ -397,10 +398,10 @@ def deterministic_sign(
     _, _, _, _, thresh_pk = signers_ctx
     tweaked_tpk = get_xonly_pk(thresh_pubkey_and_tweak(thresh_pk, tweaks, is_xonly))
 
-    k_1 = Scalar.from_int_wrapping(
+    k_1 = Scalar.from_bytes_wrapping(
         det_nonce_hash(secshare_, aggothernonce, tweaked_tpk, msg, 0)
     )
-    k_2 = Scalar.from_int_wrapping(
+    k_2 = Scalar.from_bytes_wrapping(
         det_nonce_hash(secshare_, aggothernonce, tweaked_tpk, msg, 1)
     )
     # k_1 == 0 or k_2 == 0 cannot occur except with negligible probability.
