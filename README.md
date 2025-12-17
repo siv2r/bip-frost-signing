@@ -307,8 +307,8 @@ The following helper functions and notation are used for operations on standard 
 | *x[i:j]* | Returns the sub-array of the byte array *x* starting at index *i* (inclusive) and ending at *j* (exclusive). The result has length *j - i* |
 | *empty_bytestring* | A constant representing an empty byte array where length is 0 |
 | *bytes(n, x)* | Returns the big-endian *n*-byte encoding of the integer *x* |
-| *count(x, lst)* | Returns the number of times the element *x* is occurred in the list *lst* |
-| *has_unique_elements(lst)* | Returns whether every element in *lst* is distinct (i.e., *count()* is 1 for all elements) |
+| *count(x, lst)* | Returns the number of times the element *x* occurs in the list *lst* |
+| *has_duplicates(lst)* | Returns *True* if any element in *lst* appears more than once, *False* otherwise |
 | *sorted(lst)* | Returns a new list containing the elements of *lst* arranged in ascending order |
 | *(a, b, ...)* | Refers to a tuple containing the listed elements |
 
@@ -340,7 +340,7 @@ Algorithm *ValidateSignersCtx(signers_ctx)*:
 - For *i = 1 .. u*:
   - Fail if not *0 ≤ id<sub>i</sub> ≤ n - 1*
   - Fail if *cpoint(pubshare<sub>i</sub>)* fails
-- Fail if not *has_unique_elements(id<sub>1..u</sub>)*
+- Fail if *has_duplicates(id<sub>1..u</sub>)*
 - Fail if *DeriveThreshPubkey(id<sub>1..u</sub>, pubshare<sub>1..u</sub>) ≠ thresh_pk*
 - No return
 
@@ -348,6 +348,7 @@ Internal Algorithm *DeriveThreshPubkey(id<sub>1..u</sub>,  pubshare<sub>1..u</su
 
 - *Q = inf_point*
 - For *i = 1..u*:
+  - *P* = cpoint(pubshare<sub>i</sub>); fail if that fails
   - *&lambda; = DeriveInterpolatingValue(id<sub>1..u</sub>, id<sub>i</sub>)*
   - *Q = Q + &lambda; &middot; P*
 - Return *cbytes(Q)*
@@ -357,7 +358,7 @@ Internal Algorithm *DeriveThreshPubkey(id<sub>1..u</sub>,  pubshare<sub>1..u</su
 Internal Algorithm *DeriveInterpolatingValue(id<sub>1..u</sub>, my_id):*
 
 - Fail if *my_id* not in *id<sub>1..u</sub>*
-- Fail if not *has_unique_elements(id<sub>1..u</sub>)*
+- Fail if *has_duplicates(id<sub>1..u</sub>)*
 - Let *num = Scalar(1)*
 - Let *deno = Scalar(1)*
 - For *i = 1..u*:
@@ -503,7 +504,6 @@ Algorithm *GetSessionValues(session_ctx)*:
 - Fail if *b = Scalar(0)*
 - Let *R<sub>1</sub> = cpoint_ext(aggnonce[0:33]), R<sub>2</sub> = cpoint_ext(aggnonce[33:66])*; fail if that fails and blame the coordinator for invalid *aggnonce*.
 - Let *R' = R<sub>1</sub> + b &middot; R<sub>2</sub>*
-- Let *R' = R<sub>1</sub> + b  &middot;  R<sub>2</sub>*
 - If *is_infinity(R'):*
   - Let final nonce *R = G* ([see Dealing with Infinity in Nonce Aggregation](#dealing-with-infinity-in-nonce-aggregation))
 - Else:
@@ -673,19 +673,19 @@ Algorithm *DeterministicSign(secshare, my_id, aggothernonce, signers, tweak<sub>
 
 Two modes of tweaking the threshold public key are supported. They correspond to the following algorithms:
 
-Algorithm *ApplyPlainTweak(P, twk)*:
+Algorithm *ApplyPlainTweak(P, t)*:
 
 - Inputs:
-  - *P*: a Point
-  - The tweak *twk*: a Scalar
-- Return *P + twk &middot; G*
+  - *P*: a point
+  - The tweak *t*: a scalar
+- Return *P + t &middot; G*
 
-Algorithm *ApplyXonlyTweak(P, twk)*:
+Algorithm *ApplyXonlyTweak(P, t)*:
 
 - Inputs:
-  - *P*: a Point
-  - The tweak *twk*: a Scalar
-- Return *with_even_y(P) + twk &middot; G*
+  - *P*: a point
+  - The tweak *t*: a scalar
+- Return *with_even_y(P) + t &middot; G*
 
 <!-- REVIEW: Should we point to BIP327 for this proof? Unless we use agnostic tweaking -->
 ### Negation of the Secret Share when Signing
@@ -802,6 +802,7 @@ This document proposes a standard for the FROST threshold signature scheme that 
 
 ## Changelog
 
+- *0.3.0* (2025-12-17): Update the Algorithms section to use secp256k1lab methods and types.
 - *0.3.0* (2025-12-15): Introduces the following changes:
   - Introduce *SignersContext* and define key material compatibility with *ValidateSignersCtx*.
   - Rewrite the signing protocol assuming a coordinator, add sequence diagram, and warn key generation protocols to output Taproot-safe *threshold public key*.

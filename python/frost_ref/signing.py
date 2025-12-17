@@ -463,12 +463,16 @@ def partial_sig_verify_internal(
         return False
     if my_id not in ids:
         return False
-    R1_partial = GE.from_bytes_compressed(pubnonce[0:33])
-    R2_partial = GE.from_bytes_compressed(pubnonce[33:66])
+    try:
+        R1_partial = GE.from_bytes_compressed(pubnonce[0:33])
+        R2_partial = GE.from_bytes_compressed(pubnonce[33:66])
+    except ValueError:
+        return False
     Re_s_ = R1_partial + b * R2_partial
     Re_s = Re_s_ if R.has_even_y() else -Re_s_
-    P = GE.from_bytes_compressed(pubshare)
-    if P is None:
+    try:
+        P = GE.from_bytes_compressed(pubshare)
+    except ValueError:
         return False
     a = derive_interpolating_value(ids, my_id)
     g = Scalar(1) if Q.has_even_y() else Scalar(-1)
