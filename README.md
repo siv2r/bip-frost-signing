@@ -269,30 +269,32 @@ We rely on the following types and conventions throughout this document:
 
 The reference code vendors the secp256k1lab library to handle underlying arithmetic, serialization, deserialization, and auxiliary functions. To improve the readability of this specification, we utilize simplified notation aliases for the library's internal methods, as mapped below:
 
-| Notation | Description | secp256k1lab Equivalent |
+<!-- markdownlint-disable MD033 -->
+| Notation | secp256k1lab | Description |
 | --- | --- | --- |
-| *p* | Field element size | *FE.SIZE* |
-| *order* | Group order | *GE.ORDER* |
-| *G* | The secp256k1 generator point | *G* |
-| *inf_point* | The infinity point | *GE()* |
-| *is_infinity(P)* | Returns whether *P* is the point at infinity | *P.infinity()* |
-| *x(P)* | Returns the x-coordinate of a non-infinity point *P*, in the range *[0, p−1]* | *P.x* |
-| *y(P)* | Returns the y-coordinate of a non-infinity point *P*, in the range *[0, p-1]* | *P.y* |
-| *has_even_y(P)* | Returns whether *P* has an even y-coordinate | *P.has_even_y()* |
-| *with_even_y(P)* | Returns the version of point *P* that has an even y-coordinate. If *P* already has an even y-coordinate (or is infinity), it is returned unchanged. Otherwise, its negation *-P* is returned | - |
-| *xbytes(P)* | Returns the 32-byte x-only serialization of a non-infinity point *P* | *P.to_bytes_xonly()* |
-| *cbytes(P)* | Returns the 33-byte compressed serialization of a non-infinity point *P* | *P.to_bytes_compressed()* |
-| *cbytes_ext(P)* | Returns the 33-byte compressed serialization of a point *P*. If *P* is the point at infinity, it is encoded as a 33-byte array of zeros. | *P.to_bytes_compressed_with_infinity()* |
-| *lift_x(x)*[^liftx-soln] | Decodes a 32-byte x-only serialization *x* into a non-infinity point P. The resulting point always has an even y-coordinate. | *GE.lift_x(x)* |
-| *cpoint(b)* | Decodes a 33-byte compressed serialization *b* into a non-infinity point | *GE.from_bytes_compressed(b)* |
-| *cpoint_ext(b)* | Decodes a 33-byte compressed serialization *b* into a point. If *b* is a 33-byte array of zeros, it returns the point at infinity | *GE.from_bytes_compressed_with_infinity(b)* |
-| *scalar_from_bytes_checked(b)* | Deserializes a 32-byte array *b* to a scalar, fails if the value is ≥ *order* | *Scalar.from_bytes_checked(b)* |
-| *scalar_from_bytes_nonzero_checked(b)* | Deserializes a 32-byte array *b* to a scalar, fails if the value is zero or ≥ *order* | *Scalar.from_bytes_nonzero_checked(b)* |
-| *scalar_from_bytes_wrapping(b)* | Deserializes a 32-byte array *b* to a scalar, reducing the value modulo *order* | *Scalar.from_bytes_wrapping(b)* |
-| *scalar_to_bytes(s)* | Returns the 32-byte serialization of a scalar *s* | *s.to_bytes()* |
-| *hash<sub>tag</sub>(x)* | Computes a 32-byte domain-separated hash of the byte array *x*. The output is *SHA256(SHA256(tag) \|\| SHA256(tag) \|\| x)*, where *tag* is UTF-8 encoded string unique to the context | *tagged_hash(x)* |
-| *random_bytes(n)* | Returns *n* bytes, sampled uniformly at random using a cryptographically secure pseudorandom number generator (CSPRNG) | - |
-| *xor_bytes(a, b)* | Returns byte-wise xor of *a* and *b* | *xor_bytes(a, b)* |
+| *p* | *FE.SIZE* | Field element size |
+| *order* | *GE.ORDER* | Group order |
+| *G* | *G* | The secp256k1 generator point |
+| *inf_point* | *GE()* | The infinity point |
+| *is_infinity(P)* | *P.infinity()* | Returns whether *P* is the point at infinity |
+| *x(P)* | *P.x* | Returns the x-coordinate of a non-infinity point *P*, in the range *[0, p−1]* |
+| *y(P)* | *P.y* | Returns the y-coordinate of a non-infinity point *P*, in the range *[0, p-1]* |
+| *has_even_y(P)* | *P.has_even_y()* | Returns whether *P* has an even y-coordinate |
+| *with_even_y(P)* | - | Returns the version of point *P* that has an even y-coordinate. If *P* already has an even y-coordinate (or is infinity), it is returned unchanged. Otherwise, its negation *-P* is returned |
+| *xbytes(P)* | *P.to_bytes_xonly()* | Returns the 32-byte x-only serialization of a non-infinity point *P* |
+| *cbytes(P)* | *P.to_bytes_compressed()* | Returns the 33-byte compressed serialization of a non-infinity point *P* |
+| *cbytes_ext(P)* | *P.to_bytes_compressed<br>_with_infinity()* | Returns the 33-byte compressed serialization of a point *P*. If *P* is the point at infinity, it is encoded as a 33-byte array of zeros. |
+| *lift_x(x)*[^liftx-soln] | *GE.lift_x(x)* | Decodes a 32-byte x-only serialization *x* into a non-infinity point P. The resulting point always has an even y-coordinate. |
+| *cpoint(b)* | *GE.from_bytes_compressed(b)* | Decodes a 33-byte compressed serialization *b* into a non-infinity point |
+| *cpoint_ext(b)* | *GE.from_bytes_compressed<br>_with_infinity(b)* | Decodes a 33-byte compressed serialization *b* into a point. If *b* is a 33-byte array of zeros, it returns the point at infinity |
+| *scalar_from_bytes_checked(b)* | *Scalar.from_bytes_checked(b)* | Deserializes a 32-byte array *b* to a scalar, fails if the value is ≥ *order* |
+| *scalar_from_bytes<br>_nonzero_checked(b)* | *Scalar.from_bytes<br>_nonzero_checked(b)* | Deserializes a 32-byte array *b* to a scalar, fails if the value is zero or ≥ *order* |
+| *scalar_from_bytes_wrapping(b)* | *Scalar.from_bytes_wrapping(b)* | Deserializes a 32-byte array *b* to a scalar, reducing the value modulo *order* |
+| *scalar_to_bytes(s)* | *s.to_bytes()* | Returns the 32-byte serialization of a scalar *s* |
+| *hash<sub>tag</sub>(x)* | *tagged_hash(x)* | Computes a 32-byte domain-separated hash of the byte array *x*. The output is *SHA256(SHA256(tag) \|\| SHA256(tag) \|\| x)*, where *tag* is UTF-8 encoded string unique to the context |
+| *random_bytes(n)* | - | Returns *n* bytes, sampled uniformly at random using a cryptographically secure pseudorandom number generator (CSPRNG) |
+| *xor_bytes(a, b)* | *xor_bytes(a, b)* | Returns byte-wise xor of *a* and *b* |
+<!-- markdownlint-enable MD033 -->
 
 [^liftx-soln]: Given a candidate X coordinate *x* in the range *0..p-1*, there exist either exactly two or exactly zero valid Y coordinates. If no valid Y coordinate exists, then *x* is not a valid X coordinate either, i.e., no point *P* exists for which *x(P) = x*. The valid Y coordinates for a given candidate *x* are the square roots of *c = x<sup>3</sup> + 7 mod p* and they can be computed as *y = ±c<sup>(p+1)/4</sup> mod p* (see [Quadratic residue](https://en.wikipedia.org/wiki/Quadratic_residue#Prime_or_prime_power_modulus)) if they exist, which can be checked by squaring and comparing with *c*.
 
