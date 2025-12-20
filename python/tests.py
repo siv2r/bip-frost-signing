@@ -158,18 +158,18 @@ def test_sign_verify_vectors():
 
     n = test_data["n"]
     t = test_data["t"]
-    secshare_p1 = bytes.fromhex(test_data["secshare_p1"])
+    secshare_p0 = bytes.fromhex(test_data["secshare_p0"])
     ids = test_data["identifiers"]
     pubshares = fromhex_all(test_data["pubshares"])
     thresh_pk = bytes.fromhex(test_data["threshold_pubkey"])
-    # The public key corresponding to the first participant (secshare_p1) is at index 0
-    assert pubshares[0] == PlainPk(pubkey_gen_plain(secshare_p1))
+    # The public key corresponding to the first participant (secshare_p0) is at index 0
+    assert pubshares[0] == PlainPk(pubkey_gen_plain(secshare_p0))
 
-    secnonces_p1 = fromhex_all(test_data["secnonces_p1"])
+    secnonces_p0 = fromhex_all(test_data["secnonces_p0"])
     pubnonces = fromhex_all(test_data["pubnonces"])
-    # The public nonce corresponding to first participant (secnonce_p1[0]) is at index 0
-    k_1 = int_from_bytes(secnonces_p1[0][0:32])
-    k_2 = int_from_bytes(secnonces_p1[0][32:64])
+    # The public nonce corresponding to first participant (secnonce_p0[0]) is at index 0
+    k_1 = int_from_bytes(secnonces_p0[0][0:32])
+    k_2 = int_from_bytes(secnonces_p0[0][32:64])
     R_s1 = k_1 * G
     R_s2 = k_2 * G
     assert not R_s1.infinity and not R_s2.infinity
@@ -200,8 +200,8 @@ def test_sign_verify_vectors():
         # WARNING: An actual implementation should _not_ copy the secnonce.
         # Reusing the secnonce, as we do here for testing purposes, can leak the
         # secret key.
-        secnonce_tmp = bytearray(secnonces_p1[0])
-        assert sign(secnonce_tmp, secshare_p1, my_id, session_ctx) == expected
+        secnonce_tmp = bytearray(secnonces_p0[0])
+        assert sign(secnonce_tmp, secshare_p0, my_id, session_ctx) == expected
         assert partial_sig_verify(
             expected, pubnonces_tmp, signers_tmp, [], [], msg, signer_index
         )
@@ -216,13 +216,13 @@ def test_sign_verify_vectors():
         my_id = (
             test_case["signer_id"] if signer_index is None else ids_tmp[signer_index]
         )
-        secnonce_tmp = bytearray(secnonces_p1[test_case["secnonce_index"]])
+        secnonce_tmp = bytearray(secnonces_p0[test_case["secnonce_index"]])
 
         signers_tmp = SignersContext(n, t, ids_tmp, pubshares_tmp, thresh_pk)
         session_ctx = SessionContext(aggnonce_tmp, signers_tmp, [], [], msg)
         assert_raises(
             exception,
-            lambda: sign(secnonce_tmp, secshare_p1, my_id, session_ctx),
+            lambda: sign(secnonce_tmp, secshare_p0, my_id, session_ctx),
             except_fn,
         )
 
@@ -268,18 +268,18 @@ def test_tweak_vectors():
 
     n = test_data["n"]
     t = test_data["t"]
-    secshare_p1 = bytes.fromhex(test_data["secshare_p1"])
+    secshare_p0 = bytes.fromhex(test_data["secshare_p0"])
     ids = test_data["identifiers"]
     pubshares = fromhex_all(test_data["pubshares"])
-    # The public key corresponding to the first participant (secshare_p1) is at index 0
-    assert pubshares[0] == PlainPk(pubkey_gen_plain(secshare_p1))
+    # The public key corresponding to the first participant (secshare_p0) is at index 0
+    assert pubshares[0] == PlainPk(pubkey_gen_plain(secshare_p0))
     thresh_pk = bytes.fromhex(test_data["threshold_pubkey"])
 
-    secnonce_p1 = bytearray(bytes.fromhex(test_data["secnonce_p1"]))
+    secnonce_p0 = bytearray(bytes.fromhex(test_data["secnonce_p0"]))
     pubnonces = fromhex_all(test_data["pubnonces"])
-    # The public nonce corresponding to first participant (secnonce_p1[0]) is at index 0
-    k_1 = Scalar.from_bytes_checked(secnonce_p1[0:32])
-    k_2 = Scalar.from_bytes_checked(secnonce_p1[32:64])
+    # The public nonce corresponding to first participant (secnonce_p0[0]) is at index 0
+    k_1 = Scalar.from_bytes_checked(secnonce_p0[0:32])
+    k_2 = Scalar.from_bytes_checked(secnonce_p0[32:64])
     R_s1 = k_1 * G
     R_s2 = k_2 * G
     assert not R_s1.infinity and not R_s2.infinity
@@ -293,7 +293,7 @@ def test_tweak_vectors():
     valid_test_cases = test_data["valid_test_cases"]
     error_test_cases = test_data["error_test_cases"]
 
-    for test_case in valid_test_cases:
+    for i, test_case in enumerate(valid_test_cases):
         ids_tmp = [ids[i] for i in test_case["id_indices"]]
         pubshares_tmp = [PlainPk(pubshares[i]) for i in test_case["pubshare_indices"]]
         pubnonces_tmp = [pubnonces[i] for i in test_case["pubnonce_indices"]]
@@ -313,8 +313,8 @@ def test_tweak_vectors():
         # WARNING: An actual implementation should _not_ copy the secnonce.
         # Reusing the secnonce, as we do here for testing purposes, can leak the
         # secret key.
-        secnonce_tmp = bytearray(secnonce_p1)
-        assert sign(secnonce_tmp, secshare_p1, my_id, session_ctx) == expected
+        secnonce_tmp = bytearray(secnonce_p0)
+        assert sign(secnonce_tmp, secshare_p0, my_id, session_ctx) == expected
         assert partial_sig_verify(
             expected,
             pubnonces_tmp,
@@ -341,7 +341,7 @@ def test_tweak_vectors():
         )
         assert_raises(
             exception,
-            lambda: sign(secnonce_p1, secshare_p1, my_id, session_ctx),
+            lambda: sign(secnonce_p0, secshare_p0, my_id, session_ctx),
             except_fn,
         )
 
@@ -352,11 +352,11 @@ def test_det_sign_vectors():
 
     n = test_data["n"]
     t = test_data["t"]
-    secshare_p1 = bytes.fromhex(test_data["secshare_p1"])
+    secshare_p0 = bytes.fromhex(test_data["secshare_p0"])
     ids = test_data["identifiers"]
     pubshares = fromhex_all(test_data["pubshares"])
-    # The public key corresponding to the first participant (secshare_p1) is at index 0
-    assert pubshares[0] == PlainPk(pubkey_gen_plain(secshare_p1))
+    # The public key corresponding to the first participant (secshare_p0) is at index 0
+    assert pubshares[0] == PlainPk(pubkey_gen_plain(secshare_p0))
 
     thresh_pk = bytes.fromhex(test_data["threshold_pubkey"])
     msgs = fromhex_all(test_data["msgs"])
@@ -380,7 +380,7 @@ def test_det_sign_vectors():
 
         signers_tmp = SignersContext(n, t, ids_tmp, pubshares_tmp, thresh_pk)
         pubnonce, psig = deterministic_sign(
-            secshare_p1,
+            secshare_p0,
             my_id,
             aggothernonce,
             signers_tmp,
@@ -419,7 +419,7 @@ def test_det_sign_vectors():
 
         def try_fn():
             return deterministic_sign(
-                secshare_p1,
+                secshare_p0,
                 my_id,
                 aggothernonce,
                 signers_tmp,
@@ -664,7 +664,6 @@ def run_test(test_name, test_func):
 if __name__ == "__main__":
     run_test("test_nonce_gen_vectors", test_nonce_gen_vectors)
     run_test("test_nonce_agg_vectors", test_nonce_agg_vectors)
-    test_sign_verify_vectors()
     run_test("test_sign_verify_vectors", test_sign_verify_vectors)
     run_test("test_tweak_vectors", test_tweak_vectors)
     run_test("test_det_sign_vectors", test_det_sign_vectors)
