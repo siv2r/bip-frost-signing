@@ -48,7 +48,7 @@
                 "id": 1,
                 "contrib": "pubnonce"
             },
-            "comment": "Public nonce from signer 2 is invalid due wrong tag, 0x04, in the first half"
+            "comment": "Public nonce from signer 1 is invalid due wrong tag, 0x04, in the first half"
         },
         {
             "pubnonce_indices": [
@@ -64,7 +64,7 @@
                 "id": 0,
                 "contrib": "pubnonce"
             },
-            "comment": "Public nonce from signer 1 is invalid because the second half does not correspond to an X coordinate"
+            "comment": "Public nonce from signer 0 is invalid because the second half does not correspond to an X coordinate"
         },
         {
             "pubnonce_indices": [
@@ -80,7 +80,7 @@
                 "id": 0,
                 "contrib": "pubnonce"
             },
-            "comment": "Public nonce from signer 1 is invalid because second half exceeds field size"
+            "comment": "Public nonce from signer 0 is invalid because second half exceeds field size"
         }
     ]
 }

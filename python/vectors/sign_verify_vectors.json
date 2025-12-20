@@ -1,41 +1,34 @@
 {
-    "n": 5,
-    "t": 3,
-    "threshold_pubkey": "03F9186397E61022663935B3FDFF7880A9F0EC288D8B054DF6AC2BC5777B5FBBB1",
-    "secshare_p1": "6FF0F78C1F0E76C4AB67C1B32E0B4B1652120B794AC1AE7EC3992DE06092B566",
+    "n": 3,
+    "t": 2,
+    "threshold_pubkey": "03B02645D79ABFC494338139410F9D7F0A72BE86C952D6BDE1A66447B8A8D69237",
+    "secshare_p0": "CCD2EF4559DB05635091D80189AB3544D6668EFC0500A8D5FF51A1F4D32CC1F1",
     "identifiers": [
         0,
         1,
-        2,
-        3,
-        4
+        2
     ],
     "pubshares": [
-        "0260C5B10BAF5D471F0D09ED9BDED80B23CEFE0C9DC0F26AD1A0453A6FDFF663E2",
-        "028B96AE32F17C49C6111D6BF7D17E89428734D6DED0E31C480F2BABD263DDFA28",
-        "029456C5A981CF9DA72BF7AF0F82C44A343DC08419911286E975D16697D93B9A61",
-        "030CAA62081616E0B833FBD39A1058C1A11A23FB8307127D486914E8BF2E5935BB",
-        "03E483B7D41072D6E883447EB85617A086290EB67B40C89F3A787CF1B66005F488",
+        "022B02109FBCFB4DA3F53C7393B22E72A2A51C4AFBF0C01AAF44F73843CFB4B74B",
+        "02EC6444271D791A1DA95300329DB2268611B9C60E193DABFDEE0AA816AE512583",
+        "03113F810F612567D9552F46AF9BDA21A67D52060F95BD4A723F4B60B1820D3676",
         "020000000000000000000000000000000000000000000000000000000000000007"
     ],
-    "secnonces_p1": [
-        "05AB25AF7D0F8EE4231470B5CF9DCBE7069E007FDDBD7053D5436CED37926CCBDE406FFC1E658CB2B870296D5913305AABC90CD56AEC7066051EB3A63C025C17",
+    "secnonces_p0": [
+        "DB26CEB14C1CF111274574860A4667E3305B9C8D47E48861562445CF2E7D2277D17751A6F6972FD753CF2B2784CF5193ADBEA4DA066526D0A9984E9C1C07179F",
         "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
     ],
     "pubnonces": [
-        "036012764FC86D835893E0E802FD74BF01B80F35E10288CAE866B2ADF3E218017502E128AB0D2112DFFC4852EBF5F62F69770EAD9CB777229FA27C4167F589CCCF63",
-        "03DB57751EA90F2DFCDF684CE3C47F2CD33E54FB821347827844AE04913F36AB8D02B38858FB1D03A92D1D734DF0445FD8603F861984EC61B368AAE29FE862678700",
-        "028B115FE43676F134793CD556EFFBE6995C53F8CC4EAFA139008CF0337D9F39D6030D4B01F9BBF4B603C08ECB78C3207E4B43A10273FD82267A40407C864B314F13",
-        "03AF20782F4A855E5671A0ED5E845EC9D4CA6DC662423C3B2AE098FE315086ED1E0387542FE72832136823C2206385C1935355F1CECF7AA92AA23E33E3B9C43B0C55",
-        "022525FD3CA2F5C36A5298BFC4E4175620E3DF5C6098337CD484A872F335C43B48037C254E70008552F26D59F4914E0612346E7B6879B84BE46ADA9A7F2862EE9159",
+        "0330935948101543C50AF2FA7A7A4F7073CEB73290CA141497EF06E0269363162D0358785EB5CD7C1626CAB55C59B484E1B3147FA4EB919224ECB04BAB1271022A5C",
+        "0244D225137BC9390069C9D4D230B6D0942A1A3D72678B638B81F3416B6FEA719C02B1C7E637FD51FE2BC2C91CB6ACA0EA6A8BB30A33A0589D369687EAA33BFC5FA8",
+        "0332DAA54E451217D6F14747B72634D1E9E21B247C8E92397ABFEE296BD714772403FE1674C2B2B8076D641CEC4B2E6DF054C3D60AA77352A55233B40AC12046C312",
         "0200000000000000000000000000000000000000000000000000000000000000090287BF891D2A6DEAEBADC909352AA9405D1428C15F4B75F04DAE642A95C2548480",
-        "03C2193CFB6E402E369064FBAC870DAFABCCF6D7096C3CFE0DE30417A9368E4C33029CAF67D6AF4D6A7BBCC6FF86A8773DCE31FA0D7D2AE757C0C90E29729B84BA06"
+        "032AAC6A4960DE35FC36D8E2DC06255C5CB7FD28250DFD84EBF1AC943B1EA22C3503178AD06BB0490BAD857446FEF55C15FD9FF4329F4EE2F23CA8B7CA0598014910"
     ],
     "aggnonces": [
-        "038ECCE47C2DEBB46EBD7C04DE2580237AE4C37E565BC10253D925F25257F4F1E903BF7AEBEDAAAEA115592133BE23F991D97DD843F06875CFB678239BFAE407F668",
-        "021EC32479E77C7FBB505FE86AF25E48D5CB887BE51567CF5C270781FBBBD78C6F02CDFAE98BEB8951A47ECBB10AF98131D999ABF7EA70ECC6E97BDE9CD5CD261408",
-        "0218CA838EE6DE2703318E7399F23A1EE6DE41461DB51D7A8EEB626E66FC5D64270294D9CFC121378285C93B1BE040B24F78A4D33810C1889DB8D4CA19C453F28C73",
-        "02FEC5F20C003199EE392537E83AEEA5EA8A1C565C71959B844990A3C079FCCD640334C5B98145FDC9444C322220F53D7A314D4962450B3BBA68916C3FFB2824740E",
+        "022AAC6A4960DE35FC36D8E2DC06255C5CB7FD28250DFD84EBF1AC943B1EA22C3502178AD06BB0490BAD857446FEF55C15FD9FF4329F4EE2F23CA8B7CA0598014910",
+        "020C800916841C67A0261D280120246C2DB4DB930FD6963633DC9B59F026B0EA4B03E5178080C6B5F53C3EE78297D518969CF21DDD7FDAF7C861F7BDD2C48532A6CA",
+        "0282E58B733AB1B74D1C54B960D668E4298C3EF9F406D44249FB30C403568A1B14039B38604D0FD33E07C3EB81BBDAE39A38A82A1D9E325112A24F0F5480582C9CEE",
         "000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
         "048465FCF0BBDBCF443AABCCE533D42B4B5A10966AC09A49655E8C42DAAB8FCD61037496A3CC86926D452CAFCFD55D25972CA1675D549310DE296BFF42F72EEEA8C9",
         "028465FCF0BBDBCF443AABCCE533D42B4B5A10966AC09A49655E8C42DAAB8FCD61020000000000000000000000000000000000000000000000000000000000000009",
@@ -50,120 +43,80 @@
         {
             "id_indices": [
                 0,
-                1,
-                2
+                1
             ],
             "pubshare_indices": [
                 0,
-                1,
-                2
+                1
             ],
             "pubnonce_indices": [
                 0,
-                1,
-                2
+                1
             ],
             "aggnonce_index": 0,
             "msg_index": 0,
             "signer_index": 0,
-            "expected": "B45B8C1195CBFC1904D09BE6E58DDB9A7DFC4100A8DEC40F9E5B80347FA6E1F3",
+            "expected": "79DEFC679CF419BA7C48AF8F9526B5D510AAA4115B04DECDDE10CE9E06105334",
             "comment": "Signing with minimum number of participants"
         },
         {
             "id_indices": [
                 1,
-                0,
-                2
+                0
             ],
             "pubshare_indices": [
                 1,
-                0,
-                2
+                0
             ],
             "pubnonce_indices": [
                 1,
-                0,
-                2
+                0
             ],
             "aggnonce_index": 0,
             "msg_index": 0,
             "signer_index": 1,
-            "expected": "B45B8C1195CBFC1904D09BE6E58DDB9A7DFC4100A8DEC40F9E5B80347FA6E1F3",
+            "expected": "79DEFC679CF419BA7C48AF8F9526B5D510AAA4115B04DECDDE10CE9E06105334",
             "comment": "Partial-signature doesn't change if the order of signers set changes (without changing secnonces)"
         },
         {
             "id_indices": [
                 0,
-                3,
-                4
+                2
             ],
             "pubshare_indices": [
                 0,
-                3,
-                4
+                2
             ],
             "pubnonce_indices": [
                 0,
-                3,
-                4
+                2
             ],
             "aggnonce_index": 1,
             "msg_index": 0,
             "signer_index": 0,
-            "expected": "3411850FF9714CA76FB447F8A1AC65AB629CEFF559A37316925A3C2FE2E159CA",
+            "expected": "39C84732FA3A9EBAF568AB269A18632E8CD62EEE3FE39F0799071FEFB71CAFC2",
             "comment": "Partial-signature changes if the members of signers set changes"
         },
         {
             "id_indices": [
                 0,
                 1,
-                2,
-                3
+                2
             ],
             "pubshare_indices": [
                 0,
                 1,
-                2,
-                3
+                2
             ],
             "pubnonce_indices": [
                 0,
                 1,
-                2,
-                3
+                2
             ],
             "aggnonce_index": 2,
             "msg_index": 0,
             "signer_index": 0,
-            "expected": "C4CD316B07118DC18F82D251F0055643A938AF61325DE8CC1BD2093DE8083365",
-            "comment": "Signing with t < number of participants < n"
-        },
-        {
-            "id_indices": [
-                0,
-                1,
-                2,
-                3,
-                4
-            ],
-            "pubshare_indices": [
-                0,
-                1,
-                2,
-                3,
-                4
-            ],
-            "pubnonce_indices": [
-                0,
-                1,
-                2,
-                3,
-                4
-            ],
-            "aggnonce_index": 3,
-            "msg_index": 0,
-            "signer_index": 0,
-            "expected": "4B0BBE3946CEB999546213FA4CEBF328C48265822C45A11A84E0C9BB15990292",
+            "expected": "304337D1F0BEF7F3FAFB8F5D165F77D6F511CEA3E0375F9B7EF5579A2314004E",
             "comment": "Signing with max number of participants"
         },
         {
@@ -180,70 +133,62 @@
             "pubnonce_indices": [
                 0,
                 1,
-                6
+                4
             ],
-            "aggnonce_index": 4,
+            "aggnonce_index": 3,
             "msg_index": 0,
             "signer_index": 0,
-            "expected": "06512BBB8AA35AA2916D3A181562FB1876BF21A3B32E81A7C208DEBAAB61D0A8",
+            "expected": "F6A823D47F626D7106D65F7F83AAB8B4C4E2B7DC1CC036A66C747786659FED8D",
             "comment": "Both halves of aggregate nonce correspond to point at infinity"
         },
         {
             "id_indices": [
                 0,
-                1,
-                2
+                1
             ],
             "pubshare_indices": [
                 0,
-                1,
-                2
+                1
             ],
             "pubnonce_indices": [
                 0,
-                1,
-                2
+                1
             ],
             "aggnonce_index": 0,
             "msg_index": 1,
             "signer_index": 0,
-            "expected": "583031C55BA1A0FB625DA9D6081AC88FB03EF181C43025AE6975F48825E73559",
+            "expected": "679F7A5282BC979090AA7167499C27F64BDB562A791AE60DEBAF40F01E7CED40",
             "comment": "Empty message"
         },
         {
             "id_indices": [
                 0,
-                1,
-                2
+                1
             ],
             "pubshare_indices": [
                 0,
-                1,
-                2
+                1
             ],
             "pubnonce_indices": [
                 0,
-                1,
-                2
+                1
             ],
             "aggnonce_index": 0,
             "msg_index": 2,
             "signer_index": 0,
-            "expected": "195084A23012D70E44D20169B5ED8694B9DEC24B1E4AF1178F814D1FE3C76E91",
+            "expected": "FBE3883C9C8D3CA5010A649689CBB54BC429A58CBD4CD2B3347629558536EBD6",
             "comment": "Message longer than 32 bytes (38-byte msg)"
         }
     ],
     "sign_error_test_cases": [
         {
             "id_indices": [
-                3,
-                1,
-                2
+                2,
+                1
             ],
             "pubshare_indices": [
                 0,
-                1,
-                2
+                1
             ],
             "aggnonce_index": 0,
             "msg_index": 0,
@@ -260,13 +205,11 @@
             "id_indices": [
                 0,
                 1,
-                2,
                 1
             ],
             "pubshare_indices": [
                 0,
                 1,
-                2,
                 1
             ],
             "aggnonce_index": 0,
@@ -282,13 +225,11 @@
         {
             "id_indices": [
                 0,
-                1,
-                2
+                1
             ],
             "pubshare_indices": [
-                3,
-                1,
-                2
+                2,
+                1
             ],
             "aggnonce_index": 0,
             "msg_index": 0,
@@ -323,13 +264,11 @@
         {
             "id_indices": [
                 0,
-                1,
-                2
+                1
             ],
             "pubshare_indices": [
                 0,
-                1,
-                5
+                3
             ],
             "aggnonce_index": 0,
             "msg_index": 0,
@@ -337,23 +276,21 @@
             "secnonce_index": 0,
             "error": {
                 "type": "InvalidContributionError",
-                "id": 2,
+                "id": 1,
                 "contrib": "pubshare"
             },
-            "comment": "Signer 3 provided an invalid participant public share"
+            "comment": "Signer 1 provided an invalid participant public share"
         },
         {
             "id_indices": [
                 0,
-                1,
-                2
+                1
             ],
             "pubshare_indices": [
                 0,
-                1,
-                2
+                1
             ],
-            "aggnonce_index": 5,
+            "aggnonce_index": 4,
             "msg_index": 0,
             "signer_index": 0,
             "secnonce_index": 0,
@@ -367,15 +304,13 @@
         {
             "id_indices": [
                 0,
-                1,
-                2
+                1
             ],
             "pubshare_indices": [
                 0,
-                1,
-                2
+                1
             ],
-            "aggnonce_index": 6,
+            "aggnonce_index": 5,
             "msg_index": 0,
             "signer_index": 0,
             "secnonce_index": 0,
@@ -389,15 +324,13 @@
         {
             "id_indices": [
                 0,
-                1,
-                2
+                1
             ],
             "pubshare_indices": [
                 0,
-                1,
-                2
+                1
             ],
-            "aggnonce_index": 7,
+            "aggnonce_index": 6,
             "msg_index": 0,
             "signer_index": 0,
             "secnonce_index": 0,
@@ -411,13 +344,11 @@
         {
             "id_indices": [
                 0,
-                1,
-                2
+                1
             ],
             "pubshare_indices": [
                 0,
-                1,
-                2
+                1
             ],
             "aggnonce_index": 0,
             "msg_index": 0,
@@ -432,63 +363,54 @@
     ],
     "verify_fail_test_cases": [
         {
-            "psig": "4BA473EE6A3403E6FB2F64191A7224643CB29BE60669DC2C2176DE58508F5F4E",
+            "psig": "86210398630BE64583B750706AD94A29AA0438D55443C16DE1C18FEECA25EE0D",
             "id_indices": [
                 0,
-                1,
-                2
+                1
             ],
             "pubshare_indices": [
                 0,
-                1,
-                2
+                1
             ],
             "pubnonce_indices": [
                 0,
-                1,
-                2
+                1
             ],
             "msg_index": 0,
             "signer_index": 0,
             "comment": "Wrong signature (which is equal to the negation of valid signature)"
         },
         {
-            "psig": "B45B8C1195CBFC1904D09BE6E58DDB9A7DFC4100A8DEC40F9E5B80347FA6E1F3",
+            "psig": "79DEFC679CF419BA7C48AF8F9526B5D510AAA4115B04DECDDE10CE9E06105334",
             "id_indices": [
                 0,
-                1,
-                2
+                1
             ],
             "pubshare_indices": [
                 0,
-                1,
-                2
+                1
             ],
             "pubnonce_indices": [
                 0,
-                1,
-                2
+                1
             ],
             "msg_index": 0,
             "signer_index": 1,
             "comment": "Wrong signer index"
         },
         {
-            "psig": "B45B8C1195CBFC1904D09BE6E58DDB9A7DFC4100A8DEC40F9E5B80347FA6E1F3",
+            "psig": "79DEFC679CF419BA7C48AF8F9526B5D510AAA4115B04DECDDE10CE9E06105334",
             "id_indices": [
                 0,
-                1,
-                2
+                1
             ],
             "pubshare_indices": [
-                3,
-                1,
-                2
+                2,
+                1
             ],
             "pubnonce_indices": [
                 0,
-                1,
-                2
+                1
             ],
             "msg_index": 0,
             "signer_index": 0,
@@ -498,18 +420,15 @@
             "psig": "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141",
             "id_indices": [
                 0,
-                1,
-                2
+                1
             ],
             "pubshare_indices": [
                 0,
-                1,
-                2
+                1
             ],
             "pubnonce_indices": [
                 0,
-                1,
-                2
+                1
             ],
             "msg_index": 0,
             "signer_index": 0,
@@ -518,21 +437,18 @@
     ],
     "verify_error_test_cases": [
         {
-            "psig": "B45B8C1195CBFC1904D09BE6E58DDB9A7DFC4100A8DEC40F9E5B80347FA6E1F3",
+            "psig": "79DEFC679CF419BA7C48AF8F9526B5D510AAA4115B04DECDDE10CE9E06105334",
             "id_indices": [
                 0,
-                1,
-                2
+                1
             ],
             "pubshare_indices": [
                 0,
-                1,
-                2
+                1
             ],
             "pubnonce_indices": [
-                5,
-                1,
-                2
+                3,
+                1
             ],
             "msg_index": 0,
             "signer_index": 0,
@@ -544,21 +460,18 @@
             "comment": "Invalid pubnonce"
         },
         {
-            "psig": "B45B8C1195CBFC1904D09BE6E58DDB9A7DFC4100A8DEC40F9E5B80347FA6E1F3",
+            "psig": "79DEFC679CF419BA7C48AF8F9526B5D510AAA4115B04DECDDE10CE9E06105334",
             "id_indices": [
                 0,
-                1,
-                2
+                1
             ],
             "pubshare_indices": [
-                5,
-                1,
-                2
+                3,
+                1
             ],
             "pubnonce_indices": [
                 0,
-                1,
-                2
+                1
             ],
             "msg_index": 0,
             "signer_index": 0,
@@ -570,22 +483,19 @@
             "comment": "Invalid pubshare"
         },
         {
-            "psig": "B45B8C1195CBFC1904D09BE6E58DDB9A7DFC4100A8DEC40F9E5B80347FA6E1F3",
+            "psig": "79DEFC679CF419BA7C48AF8F9526B5D510AAA4115B04DECDDE10CE9E06105334",
             "id_indices": [
                 0,
-                1,
-                2
+                1
             ],
             "pubshare_indices": [
                 0,
-                1,
-                2
+                1
             ],
             "pubnonce_indices": [
                 0,
                 1,
-                2,
-                3
+                2
             ],
             "msg_index": 0,
             "signer_index": 0,

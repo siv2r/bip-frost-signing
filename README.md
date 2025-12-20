@@ -804,7 +804,8 @@ This document proposes a standard for the FROST threshold signature scheme that 
 
 ## Changelog
 
-- *0.3.0* (2025-12-17): Update the Algorithms section to use secp256k1lab methods and types.
+- *0.3.2* (2025-12-20): Use 2-of-3 keys in test vectors.
+- *0.3.1* (2025-12-17): Update the Algorithms section to use secp256k1lab methods and types.
 - *0.3.0* (2025-12-15): Introduces the following changes:
   - Introduce *SignersContext* and define key material compatibility with *ValidateSignersCtx*.
   - Rewrite the signing protocol assuming a coordinator, add sequence diagram, and warn key generation protocols to output Taproot-safe *threshold public key*.

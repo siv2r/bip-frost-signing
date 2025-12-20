@@ -1,21 +1,17 @@
 {
-    "n": 5,
-    "t": 3,
-    "threshold_pubkey": "03F9186397E61022663935B3FDFF7880A9F0EC288D8B054DF6AC2BC5777B5FBBB1",
-    "secshare_p1": "6FF0F78C1F0E76C4AB67C1B32E0B4B1652120B794AC1AE7EC3992DE06092B566",
+    "n": 3,
+    "t": 2,
+    "threshold_pubkey": "03B02645D79ABFC494338139410F9D7F0A72BE86C952D6BDE1A66447B8A8D69237",
+    "secshare_p0": "CCD2EF4559DB05635091D80189AB3544D6668EFC0500A8D5FF51A1F4D32CC1F1",
     "identifiers": [
         0,
         1,
-        2,
-        3,
-        4
+        2
     ],
     "pubshares": [
-        "0260C5B10BAF5D471F0D09ED9BDED80B23CEFE0C9DC0F26AD1A0453A6FDFF663E2",
-        "028B96AE32F17C49C6111D6BF7D17E89428734D6DED0E31C480F2BABD263DDFA28",
-        "029456C5A981CF9DA72BF7AF0F82C44A343DC08419911286E975D16697D93B9A61",
-        "030CAA62081616E0B833FBD39A1058C1A11A23FB8307127D486914E8BF2E5935BB",
-        "03E483B7D41072D6E883447EB85617A086290EB67B40C89F3A787CF1B66005F488",
+        "022B02109FBCFB4DA3F53C7393B22E72A2A51C4AFBF0C01AAF44F73843CFB4B74B",
+        "02EC6444271D791A1DA95300329DB2268611B9C60E193DABFDEE0AA816AE512583",
+        "03113F810F612567D9552F46AF9BDA21A67D52060F95BD4A723F4B60B1820D3676",
         "020000000000000000000000000000000000000000000000000000000000000007"
     ],
     "msgs": [
@@ -26,229 +22,184 @@
     "valid_test_cases": [
         {
             "rand": "0000000000000000000000000000000000000000000000000000000000000000",
-            "aggothernonce": "0213D29E3E76BC742FD1229AAB5B723D5B6BF9F0C9A08E7FAED8389728EEE319720223AAACF1C1200E764BE964AB3A0D72EC2EDB68C0B750AAD6430D30DC3DB948FD",
+            "aggothernonce": "0353BC2314D46C813AF81317AF1BDF99816B6444E416BB8D3DC04ACB2F5388D1AC02B13BC644F720223B547DB344C94E0F5E769B674D8A9C3F5E86A5231A5B9C3297",
             "id_indices": [
                 0,
-                1,
-                2
+                1
             ],
             "pubshare_indices": [
                 0,
-                1,
-                2
+                1
             ],
             "tweaks": [],
             "is_xonly": [],
             "msg_index": 0,
             "signer_index": 0,
             "expected": [
-                "02797030BB92CCC543328AE3694912E0C695B31434BED9B1F54179070F6A5CC23F02E0A46F1F31AAF21697649D9C610D5069183C97BF55BE5CD8205D95B97E29AD58",
-                "41A225B68A2E3DE5001D580F178216009ED30039AB1D1F44EDE6E1BEAE67C167"
+                "02ECF1B7C1C3675E9EC605D95EAFF24CD7A4A0F8DAD89F8A9B6050F78F0C33522103B4368C46B3A9DA59EC52BB1A4B27A0446A302A046E593723E111FECEDE04CC30",
+                "572A5EED305B5533A4EC73D40B4645C5559BF2C137D57F1EBA974DA84B13B8D7"
             ],
             "comment": "Signing with minimum number of participants"
         },
         {
             "rand": "0000000000000000000000000000000000000000000000000000000000000000",
-            "aggothernonce": "020E0F2E2DB618128F7FAEC01D8C861BB62DF24751AA4D4C72FD121B900B5228AD03CB1A8E5F9B695FA0D98BAC1D9D6A7EE841E578FDD2A92154F7E3868B7124DA1C",
+            "aggothernonce": "02A8B5F064871F3BBB06D325F5B4A2B51487E0AE24F14E2A121C39B9F7CBDE7474038161382177105511164E63DD2C73138EDB271CF11B922DBA54CA4A9B365EDB55",
             "id_indices": [
                 1,
-                0,
-                2
+                0
             ],
             "pubshare_indices": [
                 1,
-                0,
-                2
+                0
             ],
             "tweaks": [],
             "is_xonly": [],
             "msg_index": 0,
             "signer_index": 1,
             "expected": [
-                "0298181EF98F083A6532C9927D862E695988C32248803E0DF9E6EE928C414E72310227C3976F753B6E19ED05B626D175BBFBBDC50D2F3ECDF242ED0DE650190B6477",
-                "0301992329720756528A28275620472B25A9CC9C0B742E607051319C07593505"
+                "03D1F0BE59DFDC6E9BA09C830FB60B95CA154904F4919D080CF085A86F383EC66E024D3002A880C72187F62A041E01C0A356284C82BA2688DF2CB58B66DF28F75295",
+                "3BEEB13926DAAF6AA6F042FB20B2C33D5887EA8127B94197D8213474DAA1EF49"
             ],
             "comment": "Partial-signature shouldn't change if the order of signers set changes. Note: The deterministic sign will generate the same secnonces due to unchanged parameters"
         },
         {
             "rand": "0000000000000000000000000000000000000000000000000000000000000000",
-            "aggothernonce": "027BB05D8B1B72ADF014CA75FFD1DBC0751CF6F6701DCB8F00EE8D14819D36FA0103E43F43CD74416248AEE796A9E55EC5AC5F335B37AB9D9A2D8BC7B988719E577C",
+            "aggothernonce": "022260912C9999C9EC5A3B8E493F5DEB76DCA3E772345905E12C24D281612DA403022508B1A355D6E94A5BB239441B38971716031EF05DE9AF952BAB69799621AE52",
             "id_indices": [
                 0,
-                3,
-                4
+                2
             ],
             "pubshare_indices": [
                 0,
-                3,
-                4
+                2
             ],
             "tweaks": [],
             "is_xonly": [],
             "msg_index": 0,
             "signer_index": 0,
             "expected": [
-                "0302D3C4D08CC1CCA3D3247A0F9037DE6BBB4BBBAE103C1F07F3B19D0BD821288803B34C402DF30B8FF47652C4CF54C04416D7676F2AFBF12C1ED1DD2B31F4BA5229",
-                "24F39311027EE1579E1E08FE3C34393475766CAC1D23789CB8A71C29537A436E"
+                "03C71C9C0B81BE5F3501553182252266CC935E5D2A900C376CCEC8EDF78BB3F8A903585BF5D830984908F0F3B090CBE8C32B3CCE9719F941B27D7E128F475F22EE14",
+                "62B7FC46552F3E3F3F7B07596FE9E73817A1576F4D0E850015334CE340434CC3"
             ],
             "comment": "Partial-signature changes if the members of signers set changes"
         },
         {
             "rand": null,
-            "aggothernonce": "028ECB34F618EDD8E01F9DDE4BC303D5C8C081C0AE7C5E2703A593DB8B410EC68602F5401EA7D2CEB7CEBA7DCD944427E8E7AB2CDB0893F54ACA8002D4F629B56B9F",
+            "aggothernonce": "0220E5B590F7058B5E88593C8635411767B416EB53378AEE7E40CD1D35329AD2C302164F00762CDFFF9138C43884661CC93FF53D61B4BFD3CD2BD7265F41775A4F0F",
             "id_indices": [
                 0,
-                1,
-                2
+                1
             ],
             "pubshare_indices": [
                 0,
-                1,
-                2
+                1
             ],
             "tweaks": [],
             "is_xonly": [],
             "msg_index": 0,
             "signer_index": 0,
             "expected": [
-                "03ED0354DE40A57BF7DD8AE974DF7E924CCBE3E98635CEE0CEBF9122B0A87776E40230AC4F0B056F5C695BE64B7EB671C34046F1F6886B2CAD6E67DD525B9FFB2678",
-                "C46C61A6C37136C91A906417321FAFD9ECE23E376706AC1ED266999C63475D35"
+                "036BF6DCC0A80061CC2CCA7A8BB20448534BEFDCCB9A2E23714F5AB1112CA3098A03D68C52E4D90D3951B19D3BC3BB7411066F4AAE6F4B91BEC1B811C1CDD38E1D9F",
+                "4F464D1B1F3EF7CABFBC446BBB1D226F82AC56B7DC1DAD4EF7A641E0A8F378FD"
             ],
             "comment": "Signing without auxiliary randomness"
         },
         {
             "rand": "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF",
-            "aggothernonce": "02AEB6CB8631282E221B7688E3147BB544A1038AF0D09B81769E4656D3CF8C5AD202A5AC7DDF391347D3520C5B45BEAEC5D4A3C3971DD36961D3D5F51BFD39DEDD38",
+            "aggothernonce": "0258091883DA3CCA616F8BEC80AAE2E397E3572DFFC3C261EDC695E5FCA0BE00180251EC60E426128FA2370F13A6235040120CCDB0CA97C36BC63693C44FC5B73E44",
             "id_indices": [
                 0,
-                1,
-                2
+                1
             ],
             "pubshare_indices": [
                 0,
-                1,
-                2
+                1
             ],
             "tweaks": [],
             "is_xonly": [],
             "msg_index": 0,
             "signer_index": 0,
             "expected": [
-                "031E9E4C323358CA94230A58BB2106FF1E7DB61D39140A72C5977B99F4DBC55CAA02FE99098A3A88283143F01F603387F164E3CC239AB9F3947A5695054CCA7AB1E2",
-                "AE6B3D7B276A534B083089B5447F739495E29E7D82EAB8F826B7EBA15AC352B6"
+                "03C2493BB6AB51760DBFBF1A08FCB6F82472552D4343637296DF6392D2F203821903B75F2339C21FB67AB0AA5351A15EB0A1CC5F7BCD3417CF06B6870AABAACAE9CF",
+                "77CE17195D39B6CBEF533E5EA416F173C294450AD8283153C67F6AAD87BFF0EB"
             ],
             "comment": "Signing with max auxiliary randomness"
         },
         {
             "rand": "0000000000000000000000000000000000000000000000000000000000000000",
-            "aggothernonce": "0285527346501F0CF58180DDACEC0303C440A5F1979E1D5DDC095BC69E90C890AE02D83EAF404F8334B3718E93B4A6D400116A3BE5650060E259FD3F9583238FE719",
+            "aggothernonce": "03B7F17DD6A2495898D19BDEA05C46F45B2C14BCA17F61C3DDC1D3C087CD748AB002CF7D031F5075C164D6A9D713F03B56422FD3472BDC8E0E6BB3ED6B6ED9C529AE",
             "id_indices": [
                 0,
                 1,
-                2,
-                3
+                2
             ],
             "pubshare_indices": [
                 0,
                 1,
-                2,
-                3
+                2
             ],
             "tweaks": [],
             "is_xonly": [],
             "msg_index": 0,
             "signer_index": 0,
             "expected": [
-                "02D33E23B5027B30C2728D2A2C5517C64113B99CB730ED6EE2D6C3ED870D6C27460318EFCB7B6D506C64DB2AD4139576096E77594840C8ED759E3E12AC084EA605C1",
-                "A37FB870C75150EE624C756883F717D3D71D449BD9D2A93127C65BEA02EBC316"
-            ],
-            "comment": "Signing with t < no of participants < n"
-        },
-        {
-            "rand": "0000000000000000000000000000000000000000000000000000000000000000",
-            "aggothernonce": "033106B0B7046D4268BE15D33BFF0FA6BEB7AC6C63E1A7CA076CB2299F9C7F4F5403AD2DFC59616CC47CBB6EAE1D0F80ABEB29558A47CC3096153B3F89B95681790E",
-            "id_indices": [
-                0,
-                1,
-                2,
-                3,
-                4
-            ],
-            "pubshare_indices": [
-                0,
-                1,
-                2,
-                3,
-                4
-            ],
-            "tweaks": [],
-            "is_xonly": [],
-            "msg_index": 0,
-            "signer_index": 0,
-            "expected": [
-                "02353FEFB48A09807D37D6040CB6CB9335D4A0F870A01C7399C4CCDD3E154E5802028E4150FD0C02FD4CC2BF63A428D1BD8CCC9A582B198C0EC767A66B6DB0E853BB",
-                "E3A1005520BE1A090843D2DEBB0ED58763B9BAC68BDD022BB9C4BF7AAF2B12FF"
+                "0244C0BAA16B62D53047051B95111D89060FA23052C99CD4521B1222D98B267C2002B04FEDE26A30C4648657FC32B334FFA4FB2162133A52E4BB5373FC3B6B6FFA93",
+                "41F558B7335F18ED09F1B0F04324AC84FDD97DE9E63B5090542B9566BBBAD78E"
             ],
             "comment": "Signing with maximum number of participants"
         },
         {
             "rand": "0000000000000000000000000000000000000000000000000000000000000000",
-            "aggothernonce": "0366A9BBD0FC622AB6FE672AAF557253B53F907A830DBE1772738510A0DA2EDEC1037F2ED964BE01FDC02D095C5BBFC25CCD6378FE1EF43DFC5225CA17D088C3190D",
+            "aggothernonce": "02E67053C8D9A6754D8243EF13B722B4909F3037FEAB23600D019E1C307D0BA2E20381207D01C5D6F4E2E654D2CBD23C9B6E8C38407FECAC41571E0EA2B307634004",
             "id_indices": [
                 0,
-                1,
-                2
+                1
             ],
             "pubshare_indices": [
                 0,
-                1,
-                2
+                1
             ],
             "tweaks": [],
             "is_xonly": [],
             "msg_index": 1,
             "signer_index": 0,
             "expected": [
-                "025DE0E382D19FBA9B6184B53E677DF2ABE80BEFB6673973EDEB0353010FA3052002F798E4794B686B9F8F4A0B7AC785345FC46C7B1E196643152814B8FF93A4B636",
-                "5D5F50CDF275E8FC0C0C30244858FB0A053924E76C0468176418528A514E280B"
+                "030B18187D6DA62CE6B6E48ACD472A4CD9285BE7671F11B80D8F838EFE55A2C9660218FC5EED7224B5EA4284ED913D44A634817608721EC1F75B615375B88B1F3293",
+                "DFDBC51E48278E34AFC436D9EF1944657AB49D349945841442380C54C36F9FA7"
             ],
             "comment": "Empty message"
         },
         {
             "rand": "0000000000000000000000000000000000000000000000000000000000000000",
-            "aggothernonce": "031111FEA894361402C6BCAA1A62116041E1188BB6D1736A77830EF08F377FBAB003C2B19EB56ABBD76B037A4274E7A33C276A8467297575E7CF577385253252EC92",
+            "aggothernonce": "03C71201804A346CCAF2733EB9701302FA50F4C99B053D23C20363ECE2E05DEE97027D4DBE90EC16ACA95DBC921F4BD3FBDBCF1D9F3D01627F6077BE6BD7DAEDB627",
             "id_indices": [
                 0,
-                1,
-                2
+                1
             ],
             "pubshare_indices": [
                 0,
-                1,
-                2
+                1
             ],
             "tweaks": [],
             "is_xonly": [],
             "msg_index": 2,
             "signer_index": 0,
             "expected": [
-                "031E524A3AB3A4AB6DCA2D3CF299D9D713A0F0F361AF3946314B2520981885EBBD03040C42A117CDA8A27A2E276EDE3F2BE89381AC67D69A5F746143257D6C9DE305",
-                "0BC055DE21CE6D55994E46C14E7B9DB20D2C6E4517DFCC3395A108A6C0F6680E"
+                "028BB5C9114C5991CF2DAE6CE6D6AA1274783BDFB30ED89AF0D64B8E4061015087021E5712184A72688ED52D54D02FCB3E28A695C2DAEC6BE9FE9AD894D958AF530A",
+                "853BF60CA2EB5D15B54D3B6986B763A9E84270CD68F0F8B9167C4AD801C0B86A"
             ],
             "comment": "Message longer than 32 bytes (38-byte msg)"
         },
         {
             "rand": "0000000000000000000000000000000000000000000000000000000000000000",
-            "aggothernonce": "0213D29E3E76BC742FD1229AAB5B723D5B6BF9F0C9A08E7FAED8389728EEE319720223AAACF1C1200E764BE964AB3A0D72EC2EDB68C0B750AAD6430D30DC3DB948FD",
+            "aggothernonce": "0353BC2314D46C813AF81317AF1BDF99816B6444E416BB8D3DC04ACB2F5388D1AC02B13BC644F720223B547DB344C94E0F5E769B674D8A9C3F5E86A5231A5B9C3297",
             "id_indices": [
                 0,
-                1,
-                2
+                1
             ],
             "pubshare_indices": [
                 0,
-                1,
-                2
+                1
             ],
             "tweaks": [
                 "E8F791FF9225A2AF0102AFFF4A9A723D9612A682A25EBE79802B263CDFCD83BB"
@@ -259,8 +210,8 @@
             "msg_index": 0,
             "signer_index": 0,
             "expected": [
-                "0344F294A4446CCCF497F28A3B7CE0AC31EC138E701121C933E73272B95786B28502CB2AF7D73448FB2DD11ED0856F6707164F89A3C417B8B15FC3E7B88DA21A7E49",
-                "8F4E139B534E8F38ED20BF5DDAF63272EE22CA294A3C8287C150BD9DD38748D5"
+                "03161BD943B39F07744FD2BE702132A051D194DD5F7B34CD7FC925FA70F35F56D8022F4597F6E0A96BB1DCA84EF68CC91AEC0EAB7A51EF0E9EE75079B36819FA7204",
+                "496B94BA355C529E60F728DB22F63C9AF64B8E87252AF6A22F7EC99AC788AAC9"
             ],
             "comment": "Signing with tweaks"
         }
@@ -270,14 +221,12 @@
             "rand": "0000000000000000000000000000000000000000000000000000000000000000",
             "aggothernonce": "02FCDBEE416E4426FB4004BAB2B416164845DEC27337AD2B96184236D715965AB2039F71F389F6808DC6176F062F80531E13EA5BC2612B690FC284AE66C2CD859CE9",
             "id_indices": [
-                3,
-                1,
-                2
+                2,
+                1
             ],
             "pubshare_indices": [
                 0,
-                1,
-                2
+                1
             ],
             "tweaks": [],
             "is_xonly": [],
@@ -292,17 +241,15 @@
         },
         {
             "rand": "0000000000000000000000000000000000000000000000000000000000000000",
-            "aggothernonce": "02AC09CB4AFB2C0E17E511E328C2F554CEC4EBF351A3E5A0DAB9411C338900A04E02282EFBABFAA97CD281FBB1D8DFD1AF839FBC28129DB52E09BEF43C3657BD729D",
+            "aggothernonce": "02C1D8D5D95E15E4B46B49AF7A309520B0D07E5386995B99A572440C658FE443DF028A89044AE2FFC00131089E7B1EB15FE8DF52282F44D5EE2FA25F0DF437082407",
             "id_indices": [
                 0,
                 1,
-                2,
                 1
             ],
             "pubshare_indices": [
                 0,
                 1,
-                2,
                 1
             ],
             "tweaks": [],
@@ -317,16 +264,14 @@
         },
         {
             "rand": "0000000000000000000000000000000000000000000000000000000000000000",
-            "aggothernonce": "0213D29E3E76BC742FD1229AAB5B723D5B6BF9F0C9A08E7FAED8389728EEE319720223AAACF1C1200E764BE964AB3A0D72EC2EDB68C0B750AAD6430D30DC3DB948FD",
+            "aggothernonce": "0353BC2314D46C813AF81317AF1BDF99816B6444E416BB8D3DC04ACB2F5388D1AC02B13BC644F720223B547DB344C94E0F5E769B674D8A9C3F5E86A5231A5B9C3297",
             "id_indices": [
                 0,
-                1,
-                2
+                1
             ],
             "pubshare_indices": [
-                3,
-                1,
-                2
+                2,
+                1
             ],
             "tweaks": [],
             "is_xonly": [],
@@ -362,16 +307,14 @@
         },
         {
             "rand": "0000000000000000000000000000000000000000000000000000000000000000",
-            "aggothernonce": "0213D29E3E76BC742FD1229AAB5B723D5B6BF9F0C9A08E7FAED8389728EEE319720223AAACF1C1200E764BE964AB3A0D72EC2EDB68C0B750AAD6430D30DC3DB948FD",
+            "aggothernonce": "0353BC2314D46C813AF81317AF1BDF99816B6444E416BB8D3DC04ACB2F5388D1AC02B13BC644F720223B547DB344C94E0F5E769B674D8A9C3F5E86A5231A5B9C3297",
             "id_indices": [
                 0,
-                1,
-                2
+                1
             ],
             "pubshare_indices": [
                 0,
-                1,
-                5
+                3
             ],
             "tweaks": [],
             "is_xonly": [],
@@ -379,23 +322,21 @@
             "signer_index": 0,
             "error": {
                 "type": "InvalidContributionError",
-                "id": 2,
+                "id": 1,
                 "contrib": "pubshare"
             },
-            "comment": "Signer 3 provided an invalid participant public share"
+            "comment": "Signer 1 provided an invalid participant public share"
         },
         {
             "rand": "0000000000000000000000000000000000000000000000000000000000000000",
             "aggothernonce": "048465FCF0BBDBCF443AABCCE533D42B4B5A10966AC09A49655E8C42DAAB8FCD61037496A3CC86926D452CAFCFD55D25972CA1675D549310DE296BFF42F72EEEA8C9",
             "id_indices": [
                 0,
-                1,
-                2
+                1
             ],
             "pubshare_indices": [
                 0,
-                1,
-                2
+                1
             ],
             "tweaks": [],
             "is_xonly": [],
@@ -413,13 +354,11 @@
             "aggothernonce": "0000000000000000000000000000000000000000000000000000000000000000000287BF891D2A6DEAEBADC909352AA9405D1428C15F4B75F04DAE642A95C2548480",
             "id_indices": [
                 0,
-                1,
-                2
+                1
             ],
             "pubshare_indices": [
                 0,
-                1,
-                2
+                1
             ],
             "tweaks": [],
             "is_xonly": [],
@@ -434,16 +373,14 @@
         },
         {
             "rand": "0000000000000000000000000000000000000000000000000000000000000000",
-            "aggothernonce": "0213D29E3E76BC742FD1229AAB5B723D5B6BF9F0C9A08E7FAED8389728EEE319720223AAACF1C1200E764BE964AB3A0D72EC2EDB68C0B750AAD6430D30DC3DB948FD",
+            "aggothernonce": "0353BC2314D46C813AF81317AF1BDF99816B6444E416BB8D3DC04ACB2F5388D1AC02B13BC644F720223B547DB344C94E0F5E769B674D8A9C3F5E86A5231A5B9C3297",
             "id_indices": [
                 0,
-                1,
-                2
+                1
             ],
             "pubshare_indices": [
                 0,
-                1,
-                2
+                1
             ],
             "tweaks": [
                 "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141"
