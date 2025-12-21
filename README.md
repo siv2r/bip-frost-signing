@@ -1,5 +1,3 @@
-# FROST Signing Protocol for BIP340 Schnorr Signatures
-
 ```yaml
 BIP:
 Title: FROST Signing Protocol for BIP340 Schnorr Signatures
@@ -12,6 +10,48 @@ Created:
 Post-History: https://groups.google.com/g/bitcoindev/c/PeMp2HQl-H4/m/AcJtK0aKAwAJ
 Comments-URI:
 ```
+
+- [Abstract](#abstract)
+- [Copyright](#copyright)
+- [Introduction](#introduction)
+  - [Motivation](#motivation)
+  - [Design](#design)
+- [Overview](#overview)
+  - [Optionality of Features](#optionality-of-features)
+  - [Key Material and Setup](#key-material-and-setup)
+    - [Protocol Parties and Network Setup](#protocol-parties-and-network-setup)
+    - [Signing Inputs and Outputs](#signing-inputs-and-outputs)
+  - [General Signing Flow](#general-signing-flow)
+  - [Nonce Generation](#nonce-generation)
+  - [Identifying Disruptive Signers](#identifying-disruptive-signers)
+    - [Further Remarks](#further-remarks)
+  - [Tweaking the Threshold Public Key](#tweaking-the-threshold-public-key)
+- [Algorithms](#algorithms)
+  - [Notation](#notation)
+    - [Cryptographic Types and Operations](#cryptographic-types-and-operations)
+    - [Auxiliary and Byte-string Operations](#auxiliary-and-byte-string-operations)
+  - [Key Material and Setup](#key-material-and-setup-1)
+    - [Signers Context](#signers-context)
+  - [Tweaking the Threshold Public Key](#tweaking-the-threshold-public-key-1)
+    - [Tweak Context](#tweak-context)
+    - [Applying Tweaks](#applying-tweaks)
+  - [Nonce Generation](#nonce-generation-1)
+  - [Nonce Aggregation](#nonce-aggregation)
+  - [Session Context](#session-context)
+  - [Signing](#signing)
+  - [Partial Signature Verification](#partial-signature-verification)
+  - [Partial Signature Aggregation](#partial-signature-aggregation)
+  - [Test Vectors \& Reference Code](#test-vectors--reference-code)
+- [Remarks on Security and Correctness](#remarks-on-security-and-correctness)
+  - [Modifications to Nonce Generation](#modifications-to-nonce-generation)
+    - [Deterministic and Stateless Signing for a Single Signer](#deterministic-and-stateless-signing-for-a-single-signer)
+  - [Tweaking Definition](#tweaking-definition)
+  - [Negation of the Secret Share when Signing](#negation-of-the-secret-share-when-signing)
+    - [Negation of the Pubshare when Partially Verifying](#negation-of-the-pubshare-when-partially-verifying)
+  - [Dealing with Infinity in Nonce Aggregation](#dealing-with-infinity-in-nonce-aggregation)
+- [Backwards Compatibility](#backwards-compatibility)
+- [Changelog](#changelog)
+- [Acknowledgments](#acknowledgments)
 
 ## Abstract
 
