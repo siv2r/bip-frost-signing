@@ -64,11 +64,11 @@ The accompanying source code is licensed under the [MIT license](https://opensou
 
 <!-- REVIEW: Should we add a paragraph about `OP_CHECKSIGADD` like BIP327 does? -->
 
-The FROST signature scheme enables threshold Schnorr signatures. In a `t`[^t-edge-cases]-of-`n` threshold configuration, any `t` participants can cooperatively produce a Schnorr signature that is indistinguishable from a signature produced by a single signer. FROST signatures are unforgeable as long as fewer than `t` participants are corrupted. The signing protocol remains functional provided that at least `t` honest participants retain access to their secret key shares.
+The FROST signature scheme enables threshold Schnorr signatures. In a `t`-of-`n` threshold configuration, any `t`[^t-edge-cases] participants can cooperatively produce a Schnorr signature that is indistinguishable from a signature produced by a single signer. FROST signatures are unforgeable as long as fewer than `t` participants are corrupted. The signing protocol remains functional provided that at least `t` honest participants retain access to their secret key shares.
 
 [^t-edge-cases]: While `t = n` and `t = 1` are in principle supported, simpler alternatives are available in these cases. In the case `t = n`, using a dedicated `n`-of-`n` multi-signature scheme such as MuSig2 (see [BIP327][bip327]) instead of FROST avoids the need for an interactive DKG. The case `t = 1` can be realized by letting one signer generate an ordinary [BIP340][bip340] key pair and transmitting the key pair to every other signer, who can check its consistency and then simply use the ordinary [BIP340][bip340] signing algorithm. Signers still need to ensure that they agree on a key pair.
 
-The IRTF has published [RFC 9591][rfc9591], which specifies the FROST signing protocol for several elliptic curve and hash function combinations, including secp256k1 with SHA-256, the cryptographic primitives used in Bitcoin. However, the signatures produced by RFC 9591 are incompatible with BIP340 Schnorr signatures due to the X-only public keys introduced in BIP340. Additionally, RFC 9591 does not specify key tweaking mechanisms, which are essential for Bitcoin applications such as BIP32 key derivation and BIP341 Taproot. This document addresses these limitations by specifying a BIP340-compatible variant of FROST that supports key tweaking.
+The IRTF has published [RFC 9591][rfc9591], which specifies the FROST signing protocol for several elliptic curve and hash function combinations, including secp256k1 with SHA-256, the cryptographic primitives used in Bitcoin. However, the signatures produced by RFC 9591 are incompatible with BIP340 Schnorr signatures due to the X-only public keys introduced in BIP340. Additionally, RFC 9591 does not specify key tweaking mechanisms, which are essential for Bitcoin applications such as BIP32 key derivation and BIP341 Taproot. This document addresses these limitations by specifying a BIP340-compatible variant of FROST signing protocol that supports key tweaking.
 
 Following the initial publication of the FROST protocol[[KG20][frost1]], several optimized variants have been proposed to improve computational efficiency and bandwidth optimization: FROST2[[CKM21][frost2]], FROST2-BTZ[[BTZ21][stronger-security-frost]], and FROST3[[CGRS23][olaf]]. Among these variants, FROST3 is the most efficient variant to date.
 
@@ -162,7 +162,7 @@ If all parties behaved honestly, the result passes [BIP340][bip340] verification
 
 A malicious coordinator can cause the signing session to fail but cannot compromise the unforgeability of the scheme. Even when colluding with up to `t-1` signers, a malicious coordinator cannot forge a signature.
 
-> [!IMPORTANT]
+> [!TIP]
 > The *Sign* algorithm must **not** be executed twice with the same *secnonce*.
 > Otherwise, it is possible to extract the secret signing key from the two partial signatures output by the two executions of *Sign*.
 > To avoid accidental reuse of *secnonce*, an implementation may securely erase the *secnonce* argument by overwriting it with 64 zero bytes after it has been read by *Sign*.
@@ -814,6 +814,7 @@ This document proposes a standard for the FROST threshold signature scheme that 
 
 ## Changelog
 
+- *0.3.3* (2025-12-29): Replace the length Introduction section with a concise Motivation section.
 - *0.3.2* (2025-12-20): Use 2-of-3 keys in test vectors.
 - *0.3.1* (2025-12-17): Update the Algorithms section to use secp256k1lab methods and types.
 - *0.3.0* (2025-12-15): Introduces the following changes:
