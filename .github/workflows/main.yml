@@ -66,5 +66,5 @@ jobs:
           python-version: 3.11
       - name: Run Trusted Dealer unit tests
         env:
-          PYTHONPATH: ./python
+          PYTHONPATH: ./python:./python/secp256k1lab/src
         run: python3 -m unittest python.trusted_dealer
