@@ -28,7 +28,7 @@ from frost_ref.signing import (
 from secp256k1lab.keys import pubkey_gen_plain
 from secp256k1lab.secp256k1 import G, Scalar
 from secp256k1lab.bip340 import schnorr_verify
-from secp256k1lab.util import bytes_from_int, int_from_bytes
+from secp256k1lab.util import int_from_bytes
 from trusted_dealer import trusted_dealer_keygen
 
 
@@ -81,17 +81,15 @@ def generate_frost_keys(
     if not (2 <= t <= n):
         raise ValueError("values must satisfy: 2 <= t <= n")
 
-    secret = Scalar.from_bytes_wrapping(secrets.token_bytes(32))
-    P, secshares, pubshares = trusted_dealer_keygen(secret, n, t)
+    thresh_pk, secshares, pubshares = trusted_dealer_keygen(
+        secrets.token_bytes(32), n, t
+    )
 
-    thresh_pk = PlainPk(P.to_bytes_compressed())
-    # we need decrement by one, since our identifiers represent integer indices
-    identifiers = [int(secshare_i[0] - 1) for secshare_i in secshares]
-    ser_secshares = [bytes_from_int(secshare_i[1]) for secshare_i in secshares]
-    ser_pubshares = [
-        PlainPk(pubshare_i.to_bytes_compressed()) for pubshare_i in pubshares
-    ]
-    return (thresh_pk, identifiers, ser_secshares, ser_pubshares)
+    # IDs are 0-indexed: the index in the list IS the participant ID
+    assert len(secshares) == n
+    identifiers = list(range(len(secshares)))
+
+    return (thresh_pk, identifiers, secshares, pubshares)
 
 
 def test_nonce_gen_vectors():

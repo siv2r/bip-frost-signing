@@ -172,16 +172,14 @@ def frost_keygen_random():
     threshold_seckey = random_scalar.to_bytes()
     threshold_pubkey = pubkey_gen_plain(threshold_seckey)
     output_tpk, secshares, pubshares = trusted_dealer_keygen(random_scalar, 3, 2)
-    assert threshold_pubkey == output_tpk.to_bytes_compressed()
-    secshares_hex = [f"{share[1]:064X}" for share in secshares]
-    pubshares_hex = [P.to_bytes_compressed().hex().upper() for P in pubshares]
+    assert threshold_pubkey == output_tpk
 
     print(f"threshold secret key: {threshold_seckey.hex().upper()}")
     print(f"threshold public key: {threshold_pubkey.hex().upper()}")
     print("secret shares:")
-    pprint.pprint(secshares_hex)
+    pprint.pprint(bytes_list_to_hex(secshares))
     print("public shares:")
-    pprint.pprint(pubshares_hex)
+    pprint.pprint(bytes_list_to_hex(pubshares))
 
 
 def generate_nonce_gen_vectors():

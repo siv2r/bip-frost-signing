@@ -24,7 +24,6 @@ from frost_ref.signing import (
     partial_sig_verify_internal,
 )
 
-from secp256k1lab.secp256k1 import Scalar
 from secp256k1lab.bip340 import schnorr_verify
 from trusted_dealer import trusted_dealer_keygen
 
@@ -84,15 +83,12 @@ def generate_frost_keys(
         secshares: List of secret shares (32-byte scalars)
         pubshares: List of public shares (33-byte compressed)
     """
-    thresh_sk = Scalar.from_bytes_wrapping(secrets.token_bytes(32))
-    thresh_pk_ge, secshares_poly, pubshares_ge = trusted_dealer_keygen(thresh_sk, n, t)
+    thresh_pk, secshares, pubshares = trusted_dealer_keygen(
+        secrets.token_bytes(32), n, t
+    )
 
-    # Convert to frost_ref formats
-    thresh_pk = PlainPk(thresh_pk_ge.to_bytes_compressed())
-    # Decrement by 1: frost_ref uses 0-indexed IDs, trusted_dealer uses 1-indexed
-    ids = [x - 1 for (x, _) in secshares_poly]
-    secshares = [y.to_bytes(32, "big") for (_, y) in secshares_poly]
-    pubshares = [PlainPk(p.to_bytes_compressed()) for p in pubshares_ge]
+    assert len(secshares) == n
+    ids = list(range(len(secshares)))  # ids are 0..n-1
 
     return thresh_pk, ids, secshares, pubshares
 
