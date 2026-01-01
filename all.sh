@@ -15,4 +15,4 @@ markdownlint-cli2 README.md --config ./.markdownlint.json || true
 
 cd python || exit 1
 ./tests.sh
-#TODO: add example
+./example.py
