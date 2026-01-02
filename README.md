@@ -200,9 +200,10 @@ Moreover, this method is not compatible with the defense-in-depth mechanism desc
 [^preprocess-round1]: When preprocessing *NonceGen* round, the *Signers Context* can be extended to include the *pubnonces* of the signing participants, as these are generated and stored before the signing session begins.
 
 FROST signers are typically stateful: they generate *secnonce*, store it, and later use it to produce a partial signature after receiving the aggregated nonce.
-However, stateless signing is possible under specific conditions.
-In coordinator-less setups, any one signer can operate statelessly. In coordinator-based setups, only a signer who is also acting as the coordinator can be stateless; if the coordinator is a separate non-signing entity, stateless signing is not possible.
-A stateless signer waits to receive all other signers' *pubnonces* and for the session parameters (*Signers Context*, message, and optional tweaks) to be determined. It then runs *NonceGen*, *NonceAgg*, and *Sign* in sequence, sending its *pubnonce* and partial signature simultaneously.
+However, stateless signing is possible when one signer receives the aggregate nonce of all OTHER signers before generating their own nonce.
+In coordinator-based setups, the coordinator facilitates this by collecting pubnonces from the other signers, computing their aggregate (*aggothernonce*), and providing it to the stateless signer.
+The stateless signer then runs *NonceGen*, *NonceAgg*, and *Sign* in sequence, sending its *pubnonce* and partial signature simultaneously to the coordinator, who computes the final aggregate nonce for all participants.
+In coordinator-less setups, any one signer can achieve stateless operation by generating their nonce after seeing all other signers' *pubnonces*.
 Stateless signers may want to consider signing deterministically (see [Modifications to Nonce Generation](#modifications-to-nonce-generation)) to remove the reliance on the random number generator in the *NonceGen* algorithm.
 
 <!-- TODO: rewrite it for coordinator setup -->
@@ -640,7 +641,7 @@ The resulting algorithm *CounterNonceGen* does not draw *rand'* uniformly at ran
 With this modification, the secret share *secshare* of the signer generating the nonce is **not** an optional argument and must be provided to *NonceGen*.
 The security of the resulting scheme then depends on the requirement that reading the counter must never yield the same counter value in two *NonceGen* invocations with the same *secshare*.
 
-Second, if there is a unique signer who is supposed to send the *pubnonce* last, it is possible to modify nonce generation for this single signer to not require high-quality randomness.
+Second, if there is a unique signer who generates their nonce last (i.e., after receiving the aggregate nonce from all other signers), it is possible to modify nonce generation for this single signer to not require high-quality randomness.
 Such a nonce generation algorithm *DeterministicSign* is specified below.
 Note that the only optional argument is *rand*, which can be omitted if randomness is entirely unavailable.
 *DeterministicSign* requires the argument *aggothernonce* which should be set to the output of *NonceAgg* run on the *pubnonce* value of **all** other signers (but can be provided by an untrusted party).
@@ -678,8 +679,11 @@ Algorithm *DeterministicSign(secshare, my_id, aggothernonce, signers, tweak<sub>
 - Let *my_pubshare = cbytes(d &middot; G)*
 - Fail if *my_pubshare* is not present in *pubshare<sub>1..u</sub>*
 - Let *secnonce = scalar_to_bytes(k<sub>1</sub>) || scalar_to_bytes(k<sub>2</sub>)*
-- Let *aggnonce = NonceAgg((pubnonce, aggothernonce), (my_id, COORDINATOR_ID))*; fail if that fails and blame coordinator for invalid *aggothernonce*.
+- Let *aggnonce = NonceAgg((pubnonce, aggothernonce), (my_id, COORDINATOR_ID))*[^coordinator-id-sentinel]; fail if that fails and blame coordinator for invalid *aggothernonce*.
 - Let *session_ctx = (signers_ctx, aggnonce, v, tweak<sub>1..v</sub>, is_xonly_t<sub>1..v</sub>, m)*
+- Return (pubnonce, Sign(secnonce, secshare, my_id, session_ctx))
+
+[^coordinator-id-sentinel]: *COORDINATOR_ID* is a sentinel value (not an actual participant identifier) used to track the source of *aggothernonce* for error attribution. If *NonceAgg* fails, the coordinator is blamed for providing an invalid *aggothernonce*. In the reference implementation, *COORDINATOR_ID* is represented as `None`.
 
 ### Tweaking Definition
 
@@ -702,92 +706,99 @@ Algorithm *ApplyXonlyTweak(P, t)*:
 <!-- REVIEW: Should we point to BIP327 for this proof? Unless we use agnostic tweaking -->
 ### Negation of the Secret Share when Signing
 
-During the signing process, the *[Sign](#signing)* algorithm might have to negate the secret share in order to produce a partial signature for an X-only threshold public key. This public key is derived from *u* public shares and *u* participant identifiers (denoted by the signer set *U*) and then tweaked *v* times (X-only or plain).
+> [!NOTE]
+> In the following equations, all scalar arithmetic is understood to be modulo the group order, as specified in the [Notation](#notation) section.
+
+During the signing process, the *[Sign](#signing)* algorithm might have to negate the secret share in order to produce a partial signature for an X-only threshold public key, which may be tweaked *v* times (X-only or plain).
 
 The following elliptic curve points arise as intermediate steps when creating a signature:
 
-- *P<sub>i</sub>* as computed in any compatible key generation method is the point corresponding to the *i*-th signer's public share. Defining *d<sub>i</sub>'* to be the *i*-th signer's secret share as an integer, i.e., the *d’* value as computed in the *Sign* algorithm of the *i*-th signer, we have:  
+- The values *P<sub>i</sub>* (pubshare), *d<sub>i</sub>'* (secret share), and *Q<sub>0</sub>* (threshold public key) are produced by a FROST key generation protocol. We have  
   <pre>
-    P<sub>i</sub> = d<sub>i</sub>' &middot; G
-  </pre>
-- *Q<sub>0</sub>* is the threshold public key derived from the signer’s public shares. It is identical to the value *Q* computed in *DeriveThreshPubkey* and therefore defined as:  
-  <pre>
-    Q<sub>0</sub> = &lambda;<sub>1, U</sub> &middot; P<sub>1</sub> + &lambda;<sub>2, U</sub> &middot; P<sub>2</sub> + ... + &lambda;<sub>u, U</sub> &middot; P<sub>u</sub>
-  </pre>
+    P<sub>i</sub> = d<sub>i</sub>'&middot;G
+    Q<sub>0</sub> = &lambda;<sub>id<sub>1</sub></sub>&middot;P<sub>1</sub> + &lambda;<sub>id<sub>2</sub></sub>&middot;P<sub>2</sub> + ... + &lambda;<sub>id<sub>u</sub></sub>&middot;P<sub>u</sub>
+  </pre>  
+  Here, *&lambda;<sub>id<sub>i</sub></sub>* denotes the interpolating value for the *i*-th signing participant in the [Signers Context](#signers-context).
+
 - *Q<sub>i</sub>* is the tweaked threshold public key after the *i*-th execution of *ApplyTweak* for *1 ≤ i ≤ v*. It holds that  
   <pre>
-    Q<sub>i</sub> = f(i-1) + t<sub>i</sub> &middot; G for i = 1, ..., v where
-        f(i-1) := with_even_y(Q<sub>i-1</sub>) if is_xonly_t<sub>i</sub> and
-        f(i-1) := Q<sub>i-1</sub> otherwise.
+    Q<sub>i</sub> = f(i-1) + t<sub>i</sub>&middot;G for i = 1, ..., v where
+      f(i-1) := with_even_y(Q<sub>i-1</sub>) if is_xonly_t<sub>i</sub> and
+      f(i-1) := Q<sub>i-1</sub> otherwise.
   </pre>
-- *with_even_y(Q*<sub>v</sub>*)* is the final result of the threshold public key derivation and tweaking operations. It corresponds to the output of *GetXonlyPubkey* applied on the final Tweak Context.
+- *with_even_y(Q*<sub>v</sub>*)* is the final result of the threshold public key tweaking operations. It corresponds to the output of *GetXonlyPubkey* applied on the final Tweak Context.
 
 The signer's goal is to produce a partial signature corresponding to the final result of threshold pubkey derivation and tweaking, i.e., the X-only public key *with_even_y(Q<sub>v</sub>)*.
 
-For *1 ≤ i ≤ v*, we denote the value *g* computed in the *i*-th execution of *ApplyTweak* by *g<sub>i-1</sub>*. Therefore, *g<sub>i-1</sub>* is *-1 mod n* if and only if *is_xonly_t<sub>i</sub>* is true and *Q<sub>i-1</sub>* has an odd Y coordinate. In other words, *g<sub>i-1</sub>* indicates whether *Q<sub>i-1</sub>* needed to be negated to apply an X-only tweak:
+For *1 ≤ i ≤ v*, we denote the value *g* computed in the *i*-th execution of *ApplyTweak* by *g<sub>i-1</sub>*. Therefore, *g<sub>i-1</sub>* equals *Scalar(-1)* if and only if *is_xonly_t<sub>i</sub>* is true and *Q<sub>i-1</sub>* has an odd Y coordinate. In other words, *g<sub>i-1</sub>* indicates whether *Q<sub>i-1</sub>* needed to be negated to apply an X-only tweak:
 <pre>
-    f(i-1) = g<sub>i-1</sub> &middot; Q<sub>i-1</sub> for 1 ≤ i ≤ v.
+  f(i-1) = g<sub>i-1</sub>&middot;Q<sub>i-1</sub> for 1 ≤ i ≤ v
 </pre>
 Furthermore, the *Sign* and *PartialSigVerify* algorithms set value *g* depending on whether Q<sub>v</sub> needed to be negated to produce the (X-only) final output. For consistency, this value *g* is referred to as *g<sub>v</sub>* in this section.
 <pre>
-    with_even_y(Q<sub>v</sub>) = g<sub>v</sub> &middot; Q<sub>v</sub>.
+  with_even_y(Q<sub>v</sub>) = g<sub>v</sub>&middot;Q<sub>v</sub>
 </pre>
 
 So, the (X-only) final public key is
 <pre>
-    with_even_y(Q<sub>v</sub>)
-        = g<sub>v</sub>  &middot;  Q<sub>v</sub>
-        = g<sub>v</sub> &middot; (f(v-1)* + *t<sub>v</sub> &middot; G)
-        = g<sub>v</sub> &middot; (g<sub>v-1</sub> &middot; (f(v-2) + t<sub>v-1</sub> &middot; G) + t<sub>v</sub> &middot; G)
-        = g<sub>v</sub> &middot; g<sub>v-1</sub> &middot; f(v-2) + g<sub>v</sub> &middot; (t<sub>v</sub>* + g<sub>v-1</sub> &middot; t<sub>v-1</sub>) &middot; G
-        = g<sub>v</sub> &middot; g<sub>v-1</sub> &middot; f(v-2) + (sum<sub>i=v-1..v</sub> t<sub>i</sub> &middot; prod<sub>j=i..v</sub> g<sub>j</sub>) &middot; G
-        = g<sub>v</sub> &middot; g<sub>v-1</sub> &middot; ... &middot; g<sub>1</sub> &middot; f(0) + (sum<sub>i=1..v</sub> t<sub>i</sub> &middot; prod<sub>j=i..v</sub> g<sub>j</sub>) &middot; G
-        = g<sub>v</sub> &middot; ... &middot; g<sub>0</sub> &middot; Q<sub>0</sub> + g<sub>v</sub> &middot; tacc<sub>v</sub> &middot; G
-    where tacc<sub>i</sub> is computed by TweakCtxInit and ApplyTweak as follows:
-        tacc<sub>0</sub> = 0
-        tacc<sub>i</sub> = t<sub>i</sub> + g<sub>i-1</sub> &middot; tacc<sub>i-1</sub> for i=1..v mod n
-    for which it holds that g<sub>v</sub> &middot; tacc<sub>v</sub> = sum<sub>i=1..v</sub> t<sub>i</sub> &middot; prod<sub>j=i..v</sub> g<sub>j</sub>.
+  with_even_y(Q<sub>v</sub>)
+    = g<sub>v</sub>&middot;Q<sub>v</sub>
+    = g<sub>v</sub>&middot;(f(v-1) + t<sub>v</sub>&middot;G)
+    = g<sub>v</sub>&middot;(g<sub>v-1</sub>&middot;(f(v-2) + t<sub>v-1</sub>&middot;G) + t<sub>v</sub>&middot;G)
+    = g<sub>v</sub>&middot;g<sub>v-1</sub>&middot;f(v-2) + g<sub>v</sub>&middot;(t<sub>v</sub> + g<sub>v-1</sub>&middot;t<sub>v-1</sub>)&middot;G
+    = g<sub>v</sub>&middot;g<sub>v-1</sub>&middot;f(v-2) + (sum<sub>i=v-1..v</sub> t<sub>i</sub> &middot; prod<sub>j=i..v</sub> g<sub>j</sub>)&middot;G
+    = g<sub>v</sub>&middot;g<sub>v-1</sub>&middot; ... &middot;g<sub>1</sub>&middot;f(0) + (sum<sub>i=1..v</sub> t<sub>i</sub> &middot; prod<sub>j=i..v</sub> g<sub>j</sub>)&middot;G
+    = g<sub>v</sub>&middot; ... &middot;g<sub>0</sub>&middot;Q<sub>0</sub> + g<sub>v</sub>&middot;tacc<sub>v</sub>&middot;G
+</pre>
+where tacc<sub>i</sub> is computed by TweakCtxInit and ApplyTweak as follows:
+<pre>
+  tacc<sub>0</sub> = 0
+  tacc<sub>i</sub> = t<sub>i</sub> + g<sub>i-1</sub>&middot;tacc<sub>i-1</sub> for i=1..v
+</pre>
+  for which it holds that
+<pre>
+  g<sub>v</sub>&middot;tacc<sub>v</sub> = sum<sub>i=1..v</sub> t<sub>i</sub> &middot; prod<sub>j=i..v</sub> g<sub>j</sub>
 </pre>
 
 *TweakCtxInit* and *ApplyTweak* compute
 <pre>
-    gacc<sub>0</sub> = 1
-    gacc<sub>i</sub> = g<sub>i-1</sub> &middot; gacc<sub>i-1</sub> for i=1..v mod n
+  gacc<sub>0</sub> = 1
+  gacc<sub>i</sub> = g<sub>i-1</sub> &middot; gacc<sub>i-1</sub> for i=1..v
 </pre>
 So we can rewrite above equation for the final public key as
 <pre>
-    with_even_y(Q<sub>v</sub>) = g<sub>v</sub> &middot; gacc<sub>v</sub> &middot; Q<sub>0</sub> + g<sub>v</sub> &middot; tacc<sub>v</sub> &middot; G.
+  with_even_y(Q<sub>v</sub>) = g<sub>v</sub> &middot; gacc<sub>v</sub> &middot; Q<sub>0</sub> + g<sub>v</sub> &middot; tacc<sub>v</sub> &middot; G
 </pre>
 
 Then we have
 <pre>
-    with_even_y(Q<sub>v</sub>) - g<sub>v</sub> &middot; tacc<sub>v</sub> &middot; G
-        = g<sub>v</sub> &middot; gacc<sub>v</sub> &middot; Q<sub>0</sub>
-        = g<sub>v</sub> &middot; gacc<sub>v</sub> &middot; (&lambda;<sub>1, U</sub> &middot; P<sub>1</sub> + ... + &lambda;<sub>u, U</sub> &middot; P<sub>u</sub>)
-        = g<sub>v</sub> &middot; gacc<sub>v</sub> &middot; (&lambda;<sub>1, U</sub> &middot; d<sub>1</sub>' &middot; G + ... + &lambda;<sub>u, U</sub> &middot; d<sub>u</sub>' &middot; G)
-        = sum<sub>i=1..u</sub>(g<sub>v</sub> &middot; gacc<sub>v</sub> &middot; &lambda;<sub>i, U</sub> &middot; d<sub>i</sub>') &middot; G
+  with_even_y(Q<sub>v</sub>) - g<sub>v</sub>&middot;tacc<sub>v</sub>&middot;G
+    = g<sub>v</sub>&middot;gacc<sub>v</sub>&middot;Q<sub>0</sub>
+    = g<sub>v</sub>&middot;gacc<sub>v</sub>&middot;(&lambda;<sub>id<sub>1</sub></sub>&middot;P<sub>1</sub> + ... + &lambda;<sub>id<sub>u</sub></sub>&middot;P<sub>u</sub>)
+    = g<sub>v</sub>&middot;gacc<sub>v</sub>&middot;(&lambda;<sub>id<sub>1</sub></sub>&middot;d<sub>1</sub>'&middot;G + ... + &lambda;<sub>id<sub>u</sub></sub>&middot;d<sub>u</sub>'&middot;G)
+    = sum<sub>j=1..u</sub>(g<sub>v</sub>&middot;gacc<sub>v</sub>&middot;&lambda;<sub>id<sub>j</sub></sub>&middot;d<sub>j</sub>')&middot;G
 </pre>
 
-Intuitively, *gacc<sub>i</sub>* tracks accumulated sign flipping and *tacc<sub>i</sub>* tracks the accumulated tweak value after applying the first *i* individual tweaks. Additionally, *g<sub>v</sub>* indicates whether *Q<sub>v</sub>* needed to be negated to produce the final X-only result. Thus, signer *i* multiplies its secret share *d<sub>i</sub>'* with *g<sub>v</sub> &middot; gacc<sub>v</sub>* in the [*Sign*](#signing) algorithm.
+Intuitively, *gacc<sub>i</sub>* tracks accumulated sign flipping and *tacc<sub>i</sub>* tracks the accumulated tweak value after applying the first *i* individual tweaks. Additionally, *g<sub>v</sub>* indicates whether *Q<sub>v</sub>* needed to be negated to produce the final X-only result. Thus, participant *i* multiplies their secret share *d<sub>i</sub>'* with *g<sub>v</sub>&middot;gacc<sub>v</sub>* in the [*Sign*](#signing) algorithm.
 
 #### Negation of the Pubshare when Partially Verifying
 
 As explained in [Negation Of The Secret Share When Signing](#negation-of-the-secret-share-when-signing) the signer uses a possibly negated secret share
 <pre>
-    d = g<sub>v</sub> &middot; gacc<sub>v</sub> &middot; d' mod n
+  d = g<sub>v</sub>&middot;gacc<sub>v</sub>&middot;d'
 </pre>
 when producing a partial signature to ensure that the aggregate signature will correspond to a threshold public key with even Y coordinate.
 
 The [*PartialSigVerifyInternal*](#partial-signature-verification) algorithm is supposed to check
 <pre>
-    s &middot; G = Re<sub>⁎</sub> + e &middot; &lambda; &middot; d &middot; G.
+  s&middot;G = Re<sub>*</sub> + e&middot;&lambda;&middot;d&middot;G
 </pre>
 
-The verifier doesn't have access to *d &middot; G* but can construct it using the participant public share *pubshare* as follows:
+The verifier doesn't have access to *d &middot; G* but can construct it using the participant *pubshare* as follows:
 <pre>
-d &middot; G
-    = g<sub>v</sub> &middot; gacc<sub>v</sub> &middot; d' &middot; G
-    = g<sub>v</sub> &middot; gacc<sub>v</sub> &middot; cpoint(pubshare)
+d&middot;G
+  = g<sub>v</sub> &middot; gacc<sub>v</sub> &middot; d' &middot; G
+  = g<sub>v</sub> &middot; gacc<sub>v</sub> &middot; cpoint(pubshare)
 </pre>
 Note that the threshold public key and list of tweaks are inputs to partial signature verification, so the verifier can also construct *g<sub>v</sub>* and *gacc<sub>v</sub>*.
 
@@ -800,7 +811,7 @@ Therefore, signing continues so that the culprit is revealed when collecting and
 However, the final nonce *R* of a BIP340 Schnorr signature cannot be the point at infinity.
 If we would nonetheless allow the final nonce to be the point at infinity, then the scheme would lose the following property:
 if *PartialSigVerify* succeeds for all partial signatures, then *PartialSigAgg* will return a valid Schnorr signature.
-Since this is a valuable feature, we modify FROST3 (which is defined in the section 2.3 of the [ROAST paper](https://eprint.iacr.org/2022/550.pdf)) to avoid producing an invalid Schnorr signature while still allowing detection of the dishonest signer: In *GetSessionValues*, if the final nonce *R* would be the point at infinity, set it to the generator instead (an arbitrary choice).
+Since this is a valuable feature, we modify [FROST3 signing][roast] to avoid producing an invalid Schnorr signature while still allowing detection of the dishonest signer: In *GetSessionValues*, if the final nonce *R* would be the point at infinity, set it to the generator instead (an arbitrary choice).
 
 This modification to *GetSessionValues* does not affect the unforgeability of the scheme.
 Given a successful adversary against the unforgeability game (EUF-CMA) for the modified scheme, a reduction can win the unforgeability game for the original scheme by simulating the modification towards the adversary:
@@ -846,6 +857,6 @@ We thank Jonas Nick, Tim Ruffing, Jesse Posner, and Sebastian Falbesoner for the
 [frost2]: https://eprint.iacr.org/2021/1375
 [stronger-security-frost]: https://eprint.iacr.org/2022/833
 [olaf]: https://eprint.iacr.org/2023/899
-<!-- [roast]: https://eprint.iacr.org/2022/550 -->
+[roast]: https://eprint.iacr.org/2022/550
 <!-- [thresh-with-dkg]: https://link.springer.com/chapter/10.1007/3-540-36563-x_26 -->
 [rfc9591]: https://www.rfc-editor.org/rfc/rfc9591.html
