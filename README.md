@@ -232,7 +232,7 @@ In particular, partial signatures are *not* signatures.
 An adversary can forge a partial signature, i.e., create a partial signature without knowing the secret share for that particular participant public share.[^partialsig-forgery]
 However, if *PartialSigVerify* succeeds for all partial signatures then *PartialSigAgg* will return a valid Schnorr signature.
 
-[^partialsig-forgery]: Assume a malicious participant intends to forge a partial signature for the participant with public share *P*. It participates in the signing session pretending to be two distinct signers: one with the public share *P* and the other with its own public share. The adversary then sets the nonce for the second signer in such a way that allows it to generate a partial signature for *P*. As a side effect, it cannot generate a valid partial signature for its own public share. An explanation of the steps required to create a partial signature forgery can be found in [this document](docs/partialsig_forgery.md).
+[^partialsig-forgery]: Assume a malicious participant intends to forge a partial signature for the participant with public share *P*. It participates in the signing session pretending to be two distinct signers: one with the public share *P* and the other with its own public share. The adversary then sets the nonce for the second signer in such a way that allows it to generate a partial signature for *P*. As a side effect, it cannot generate a valid partial signature for its own public share. An explanation of the steps required to create a partial signature forgery can be found in [this document](./docs/partialsig_forgery.md).
 
 ### Tweaking the Threshold Public Key
 
@@ -650,7 +650,7 @@ Hence, using *DeterministicSign* is only possible for the last signer to generat
 
 #### Deterministic and Stateless Signing for a Single Signer
 
-Algorithm *DeterministicSign(secshare, my_id, aggothernonce, signers, tweak<sub>1..v</sub>, is_xonly_t<sub>1..v</sub>, m, rand)*:
+Algorithm *DeterministicSign(secshare, my_id, aggothernonce, signers_ctx, tweak<sub>1..v</sub>, is_xonly_t<sub>1..v</sub>, m, rand)*:
 
 - Inputs:
   - The participant secret signing share *secshare*: a 32-byte array, serialized scalar
@@ -673,8 +673,8 @@ Algorithm *DeterministicSign(secshare, my_id, aggothernonce, signers, tweak<sub>
 - Let *tweaked_tpk = GetXonlyPubkey(tweak_ctx<sub>v</sub>)*
 - Let *k<sub>i</sub> = scalar_from_bytes_wrapping(hash<sub>FROST/deterministic/nonce</sub>(secshare' || aggothernonce || tweaked_tpk || bytes(8, len(m)) || m || bytes(1, i - 1)))* for *i = 1,2*
 - Fail if *k<sub>1</sub> = Scalar(0)* or *k<sub>2</sub> = Scalar(0)*
-- Let *R<sub>⁎,1</sub> = k<sub>1</sub> &middot; G, R<sub>⁎,2</sub> = k<sub>2</sub> &middot; G*
-- Let *pubnonce = cbytes(R<sub>⁎,2</sub>) || cbytes(R<sub>⁎,2</sub>)*
+- Let *R<sub>\*,1</sub> = k<sub>1</sub> &middot; G, R<sub>\*,2</sub> = k<sub>2</sub> &middot; G*
+- Let *pubnonce = cbytes(R<sub>\*,1</sub>) || cbytes(R<sub>\*,2</sub>)*
 - Let *d = scalar_from_bytes_nonzero_checked(secshare')*; fail if that fails
 - Let *my_pubshare = cbytes(d &middot; G)*
 - Fail if *my_pubshare* is not present in *pubshare<sub>1..u</sub>*

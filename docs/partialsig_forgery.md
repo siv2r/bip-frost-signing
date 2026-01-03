@@ -61,6 +61,3 @@ Moving to the second communication round, the adversary can present the forged p
 $$s_{5} \cdot G = R_{5,1} + b \cdot R_{5,2} + \mathbb{H}\left(\tilde{X}, \tilde{R}, m\right)\lambda_{5, S}X_5$$
 
 The RHS is entirely fixed by the previous steps, and thus the LHS is a point whose discrete log cannot be extracted. In other words, the values $R_{5,1}, R_{5,2}$ were determined by the choices of nonces at other indices, and their secret values cannot be deduced (unlike in honest signing, where they are pre-determined by the signer). Therefore, **even though the adversary knows the secret share** $x_5$, **they are still unable to successfully complete the FROST protocol execution**.
-
-
-
