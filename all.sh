@@ -10,8 +10,10 @@ check_availability() {
 }
 
 check_availability markdownlint-cli2
+check_availability typos
 
 markdownlint-cli2 README.md --config ./.markdownlint.json || true
+typos || true
 
 cd python || exit 1
 ./tests.sh
