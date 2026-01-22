@@ -9,9 +9,10 @@ This document provides reasoning behind the major design decisions in the BIP an
 In this BIP, we follow the FROST3 scheme (see section 2.3 in [ROAST paper](https://eprint.iacr.org/2022/550.pdf)), which is a variant of the [original FROST](https://eprint.iacr.org/2020/852.pdf).
 
 TODO: update this section to reflect that we currently follow the alternative 1 instead.
+
 ### Key Generation
 
-We aim to represent $(t, n)$ FROST keys using [1] input/output arguments of keygen and [2] conditions that output arguments must satisfy (see definition 2.5 in the [ROAST paper](https://eprint.iacr.org/2022/550.pdf)). This representation should be easy to understand without sacrificing precision. At present, we represent these conditions using boolean functions _ValidateThreshPubkey_ and _ValidatePubshares_.
+We aim to represent $(t, n)$ FROST keys using [1] input/output arguments of keygen and [2] conditions that output arguments must satisfy (see definition 2.5 in the [ROAST paper](https://eprint.iacr.org/2022/550.pdf)). This representation should be easy to understand without sacrificing precision. At present, we represent these conditions using boolean functions *ValidateThreshPubkey* and *ValidatePubshares*.
 
 ### No Key Sorting
 
@@ -52,12 +53,15 @@ I chose Option 1 because it fits nicely with the _PartialSigVerify_ algorithm wh
 ### Sorting Ids While Signing
 
 The FROST3 scheme computes the binding factor as
+
 ```math
 b = H_{non}(T, \text{thresh\_pk}, \text{aggnonce}, \text{msg})
 ```
-where $T$ represents the signer set. Since $T$ is a set, it must be independent of the order of signers, i.e., {1, 2, 3} = {2, 1, 3}. Therefore, we sort the IDs (see [_GetSessionValues_](../README.md#session-context)) when computing the binding factor.
+
+where $T$ represents the signer set. Since $T$ is a set, it must be independent of the order of signers, i.e., {1, 2, 3} = {2, 1, 3}. Therefore, we sort the IDs (see [*GetSessionValues*](../README.md#session-context)) when computing the binding factor.
 
 ## Some Bike Shedding
+
 - how to write out inverse in lagrange coeff calc?
   - simply power -1
   - power power n-2
@@ -71,4 +75,4 @@ where $T$ represents the signer set. Since $T$ is a set, it must be independent 
   - If yes, how to blame the singer if their `id` itself is incorrect?
 - hash tag for b, "noncecoef" vs "noncecoeff"
   - follow musig2. It uses "noncecoef"
-- we currently use the symbol &lambda; in Sign & ParialSigVerify. Is it okay? Or should we use an ASCII char instead?
+- we currently use the symbol &lambda; in Sign & PartialSigVerify. Is it okay? Or should we use an ASCII char instead?

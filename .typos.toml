@@ -1,0 +1,16 @@
+[default]
+# NOTE: use here for regex patterns
+extend-ignore-re = [
+    "ser.*",
+]
+
+[files]
+extend-exclude = [
+    "*.excalidraw",
+    "python/secp256k1lab/",
+    "python/vectors/",
+]
+
+[default.extend-words]
+# Add specific false positives if needed
+# Format: incorrect = "correct" (but this allows the "incorrect" spelling)
