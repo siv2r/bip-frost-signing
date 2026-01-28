@@ -96,9 +96,7 @@ def validate_signers_ctx(signers_ctx: SignersContext) -> None:
         except ValueError:
             raise InvalidContributionError(i, "pubshare")
     if len(set(ids)) != len(ids):
-        raise ValueError(
-            "The participant identifier list contains duplicate elements."
-        )
+        raise ValueError("The participant identifier list contains duplicate elements.")
     if derive_thresh_pubkey(ids, pubshares) != thresh_pk:
         raise ValueError("The provided key material is incorrect.")
 
