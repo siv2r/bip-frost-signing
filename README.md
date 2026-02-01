@@ -1,14 +1,13 @@
 ```
-BIP: ?
+BIP: 445
 Title: FROST Signing Protocol for BIP340 Signatures
-Author: Sivaram Dhakshinamoorthy <siv2ram@gmail.com>
-Comments-URI:
+Authors: Sivaram Dhakshinamoorthy <siv2ram@gmail.com>
 Status: Draft
-Type: Standards Track
-Assigned: ?
+Type: Specification
+Assigned: 2026-01-30
 License: CC0-1.0
 Discussion: 2024-07-31: https://groups.google.com/g/bitcoindev/c/PeMp2HQl-H4/m/AcJtK0aKAwAJ
-Requires: 32, 340, 341
+Requires: 340
 ```
 
 ## Abstract
@@ -622,7 +621,7 @@ Algorithm *DeterministicSign(secshare, my_id, aggothernonce, signers_ctx, tweak<
   - The list of tweaks *tweak<sub>1..v</sub>*: *v* 32-byte arrays, each a serialized scalar
   - The list of tweak methods *is_xonly_t<sub>1..v</sub>*: *v* booleans
   - The message *m*: a byte array[^max-msg-len]
-  - The auxiliary randomness *rand*: a 32-byte array, serialized scalar (optional argument)
+  - The auxiliary randomness *rand*: a 32-byte array (optional argument)
 - If the optional argument *rand* is present:
   - Let *secshare' = xor_bytes(secshare, hash<sub>FROST/aux</sub>(rand))*
 - Else:
@@ -786,6 +785,7 @@ This document proposes a standard for the FROST threshold signature scheme that 
 
 ## Changelog
 
+- *0.4.0* (2026-01-30): Number 445 was assigned to this BIP.
 - *0.3.6* (2026-01-28): Add MIT license file for reference code and other auxiliary files.
 - *0.3.5* (2026-01-25): Update secp256k1lab to latest version, remove stub file, and fix formatting in the BIP text.
 - *0.3.4* (2026-01-01): Add an example file to the reference code.
