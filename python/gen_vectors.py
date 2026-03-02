@@ -738,18 +738,6 @@ def generate_sign_verify_vectors():
     # --- Verify Fail Test Cases 3 ---
     vectors["verify_fail_test_cases"].append(
         {
-            "psig": bytes_to_hex(psig),
-            "id_indices": id_indices,
-            "pubshare_indices": [2] + pubshare_indices[1:],
-            "pubnonce_indices": pubnonce_indices,
-            "msg_index": msg_idx,
-            "signer_index": signer_idx,
-            "comment": "The signer's pubshare is not in the list of pubshares",
-        }
-    )
-    # --- Verify Fail Test Cases 4 ---
-    vectors["verify_fail_test_cases"].append(
-        {
             "psig": "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141",
             "id_indices": id_indices,
             "pubshare_indices": pubshare_indices,
@@ -789,6 +777,15 @@ def generate_sign_verify_vectors():
             "signer": 0,
             "error": "value",
             "comment": "public nonces count is greater than ids and pubshares",
+        },
+        {
+            "ids": [0, 1],
+            "pubshares": [2, 1],
+            "pubnonces": [0, 1],
+            "msg": 0,
+            "signer": 0,
+            "error": "value",
+            "comment": "The signer's pubshare is not in the list of pubshares",
         },
     ]
     for case in verify_error_cases:

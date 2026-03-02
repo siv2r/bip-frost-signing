@@ -399,24 +399,6 @@
             "comment": "Wrong signer index"
         },
         {
-            "psig": "79DEFC679CF419BA7C48AF8F9526B5D510AAA4115B04DECDDE10CE9E06105334",
-            "id_indices": [
-                0,
-                1
-            ],
-            "pubshare_indices": [
-                2,
-                1
-            ],
-            "pubnonce_indices": [
-                0,
-                1
-            ],
-            "msg_index": 0,
-            "signer_index": 0,
-            "comment": "The signer's pubshare is not in the list of pubshares"
-        },
-        {
             "psig": "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141",
             "id_indices": [
                 0,
@@ -504,6 +486,28 @@
                 "message": "The pubnonces and ids arrays must have the same length."
             },
             "comment": "public nonces count is greater than ids and pubshares"
+        },
+        {
+            "psig": "79DEFC679CF419BA7C48AF8F9526B5D510AAA4115B04DECDDE10CE9E06105334",
+            "id_indices": [
+                0,
+                1
+            ],
+            "pubshare_indices": [
+                2,
+                1
+            ],
+            "pubnonce_indices": [
+                0,
+                1
+            ],
+            "msg_index": 0,
+            "signer_index": 0,
+            "error": {
+                "type": "ValueError",
+                "message": "The provided key material is incorrect."
+            },
+            "comment": "The signer's pubshare is not in the list of pubshares"
         }
     ]
 }

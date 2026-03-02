@@ -1,13 +1,13 @@
 ```
-BIP: 445
-Title: FROST Signing Protocol for BIP340 Signatures
-Authors: Sivaram Dhakshinamoorthy <siv2ram@gmail.com>
-Status: Draft
-Type: Specification
-Assigned: 2026-01-30
-License: CC0-1.0
-Discussion: 2024-07-31: https://groups.google.com/g/bitcoindev/c/PeMp2HQl-H4/m/AcJtK0aKAwAJ
-Requires: 340
+  BIP: 445
+  Title: FROST Signing Protocol for BIP340 Signatures
+  Authors: Sivaram Dhakshinamoorthy <siv2ram@gmail.com>
+  Status: Draft
+  Type: Specification
+  Assigned: 2026-01-30
+  License: CC0-1.0
+  Discussion: 2024-07-31: https://groups.google.com/g/bitcoindev/c/PeMp2HQl-H4/m/AcJtK0aKAwAJ
+  Requires: 340
 ```
 
 ## Abstract
@@ -534,6 +534,7 @@ Algorithm *PartialSigVerify(psig, pubnonce<sub>1..u</sub>, signers_ctx, tweak<su
   - The list of tweak modes *is_xonly_t<sub>1..v</sub>* : *v* booleans
   - The message *m*: a byte array[^max-msg-len]
   - The index *i* of the signer in the list of public nonces where *0 < i ≤ u*
+- ValidateSignersCtx(signers_ctx); fail if that fails
 - Let *(_, _, u, id<sub>1..u</sub>, pubshare<sub>1..u</sub>, _) = signers_ctx*
 - Let *aggnonce = NonceAgg(pubnonce<sub>1..u</sub>, id<sub>1..u</sub>)*; fail if that fails
 - Let *session_ctx = (signers_ctx, aggnonce, v, tweak<sub>1..v</sub>, is_xonly_t<sub>1..v</sub>, m)*

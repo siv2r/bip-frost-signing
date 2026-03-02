@@ -233,12 +233,14 @@ def test_sign_verify_vectors():
         signer_index = test_case["signer_index"]
 
         signers_tmp = SignersContext(n, t, ids_tmp, pubshares_tmp, thresh_pk)
-        assert not partial_sig_verify_internal(
+        assert not partial_sig_verify(
             psig,
-            ids_tmp[signer_index],
-            pubnonces_tmp[signer_index],
-            pubshares_tmp[signer_index],
-            session_ctx,
+            pubnonces_tmp,
+            signers_tmp,
+            [],
+            [],
+            msg,
+            signer_index,
         )
 
     for test_case in verify_error_test_cases:
