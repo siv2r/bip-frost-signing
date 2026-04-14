@@ -1006,14 +1006,14 @@ def generate_det_sign_vectors():
             "signer": 1,
             "msg": 0,
             "rand": 0,
-            "comment": "Partial-signature shouldn't change if the order of signers set changes. Note: The deterministic sign will generate the same secnonces due to unchanged parameters",
+            "comment": "Partial signature and secnonce are invariant under reordering of ids (serialize_ids sorts first).",
         },
         {
             "indices": [0, 2],
             "signer": 0,
             "msg": 0,
             "rand": 0,
-            "comment": "Partial-signature changes if the members of signers set changes",
+            "comment": "Partial signature and secnonce change when the signer subset changes, ids is bound into det_nonce_hash.",
         },
         {
             "indices": [0, 1],

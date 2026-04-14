@@ -340,12 +340,20 @@ def sign(
     return psig
 
 
-# REVIEW should we hash the signer set (or pubshares) too? Otherwise same nonce will be generate even if the signer set changes
 def det_nonce_hash(
-    secshare_: bytes, aggothernonce: bytes, tweaked_tpk: bytes, msg: bytes, i: int
+    secshare_: bytes,
+    my_id: int,
+    ids: List[int],
+    aggothernonce: bytes,
+    tweaked_tpk: bytes,
+    msg: bytes,
+    i: int,
 ) -> bytes:
     buf = b""
     buf += secshare_
+    buf += my_id.to_bytes(4, "big")
+    buf += len(ids).to_bytes(4, "big")
+    buf += serialize_ids(ids)
     buf += aggothernonce
     buf += tweaked_tpk
     buf += len(msg).to_bytes(8, "big")
@@ -370,14 +378,14 @@ def deterministic_sign(
         secshare_ = secshare
     # REVIEW: do we need to add any check for ids & pubshares (in signers_ctx context) here?
     validate_signers_ctx(signers_ctx)
-    _, _, _, _, thresh_pk = signers_ctx
+    _, _, ids, _, thresh_pk = signers_ctx
     tweaked_tpk = get_xonly_pk(thresh_pubkey_and_tweak(thresh_pk, tweaks, is_xonly))
 
     k_1 = Scalar.from_bytes_wrapping(
-        det_nonce_hash(secshare_, aggothernonce, tweaked_tpk, msg, 0)
+        det_nonce_hash(secshare_, my_id, ids, aggothernonce, tweaked_tpk, msg, 0)
     )
     k_2 = Scalar.from_bytes_wrapping(
-        det_nonce_hash(secshare_, aggothernonce, tweaked_tpk, msg, 1)
+        det_nonce_hash(secshare_, my_id, ids, aggothernonce, tweaked_tpk, msg, 1)
     )
     # k_1 == 0 or k_2 == 0 cannot occur except with negligible probability.
     assert k_1 != 0
