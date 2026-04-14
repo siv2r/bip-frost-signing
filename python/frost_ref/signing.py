@@ -429,7 +429,6 @@ def partial_sig_verify(
     )
 
 
-# REVIEW: catch `cpoint` ValueError and return false
 def partial_sig_verify_internal(
     psig: bytes,
     my_id: int,

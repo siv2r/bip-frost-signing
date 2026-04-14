@@ -49,7 +49,7 @@ Given a specific application scenario, some features may be unnecessary or not d
 Such optional features include:
 
 - Applying plain tweaks after x-only tweaks.
-- Applying tweaks at all.
+- Not Applying tweaks at all.
 - Dealing with messages that are not exactly 32 bytes.
 - Identifying a disruptive signer after aborting (aborting itself remains mandatory).
 If applicable, the corresponding algorithms should simply fail when encountering inputs unsupported by a particular implementation. (For example, the signing algorithm may fail when given a message which is not 32 bytes.)
@@ -57,7 +57,6 @@ Similarly, the test vectors that exercise the unimplemented features should be r
 
 ### Key Material and Setup
 
-<!-- REVIEW: should we use "identifiers `i`", secret share `secshare_i` style here? -->
 A FROST key generation protocol configures a group of *n* participants with a *threshold public key* (representing a *t-of-n* threshold policy).
 The corresponding *threshold secret key* is Shamir secret-shared among all *n* participants, where each participant holds a distinct long-term *secret share*.
 This ensures that any subset of at least *t* participants can jointly run the FROST signing protocol to produce a signature under the *threshold secret key*.
@@ -170,7 +169,7 @@ Stateless signers may want to consider signing deterministically (see [Modificat
 ### Identifying Disruptive Signers
 
 The signing protocol makes it possible to identify malicious signers who send invalid contributions to a signing session in order to make the signing session abort and prevent the honest signers from obtaining a valid signature.
-This property is called "identifiable aborts" and ensures that honest parties can assign blame to malicious signers who cause an abort in the signing protocol.
+This property is called "identifiable aborts" and ensures that honest parties can assign blame to malicious (or incorrectly implemented) signers who cause an abort in the signing protocol.
 
 Aborts are identifiable for an honest party if the following conditions hold in a signing session:
 
@@ -394,7 +393,7 @@ Algorithm *ApplyTweak(tweak_ctx, tweak, is_xonly_t)*:
   - Let *g = Scalar(-1)*
 - Else:
   - Let *g = Scalar(1)*
-- Let *t = scalar_from_bytes_nonzero_checked(tweak)*; fail if that fails
+- Let *t = scalar_from_bytes_checked(tweak)*; fail if that fails
 - Let *Q' = g &middot; Q + t &middot; G*
   - Fail if *is_infinity(Q')*
 - Let *gacc' = g &middot; gacc &ensp;(mod ord)*
@@ -408,8 +407,7 @@ Algorithm *NonceGen(secshare, pubshare, thresh_pk, m, extra_in)*:
 - Inputs:
   - The participant secret signing share *secshare*: a 32-byte array, serialized scalar (optional argument)
   - The participant public share *pubshare*: a 33-byte array, compressed serialized point (optional argument)
-  <!-- REVIEW: why is this xonly? why not include the 33-bytes serialization? -->
-  - The x-only threshold public key *thresh_pk*: a 32-byte array, X-only serialized point (optional argument)
+  - The x-only threshold public key *thresh_pk*: a 32-byte array, X-only serialized point (optional argument). When tweaks have been applied, this is ideally the tweaked threshold public key from *GetXonlyPubkey(tweak_ctx)*.
   - The message *m*: a byte array (optional argument)[^max-msg-len]
   - The auxiliary input *extra_in*: a byte array with *0 ≤ len(extra_in) ≤ 2<sup>32</sup>-1* (optional argument)
 - Let *rand' = random_bytes(32)*
@@ -546,7 +544,7 @@ Algorithm *PartialSigVerify(psig, pubnonce<sub>1..u</sub>, signers_ctx, tweak<su
 Internal Algorithm *PartialSigVerifyInternal(psig, my_id, pubnonce, pubshare, session_ctx)*:
 
 - Let *(Q, gacc, _, id<sub>1..u</sub>, pubshare<sub>1..u</sub>, b, R, e) = GetSessionValues(session_ctx)*; fail if that fails
-- Let *s = scalar_from_bytes_nonzero_checked(psig)*; fail if that fails
+- Let *s = scalar_from_bytes_checked(psig)*; fail if that fails
 - Fail if *pubshare* not in *pubshare<sub>1..u</sub>*
 - Fail if *my_id* not in *id<sub>1..u</sub>*
 - Let *R<sub>\*,1</sub> = cpoint(pubnonce[0:33]), R<sub>\*,2</sub> = cpoint(pubnonce[33:66])*
@@ -666,7 +664,6 @@ Algorithm *ApplyXonlyTweak(P, t)*:
   - The tweak *t*: a scalar
 - Return *with_even_y(P) + t &middot; G*
 
-<!-- REVIEW: Should we point to BIP327 for this proof? Unless we use agnostic tweaking -->
 ### Negation of the Secret Share when Signing
 
 > [!NOTE]
