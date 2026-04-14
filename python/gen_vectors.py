@@ -594,7 +594,7 @@ def generate_sign_verify_vectors():
             "msg": 0,
             "signer_idx": 0,
             "secnonce": 0,
-            "error": "invalid_contrib",
+            "error": "value",
             "comment": "Signer 1 provided an invalid participant public share",
         },
         {
@@ -752,7 +752,7 @@ def generate_sign_verify_vectors():
             "pubnonces": [0, 1],
             "msg": 0,
             "signer": 0,
-            "error": "invalid_contrib",
+            "error": "value",
             "comment": "Invalid pubshare",
         },
         {
@@ -1158,7 +1158,7 @@ def generate_det_sign_vectors():
             "signer_idx": 0,
             "msg": 0,
             "rand": 0,
-            "error": "invalid_contrib",
+            "error": "value",
             "comment": "Signer 1 provided an invalid participant public share",
         },
         {

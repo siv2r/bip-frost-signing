@@ -261,7 +261,7 @@ The reference code vendors the secp256k1lab library to handle underlying arithme
 | *scalar_from_bytes_checked(b)* | *Scalar.from_bytes_checked(b)* | Deserializes a 32-byte array *b* to a scalar, fails if the value is ≥ *ord* |
 | *scalar_from_bytes<br>_nonzero_checked(b)* | *Scalar.from_bytes<br>_nonzero_checked(b)* | Deserializes a 32-byte array *b* to a scalar, fails if the value is zero or ≥ *ord* |
 | *scalar_from_bytes_wrapping(b)* | *Scalar.from_bytes_wrapping(b)* | Deserializes a 32-byte array *b* to a scalar, reducing the value modulo *ord* |
-| *hash<sub>tag</sub>(x)* | *tagged_hash(x)* | Computes a 32-byte domain-separated hash of the byte array *x*. The output is *SHA256(SHA256(tag) \|\| SHA256(tag) \|\| x)*, where *tag* is UTF-8 encoded string unique to the context |
+| *hash<sub>tag</sub>(x)* | *tagged_hash(tag, x)* | Computes a 32-byte domain-separated hash of the byte array *x*. The output is *SHA256(SHA256(tag) \|\| SHA256(tag) \|\| x)*, where *tag* is UTF-8 encoded string unique to the context |
 | *random_bytes(n)* | - | Returns *n* bytes, sampled uniformly at random using a cryptographically secure pseudorandom number generator (CSPRNG) |
 | *xor_bytes(a, b)* | *xor_bytes(a, b)* | Returns byte-wise xor of *a* and *b* |
 <!-- markdownlint-enable MD033 -->
@@ -353,6 +353,9 @@ The Tweak Context is a data structure consisting of the following elements:
 - The accumulated tweak *tacc*: a *Scalar*
 
 We write "Let *(Q, gacc, tacc) = tweak_ctx*" to assign names to the elements of a Tweak Context.
+
+> [!TIP]
+> The Tweak Context is identical to the *KeyAgg Context* defined in [BIP327][bip327]. Implementations with existing BIP327 code can reuse it to implement this data structure and its algorithms.
 
 Algorithm *TweakCtxInit(thresh_pk):*
 
@@ -532,7 +535,7 @@ Algorithm *PartialSigVerify(psig, pubnonce<sub>1..u</sub>, signers_ctx, tweak<su
   - The list of tweaks *tweak<sub>1..v</sub>*: *v* 32-byte arrays, each a serialized scalar
   - The list of tweak modes *is_xonly_t<sub>1..v</sub>* : *v* booleans
   - The message *m*: a byte array[^max-msg-len]
-  - The index *i* of the signer in the list of public nonces where *0 < i ≤ u*
+  - The index *i* of the signer in the list of public nonces where *0 < i < u*
 - ValidateSignersCtx(signers_ctx); fail if that fails
 - Let *(_, _, u, id<sub>1..u</sub>, pubshare<sub>1..u</sub>, _) = signers_ctx*
 - Let *aggnonce = NonceAgg(pubnonce<sub>1..u</sub>)*; fail if that fails
