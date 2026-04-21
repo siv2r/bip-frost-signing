@@ -810,7 +810,7 @@ This document proposes a standard for the FROST threshold signature scheme that 
 
 ## Acknowledgments
 
-We thank Jonas Nick, Tim Ruffing, Jesse Posner, and Sebastian Falbesoner for their contributions to this document.
+We thank Jonas Nick, Tim Ruffing, Jesse Posner, Sebastian Falbesoner, Chris Stewart, Illia Melnyk, Mariia Zhvanko, and Fadi Barbàra for their comments and contributions to this document.
 
 <!-- References -->
 [bip32]: https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki
