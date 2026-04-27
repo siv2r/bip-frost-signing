@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 
+import glob
 import json
 import os
-import shutil
 import sys
 from typing import Dict, List, Sequence, Union
 import secrets
@@ -1408,9 +1408,9 @@ def generate_sig_agg_vectors():
 
 
 def create_vectors_directory():
-    if os.path.exists("vectors"):
-        shutil.rmtree("vectors")
-    os.makedirs("vectors")
+    os.makedirs("vectors", exist_ok=True)
+    for f in glob.glob("vectors/*.json"):
+        os.remove(f)
 
 
 def run_gen_vectors(test_name, test_func):
