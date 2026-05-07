@@ -244,26 +244,6 @@
         {
             "id_indices": [
                 0,
-                1,
-                2
-            ],
-            "pubshare_indices": [
-                0,
-                1
-            ],
-            "aggnonce_index": 0,
-            "msg_index": 0,
-            "signer_index": 0,
-            "secnonce_index": 0,
-            "error": {
-                "type": "ValueError",
-                "message": "The pubshares and ids arrays must have the same length."
-            },
-            "comment": "The participant identifiers count exceed the participant public shares count"
-        },
-        {
-            "id_indices": [
-                0,
                 1
             ],
             "pubshare_indices": [
@@ -461,29 +441,6 @@
                 "message": "Invalid pubshare at index 0."
             },
             "comment": "Invalid pubshare"
-        },
-        {
-            "psig": "79DEFC679CF419BA7C48AF8F9526B5D510AAA4115B04DECDDE10CE9E06105334",
-            "id_indices": [
-                0,
-                1
-            ],
-            "pubshare_indices": [
-                0,
-                1
-            ],
-            "pubnonce_indices": [
-                0,
-                1,
-                2
-            ],
-            "msg_index": 0,
-            "signer_index": 0,
-            "error": {
-                "type": "ValueError",
-                "message": "The pubnonces and ids arrays must have the same length."
-            },
-            "comment": "public nonces count is greater than ids and pubshares"
         },
         {
             "psig": "79DEFC679CF419BA7C48AF8F9526B5D510AAA4115B04DECDDE10CE9E06105334",

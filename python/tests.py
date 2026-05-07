@@ -98,7 +98,7 @@ def test_nonce_gen_vectors():
     with open(os.path.join(sys.path[0], "vectors", "nonce_gen_vectors.json")) as f:
         test_data = json.load(f)
 
-    for test_case in test_data["test_cases"]:
+    for test_case in test_data["valid_test_cases"]:
 
         def get_value(key) -> bytes:
             return bytes.fromhex(test_case[key])

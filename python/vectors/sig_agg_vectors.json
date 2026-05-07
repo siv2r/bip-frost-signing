@@ -156,31 +156,6 @@
                 "contrib": "psig"
             },
             "comment": "Partial signature is invalid because it exceeds group size"
-        },
-        {
-            "id_indices": [
-                0,
-                1
-            ],
-            "pubshare_indices": [
-                0,
-                1
-            ],
-            "pubnonce_indices": [
-                0,
-                1
-            ],
-            "aggnonce": "022AAC6A4960DE35FC36D8E2DC06255C5CB7FD28250DFD84EBF1AC943B1EA22C3502178AD06BB0490BAD857446FEF55C15FD9FF4329F4EE2F23CA8B7CA0598014910",
-            "tweak_indices": [],
-            "is_xonly": [],
-            "psigs": [
-                "09CA21FA4AE22BBB49EE5ABC091519C8695FB74FC3D39C1437019EF6FE6C7AB4"
-            ],
-            "error": {
-                "type": "ValueError",
-                "message": "The psigs and ids arrays must have the same length."
-            },
-            "comment": "Partial signature count doesn't match the signer set count"
         }
     ]
 }

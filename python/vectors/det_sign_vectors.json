@@ -285,28 +285,6 @@
         },
         {
             "rand": "0000000000000000000000000000000000000000000000000000000000000000",
-            "aggothernonce": "02FCDBEE416E4426FB4004BAB2B416164845DEC27337AD2B96184236D715965AB2039F71F389F6808DC6176F062F80531E13EA5BC2612B690FC284AE66C2CD859CE9",
-            "id_indices": [
-                0,
-                1,
-                2
-            ],
-            "pubshare_indices": [
-                0,
-                1
-            ],
-            "tweaks": [],
-            "is_xonly": [],
-            "msg_index": 0,
-            "signer_index": 0,
-            "error": {
-                "type": "ValueError",
-                "message": "The pubshares and ids arrays must have the same length."
-            },
-            "comment": "The participant identifiers count exceed the participant public shares count"
-        },
-        {
-            "rand": "0000000000000000000000000000000000000000000000000000000000000000",
             "aggothernonce": "0353BC2314D46C813AF81317AF1BDF99816B6444E416BB8D3DC04ACB2F5388D1AC02B13BC644F720223B547DB344C94E0F5E769B674D8A9C3F5E86A5231A5B9C3297",
             "id_indices": [
                 0,

@@ -1,4 +1,4 @@
-# FROST Test Vectors
+# FROST Signing Test Vectors
 
 This directory contains JSON test vectors for the BIP-FROST signing
 protocol. They are consumed by `python/tests.py` and are intended for
@@ -6,9 +6,9 @@ cross-implementation compatibility testing.
 
 ## Files
 
-| File | Function under test | Top-level shape |
+| File name | Function under test | Structure |
 |---|---|---|
-| `nonce_gen_vectors.json` | `nonce_gen_internal` | flat `test_cases[]` |
+| `nonce_gen_vectors.json` | `nonce_gen_internal` | flat `valid_test_cases[]` |
 | `nonce_agg_vectors.json` | `nonce_agg` | shared `pubnonces[]` + `valid_test_cases` + `error_test_cases` |
 | `sign_verify_vectors.json` | `sign` and `partial_sig_verify` | shared setup + `valid_test_cases` + `sign_error_test_cases` + `verify_fail_test_cases` + `verify_error_test_cases` |
 | `tweak_vectors.json` | `sign` under tweak combinations | shared setup + `valid_test_cases` + `error_test_cases` |

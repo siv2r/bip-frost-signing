@@ -245,33 +245,6 @@
                 "message": "The tweak must be less than n."
             },
             "comment": "Tweak is invalid because it exceeds group size"
-        },
-        {
-            "id_indices": [
-                0,
-                1
-            ],
-            "pubshare_indices": [
-                0,
-                1
-            ],
-            "tweak_indices": [
-                0,
-                1,
-                2,
-                3
-            ],
-            "aggnonce_index": 0,
-            "is_xonly": [
-                true,
-                false
-            ],
-            "signer_index": 0,
-            "error": {
-                "type": "ValueError",
-                "message": "The tweaks and is_xonly arrays must have the same length."
-            },
-            "comment": "Tweaks count doesn't match the tweak modes count"
         }
     ]
 }

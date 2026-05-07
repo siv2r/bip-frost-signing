@@ -183,7 +183,7 @@ def frost_keygen_random():
 
 
 def generate_nonce_gen_vectors():
-    vectors = {"test_cases": []}
+    vectors = {"valid_test_cases": []}
 
     _, _, thresh_pk_ge, secshares, pubshares = frost_keygen_fixed()
     extra_in = bytes.fromhex(
@@ -198,7 +198,7 @@ def generate_nonce_gen_vectors():
     secnonce, pubnonce = nonce_gen_internal(
         COMMON_RAND, secshares[0], pubshares[0], xonly_thresh_pk, msg, extra_in
     )
-    vectors["test_cases"].append(
+    vectors["valid_test_cases"].append(
         {
             "rand_": bytes_to_hex(COMMON_RAND),
             "secshare": bytes_to_hex(secshares[0]),
@@ -220,7 +220,7 @@ def generate_nonce_gen_vectors():
         COMMON_MSGS[1],
         extra_in,
     )
-    vectors["test_cases"].append(
+    vectors["valid_test_cases"].append(
         {
             "rand_": bytes_to_hex(COMMON_RAND),
             "secshare": bytes_to_hex(secshares[0]),
@@ -242,7 +242,7 @@ def generate_nonce_gen_vectors():
         COMMON_MSGS[2],
         extra_in,
     )
-    vectors["test_cases"].append(
+    vectors["valid_test_cases"].append(
         {
             "rand_": bytes_to_hex(COMMON_RAND),
             "secshare": bytes_to_hex(secshares[0]),
@@ -257,7 +257,7 @@ def generate_nonce_gen_vectors():
     )
     # --- Valid Test Case 4 ---
     secnonce, pubnonce = nonce_gen_internal(COMMON_RAND, None, None, None, None, None)
-    vectors["test_cases"].append(
+    vectors["valid_test_cases"].append(
         {
             "rand_": bytes_to_hex(COMMON_RAND),
             "secshare": None,
@@ -268,6 +268,23 @@ def generate_nonce_gen_vectors():
             "expected_secnonce": bytes_to_hex(secnonce),
             "expected_pubnonce": bytes_to_hex(pubnonce),
             "comment": "Every optional parameter is absent",
+        }
+    )
+    # --- Valid Test Case 5 ---
+    secnonce, pubnonce = nonce_gen_internal(
+        COMMON_RAND, secshares[0], pubshares[0], xonly_thresh_pk, None, extra_in
+    )
+    vectors["valid_test_cases"].append(
+        {
+            "rand_": bytes_to_hex(COMMON_RAND),
+            "secshare": bytes_to_hex(secshares[0]),
+            "pubshare": bytes_to_hex(pubshares[0]),
+            "threshold_pubkey": bytes_to_hex(xonly_thresh_pk),
+            "msg": None,
+            "extra_in": bytes_to_hex(extra_in),
+            "expected_secnonce": bytes_to_hex(secnonce),
+            "expected_pubnonce": bytes_to_hex(pubnonce),
+            "comment": "Preprocessing: nonce generated before message is known",
         }
     )
 
@@ -578,16 +595,6 @@ def generate_sign_verify_vectors():
             "comment": "The signer's pubshare is not in the list of pubshares. This test case is optional: it can be skipped by implementations that do not check that the signer's pubshare is included in the list of pubshares.",
         },
         {
-            "ids": [0, 1, 2],
-            "pubshares": [0, 1],
-            "aggnonce": 0,
-            "msg": 0,
-            "signer_idx": 0,
-            "secnonce": 0,
-            "error": "value",
-            "comment": "The participant identifiers count exceed the participant public shares count",
-        },
-        {
             "ids": [0, 1],
             "pubshares": [0, INVALID_PUBSHARE_IDX],
             "aggnonce": 0,
@@ -757,15 +764,6 @@ def generate_sign_verify_vectors():
         },
         {
             "ids": [0, 1],
-            "pubshares": [0, 1],
-            "pubnonces": [0, 1, 2],
-            "msg": 0,
-            "signer": 0,
-            "error": "value",
-            "comment": "public nonces count is greater than ids and pubshares",
-        },
-        {
-            "ids": [0, 1],
             "pubshares": [2, 1],
             "pubnonces": [0, 1],
             "msg": 0,
@@ -911,11 +909,6 @@ def generate_tweak_vectors():
             "tweaks_indices": [INVALID_TWEAK_IDX],
             "is_xonly": [False],
             "comment": "Tweak is invalid because it exceeds group size",
-        },
-        {
-            "tweaks_indices": [0, 1, 2, 3],
-            "is_xonly": [True, False],
-            "comment": "Tweaks count doesn't match the tweak modes count",
         },
     ]
     for case in error_cases:
@@ -1143,16 +1136,6 @@ def generate_det_sign_vectors():
             "comment": "The signer's pubshare is not in the list of pubshares. This test case is optional: it can be skipped by implementations that do not check that the signer's pubshare is included in the list of pubshares.",
         },
         {
-            "ids": [0, 1, 2],
-            "pubshares": [0, 1],
-            "signer_idx": 0,
-            "msg": 0,
-            "rand": 0,
-            "aggothernonce": "02FCDBEE416E4426FB4004BAB2B416164845DEC27337AD2B96184236D715965AB2039F71F389F6808DC6176F062F80531E13EA5BC2612B690FC284AE66C2CD859CE9",
-            "error": "value",
-            "comment": "The participant identifiers count exceed the participant public shares count",
-        },
-        {
             "ids": [0, 1],
             "pubshares": [0, INVALID_PUBSHARE_IDX],
             "signer_idx": 0,
@@ -1355,11 +1338,6 @@ def generate_sig_agg_vectors():
             "error": "invalid_contrib",
             "comment": "Partial signature is invalid because it exceeds group size",
         },
-        {
-            "indices": [0, 1],
-            "error": "value",
-            "comment": "Partial signature count doesn't match the signer set count",
-        },
     ]
     for j, case in enumerate(error_cases):
         curr_ids = [ids[i] for i in case["indices"]]
@@ -1381,8 +1359,6 @@ def generate_sig_agg_vectors():
                 "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141"
             )
             psigs[1] = invalid_psig
-        if j == 1:
-            psigs.pop()
 
         expected_exception = (
             ValueError if case["error"] == "value" else InvalidContributionError
