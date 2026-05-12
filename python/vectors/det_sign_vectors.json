@@ -43,7 +43,7 @@
         },
         {
             "rand": "0000000000000000000000000000000000000000000000000000000000000000",
-            "aggothernonce": "02A8B5F064871F3BBB06D325F5B4A2B51487E0AE24F14E2A121C39B9F7CBDE7474038161382177105511164E63DD2C73138EDB271CF11B922DBA54CA4A9B365EDB55",
+            "aggothernonce": "0353BC2314D46C813AF81317AF1BDF99816B6444E416BB8D3DC04ACB2F5388D1AC02B13BC644F720223B547DB344C94E0F5E769B674D8A9C3F5E86A5231A5B9C3297",
             "id_indices": [
                 1,
                 0
@@ -57,10 +57,10 @@
             "msg_index": 0,
             "signer_index": 1,
             "expected": [
-                "02F03FDF7CEB6C07417E151323E3D0A4B918D20EE146270F7531C6AFB890FC289C029EE54112F718D87C2D4DBEF33D173F533EEF9C58E2382EE05696160878038A84",
-                "E3F4282E3163F8C5525FCB34B2C29FF9CC5125E800946C4C3C8E9DC63E3FFC01"
+                "03822691A3FD135A5880A12E92ED62F3ECF40BC7AA0339ED2D01FBB3B44F97EE43022215BA386A89E39EE4BAC1B201C69B8706000C402F89D81799B62AAA302F0C0C",
+                "0A81D292AB93FC55EC047619E06A73AA41D20C0A44FF4C19B9F5052BB23F7BE1"
             ],
-            "comment": "Partial signature and secnonce are invariant under reordering of ids (serialize_ids sorts first)."
+            "comment": "Partial signature and secnonce are invariant under reordering of ids (serialize_ids sorts first). Expected values match the previous vector."
         },
         {
             "rand": "0000000000000000000000000000000000000000000000000000000000000000",
@@ -219,9 +219,9 @@
     "error_test_cases": [
         {
             "rand": "0000000000000000000000000000000000000000000000000000000000000000",
-            "aggothernonce": "02FCDBEE416E4426FB4004BAB2B416164845DEC27337AD2B96184236D715965AB2039F71F389F6808DC6176F062F80531E13EA5BC2612B690FC284AE66C2CD859CE9",
+            "aggothernonce": "02DCE719104EE4D5E969FB5BEDB016D55B19A874A3A5EF4506E414EAE1998437D603044D6D6536C2C44136628131E6B3F4A2197E3A0BE2A4E908636B2CDB455DB018",
             "id_indices": [
-                2,
+                0,
                 1
             ],
             "pubshare_indices": [
@@ -232,12 +232,12 @@
             "is_xonly": [],
             "msg_index": 0,
             "signer_index": null,
-            "signer_id": 0,
+            "signer_id": 2,
             "error": {
                 "type": "ValueError",
-                "message": "The provided key material is incorrect."
+                "message": "The signer's id must be present in the participant identifier list."
             },
-            "comment": "The signer's id is not in the participant identifier list"
+            "comment": "The signer's id (2) is not in the participant identifier list [0, 1]."
         },
         {
             "rand": "0000000000000000000000000000000000000000000000000000000000000000",
@@ -264,14 +264,14 @@
         },
         {
             "rand": "0000000000000000000000000000000000000000000000000000000000000000",
-            "aggothernonce": "0353BC2314D46C813AF81317AF1BDF99816B6444E416BB8D3DC04ACB2F5388D1AC02B13BC644F720223B547DB344C94E0F5E769B674D8A9C3F5E86A5231A5B9C3297",
+            "aggothernonce": "022260912C9999C9EC5A3B8E493F5DEB76DCA3E772345905E12C24D281612DA403022508B1A355D6E94A5BB239441B38971716031EF05DE9AF952BAB69799621AE52",
             "id_indices": [
-                0,
-                1
+                1,
+                2
             ],
             "pubshare_indices": [
-                2,
-                1
+                1,
+                2
             ],
             "tweaks": [],
             "is_xonly": [],
@@ -279,9 +279,9 @@
             "signer_index": 0,
             "error": {
                 "type": "ValueError",
-                "message": "The provided key material is incorrect."
+                "message": "The signer's pubshare must be included in the list of pubshares."
             },
-            "comment": "The signer's pubshare is not in the list of pubshares. This test case is optional: it can be skipped by implementations that do not check that the signer's pubshare is included in the list of pubshares."
+            "comment": "The signer's pubshare (derived from secshare_p0) is not in the pubshares list."
         },
         {
             "rand": "0000000000000000000000000000000000000000000000000000000000000000",
@@ -303,6 +303,27 @@
                 "message": "Invalid pubshare at index 1."
             },
             "comment": "Signer 1 provided an invalid participant public share"
+        },
+        {
+            "rand": "0000000000000000000000000000000000000000000000000000000000000000",
+            "aggothernonce": "0353BC2314D46C813AF81317AF1BDF99816B6444E416BB8D3DC04ACB2F5388D1AC02B13BC644F720223B547DB344C94E0F5E769B674D8A9C3F5E86A5231A5B9C3297",
+            "id_indices": [
+                2,
+                1
+            ],
+            "pubshare_indices": [
+                0,
+                1
+            ],
+            "tweaks": [],
+            "is_xonly": [],
+            "msg_index": 0,
+            "signer_index": 0,
+            "error": {
+                "type": "ValueError",
+                "message": "The provided key material is incorrect."
+            },
+            "comment": "Derived threshold public key will be invalid."
         },
         {
             "rand": "0000000000000000000000000000000000000000000000000000000000000000",
@@ -347,6 +368,50 @@
                 "contrib": "aggothernonce"
             },
             "comment": "aggothernonce is invalid because first half corresponds to point at infinity"
+        },
+        {
+            "rand": "0000000000000000000000000000000000000000000000000000000000000000",
+            "aggothernonce": "0353BC2314D46C813AF81317AF1BDF99816B6444E416BB8D3DC04ACB2F5388D1AC020000000000000000000000000000000000000000000000000000000000000009",
+            "id_indices": [
+                0,
+                1
+            ],
+            "pubshare_indices": [
+                0,
+                1
+            ],
+            "tweaks": [],
+            "is_xonly": [],
+            "msg_index": 0,
+            "signer_index": 0,
+            "error": {
+                "type": "InvalidContributionError",
+                "signer_index": null,
+                "contrib": "aggothernonce"
+            },
+            "comment": "aggothernonce is invalid because the second half does not correspond to an X coordinate"
+        },
+        {
+            "rand": "0000000000000000000000000000000000000000000000000000000000000000",
+            "aggothernonce": "0353BC2314D46C813AF81317AF1BDF99816B6444E416BB8D3DC04ACB2F5388D1AC02FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFFC30",
+            "id_indices": [
+                0,
+                1
+            ],
+            "pubshare_indices": [
+                0,
+                1
+            ],
+            "tweaks": [],
+            "is_xonly": [],
+            "msg_index": 0,
+            "signer_index": 0,
+            "error": {
+                "type": "InvalidContributionError",
+                "signer_index": null,
+                "contrib": "aggothernonce"
+            },
+            "comment": "aggothernonce is invalid because the second half x coordinate is greater than or equal to the field prime"
         },
         {
             "rand": "0000000000000000000000000000000000000000000000000000000000000000",

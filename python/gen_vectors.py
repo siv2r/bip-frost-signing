@@ -18,8 +18,8 @@ from frost_ref import (
     partial_sig_verify,
     sign,
 )
-from frost_ref.signing import nonce_gen_internal
-from secp256k1lab.secp256k1 import GE, Scalar
+from frost_ref.signing import derive_interpolating_value, nonce_gen_internal
+from secp256k1lab.secp256k1 import G, GE, Scalar
 from secp256k1lab.keys import pubkey_gen_plain
 from trusted_dealer import trusted_dealer_keygen
 
@@ -396,6 +396,11 @@ def generate_sign_verify_vectors():
     AGGNONCE_INVALID_TAG_IDX = 4  # Invalid tag 0x04
     AGGNONCE_INVALID_XCOORD_IDX = 5  # Invalid X coordinate
     AGGNONCE_INVALID_EXCEEDS_FIELD_IDX = 6  # X exceeds field size
+    OUT_OF_RANGE_ID_IDX = 3  # identifier value n (=3), out of range [0, n-1]
+
+    # Extend identifiers with an out-of-range value (n=3) for the L91 test case.
+    # Existing cases reference indices 0..2 only and are unaffected.
+    ids = ids + [n]
 
     vectors["n"] = n
     vectors["t"] = t
@@ -414,6 +419,10 @@ def generate_sign_verify_vectors():
             "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
         ),  # all zero
     ]
+    # valid first half (reused from index 0), zero second half.
+    k_2_zero_secnonce = secnonces_p0[0][0:32] + b"\x00" * 32
+    assert Scalar.from_bytes_nonzero_checked(k_2_zero_secnonce[0:32])
+    secnonces_p0.append(k_2_zero_secnonce)
     vectors["secnonces_p0"] = bytes_list_to_hex(secnonces_p0)
     # compute -(pubnonce[0] + pubnonce[1])
     tmp = nonce_agg(pubnonces[:2])
@@ -564,15 +573,15 @@ def generate_sign_verify_vectors():
     # --- Sign Error Test Cases ---
     error_cases = [
         {
-            "ids": [2, 1],
+            "ids": [0, 1],
             "pubshares": [0, 1],
             "aggnonce": 0,
             "msg": 0,
             "signer_idx": None,
-            "signer_id": 0,
+            "signer_id": 2,
             "secnonce": 0,
             "error": "value",
-            "comment": "The signer's id is not in the participant identifier list",
+            "comment": "The signer's id (2) is not in the participant identifier list [0, 1].",
         },
         {
             "ids": [0, 1, 1],
@@ -585,14 +594,14 @@ def generate_sign_verify_vectors():
             "comment": "The participant identifier list contains duplicate elements",
         },
         {
-            "ids": [0, 1],
-            "pubshares": [2, 1],
+            "ids": [1, 2],
+            "pubshares": [1, 2],
             "aggnonce": 0,
             "msg": 0,
             "signer_idx": 0,
             "secnonce": 0,
             "error": "value",
-            "comment": "The signer's pubshare is not in the list of pubshares. This test case is optional: it can be skipped by implementations that do not check that the signer's pubshare is included in the list of pubshares.",
+            "comment": "The signer's pubshare (derived from secshare_p0) is not in the pubshares list.",
         },
         {
             "ids": [0, 1],
@@ -603,6 +612,26 @@ def generate_sign_verify_vectors():
             "secnonce": 0,
             "error": "value",
             "comment": "Signer 1 provided an invalid participant public share",
+        },
+        {
+            "ids": [OUT_OF_RANGE_ID_IDX, 1],
+            "pubshares": [0, 1],
+            "aggnonce": 0,
+            "msg": 0,
+            "signer_idx": 1,
+            "secnonce": 0,
+            "error": "value",
+            "comment": "Participant identifier at index 0 has value 3, which is not in the valid range [0, n-1] = [0, 2]",
+        },
+        {
+            "ids": [0, 1],
+            "pubshares": [0, 2],
+            "aggnonce": 0,
+            "msg": 0,
+            "signer_idx": 0,
+            "secnonce": 0,
+            "error": "value",
+            "comment": "Derived threshold public key will be invalid",
         },
         {
             "ids": [0, 1],
@@ -642,7 +671,38 @@ def generate_sign_verify_vectors():
             "signer_idx": 0,
             "secnonce": SECNONCE_ZERO_IDX,
             "error": "value",
-            "comment": "Secnonce is invalid which may indicate nonce reuse",
+            "comment": "First-half secnonce out of range. May indicate nonce reuse.",
+        },
+        {
+            "ids": [0, 1],
+            "pubshares": [0, 1],
+            "aggnonce": 0,
+            "msg": 0,
+            "signer_idx": 0,
+            "secnonce": 2,
+            "error": "value",
+            "comment": "Second-half secnonce out of range.",
+        },
+        {
+            "ids": [0],
+            "pubshares": [0],
+            "aggnonce": 0,
+            "msg": 0,
+            "signer_idx": 0,
+            "secnonce": 0,
+            "error": "value",
+            "comment": "Number of signers is less than t.",
+        },
+        {
+            "ids": [0, 1],
+            "pubshares": [0, 1],
+            "aggnonce": 0,
+            "msg": 0,
+            "signer_idx": 0,
+            "secnonce": 0,
+            "secshare_zero": b"\x00" * 32,
+            "error": "value",
+            "comment": "Signer's secret share is zero, which is outside the valid range.",
         },
     ]
     for case in error_cases:
@@ -657,11 +717,13 @@ def generate_sign_verify_vectors():
         curr_signers = SignersContext(n, t, curr_ids, curr_pubshares, thresh_pk)
         session_ctx = SessionContext(curr_aggnonce, curr_signers, [], [], curr_msg)
         curr_secnonce = bytearray(secnonces_p0[case["secnonce"]])
+        curr_secshare = case.get("secshare_zero", secshare_p0)
         expected_error = (
             ValueError if case["error"] == "value" else InvalidContributionError
         )
         error = expect_exception(
-            lambda: sign(curr_secnonce, secshare_p0, my_id, session_ctx), expected_error
+            lambda: sign(curr_secnonce, curr_secshare, my_id, session_ctx),
+            expected_error,
         )
         vectors["sign_error_test_cases"].append(
             {
@@ -676,6 +738,11 @@ def generate_sign_verify_vectors():
                     else {}
                 ),
                 "secnonce_index": case["secnonce"],
+                **(
+                    {"secshare_zero": case["secshare_zero"].hex().upper()}
+                    if "secshare_zero" in case
+                    else {}
+                ),
                 "error": error,
                 "comment": case["comment"],
             }
@@ -762,15 +829,6 @@ def generate_sign_verify_vectors():
             "error": "value",
             "comment": "Invalid pubshare",
         },
-        {
-            "ids": [0, 1],
-            "pubshares": [2, 1],
-            "pubnonces": [0, 1],
-            "msg": 0,
-            "signer": 0,
-            "error": "value",
-            "comment": "The signer's pubshare is not in the list of pubshares",
-        },
     ]
     for case in verify_error_cases:
         curr_ids = [ids[i] for i in case["ids"]]
@@ -839,7 +897,24 @@ def generate_tweak_vectors():
     )
     vectors["aggnonces"] = bytes_list_to_hex(aggnonces)
 
-    vectors["tweaks"] = bytes_list_to_hex(COMMON_TWEAKS)
+    # Compute a plain tweak that drives Q + twk*G to the point at infinity.
+    # twk = -thresh_sk (mod n).
+    # Reconstruct thresh_sk via Lagrange interpolation
+    ids_sub = [0, 1]
+    lambda_0 = derive_interpolating_value(ids_sub, 0)
+    lambda_1 = derive_interpolating_value(ids_sub, 1)
+    s_0 = Scalar.from_bytes_checked(secshares[0])
+    s_1 = Scalar.from_bytes_checked(secshares[1])
+    thresh_sk = lambda_0 * s_0 + lambda_1 * s_1
+    infinity_tweak_scalar = -thresh_sk
+
+    # Q + infinity_tweak * G must be the point at infinity.
+    assert (GE.from_bytes_compressed(thresh_pk) + infinity_tweak_scalar * G).infinity
+
+    INFINITY_TWEAK_IDX = len(COMMON_TWEAKS)  # index 5
+    all_tweaks = list(COMMON_TWEAKS) + [infinity_tweak_scalar.to_bytes()]
+
+    vectors["tweaks"] = bytes_list_to_hex(all_tweaks)
     vectors["msg"] = bytes_to_hex(COMMON_MSGS[0])
 
     vectors["valid_test_cases"] = []
@@ -877,7 +952,7 @@ def generate_tweak_vectors():
         curr_pubshares = [pubshares_with_invalid[i] for i in indices]
         aggnonce_idx = case.get("aggnonce_idx", 0)
         curr_aggnonce = aggnonces[aggnonce_idx]
-        curr_tweaks = [COMMON_TWEAKS[i] for i in case["tweaks_indices"]]
+        curr_tweaks = [all_tweaks[i] for i in case["tweaks_indices"]]
         curr_tweak_modes = case["is_xonly"]
         signer_idx = 0
         my_id = curr_ids[signer_idx]
@@ -910,6 +985,11 @@ def generate_tweak_vectors():
             "is_xonly": [False],
             "comment": "Tweak is invalid because it exceeds group size",
         },
+        {
+            "tweaks_indices": [INFINITY_TWEAK_IDX],
+            "is_xonly": [False],
+            "comment": "Tweaked threshold public key is the point at infinity",
+        },
     ]
     for case in error_cases:
         indices = [0, 1]
@@ -917,7 +997,7 @@ def generate_tweak_vectors():
         curr_pubshares = [pubshares_with_invalid[i] for i in indices]
         aggnonce_idx = 0
         curr_aggnonce = aggnonces[aggnonce_idx]
-        curr_tweaks = [COMMON_TWEAKS[i] for i in case["tweaks_indices"]]
+        curr_tweaks = [all_tweaks[i] for i in case["tweaks_indices"]]
         curr_tweak_modes = case["is_xonly"]
         signer_idx = 0
         my_id = curr_ids[signer_idx]
@@ -999,7 +1079,7 @@ def generate_det_sign_vectors():
             "signer": 1,
             "msg": 0,
             "rand": 0,
-            "comment": "Partial signature and secnonce are invariant under reordering of ids (serialize_ids sorts first).",
+            "comment": "Partial signature and secnonce are invariant under reordering of ids (serialize_ids sorts first). Expected values match the previous vector.",
         },
         {
             "indices": [0, 2],
@@ -1066,8 +1146,8 @@ def generate_det_sign_vectors():
 
         # generate `aggothernonce`
         other_pubnonces = []
-        for i in case["indices"]:
-            if i == signer_index:
+        for pos, i in enumerate(case["indices"]):
+            if signer_index is not None and pos == signer_index:
                 continue
             tmp = b"" if curr_rand is None else curr_rand
             _, pub = nonce_gen_internal(
@@ -1107,15 +1187,14 @@ def generate_det_sign_vectors():
     # --- Error Test Cases ---
     error_cases = [
         {
-            "ids": [2, 1],
+            "ids": [0, 1],
             "pubshares": [0, 1],
             "signer_idx": None,
-            "signer_id": 0,
+            "signer_id": 2,
             "msg": 0,
             "rand": 0,
-            "aggothernonce": "02FCDBEE416E4426FB4004BAB2B416164845DEC27337AD2B96184236D715965AB2039F71F389F6808DC6176F062F80531E13EA5BC2612B690FC284AE66C2CD859CE9",
             "error": "value",
-            "comment": "The signer's id is not in the participant identifier list",
+            "comment": "The signer's id (2) is not in the participant identifier list [0, 1].",
         },
         {
             "ids": [0, 1, 1],
@@ -1127,13 +1206,13 @@ def generate_det_sign_vectors():
             "comment": "The participant identifier list contains duplicate elements",
         },
         {
-            "ids": [0, 1],
-            "pubshares": [2, 1],
+            "ids": [1, 2],
+            "pubshares": [1, 2],
             "signer_idx": 0,
             "msg": 0,
             "rand": 0,
             "error": "value",
-            "comment": "The signer's pubshare is not in the list of pubshares. This test case is optional: it can be skipped by implementations that do not check that the signer's pubshare is included in the list of pubshares.",
+            "comment": "The signer's pubshare (derived from secshare_p0) is not in the pubshares list.",
         },
         {
             "ids": [0, 1],
@@ -1143,6 +1222,15 @@ def generate_det_sign_vectors():
             "rand": 0,
             "error": "value",
             "comment": "Signer 1 provided an invalid participant public share",
+        },
+        {
+            "ids": [2, 1],
+            "pubshares": [0, 1],
+            "signer_idx": 0,
+            "msg": 0,
+            "rand": 0,
+            "error": "value",
+            "comment": "Derived threshold public key will be invalid.",
         },
         {
             "ids": [0, 1],
@@ -1163,6 +1251,26 @@ def generate_det_sign_vectors():
             "aggothernonce": "0000000000000000000000000000000000000000000000000000000000000000000287BF891D2A6DEAEBADC909352AA9405D1428C15F4B75F04DAE642A95C2548480",
             "error": "invalid_contrib",
             "comment": "aggothernonce is invalid because first half corresponds to point at infinity",
+        },
+        {
+            "ids": [0, 1],
+            "pubshares": [0, 1],
+            "signer_idx": 0,
+            "msg": 0,
+            "rand": 0,
+            "aggothernonce": "0353BC2314D46C813AF81317AF1BDF99816B6444E416BB8D3DC04ACB2F5388D1AC020000000000000000000000000000000000000000000000000000000000000009",
+            "error": "invalid_contrib",
+            "comment": "aggothernonce is invalid because the second half does not correspond to an X coordinate",
+        },
+        {
+            "ids": [0, 1],
+            "pubshares": [0, 1],
+            "signer_idx": 0,
+            "msg": 0,
+            "rand": 0,
+            "aggothernonce": "0353BC2314D46C813AF81317AF1BDF99816B6444E416BB8D3DC04ACB2F5388D1AC02FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFFC30",
+            "error": "invalid_contrib",
+            "comment": "aggothernonce is invalid because the second half x coordinate is greater than or equal to the field prime",
         },
         {
             "ids": [0, 1],
@@ -1194,8 +1302,8 @@ def generate_det_sign_vectors():
         is_aggothernonce = case.get("aggothernonce", None)
         if is_aggothernonce is None:
             other_pubnonces = []
-            for i in case["ids"]:
-                if i == signer_index:
+            for pos, i in enumerate(case["ids"]):
+                if signer_index is not None and pos == signer_index:
                     continue
                 tmp = b"" if curr_rand is None else curr_rand
                 _, pub = nonce_gen_internal(

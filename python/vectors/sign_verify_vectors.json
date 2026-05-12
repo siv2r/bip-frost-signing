@@ -6,7 +6,8 @@
     "identifiers": [
         0,
         1,
-        2
+        2,
+        3
     ],
     "pubshares": [
         "022B02109FBCFB4DA3F53C7393B22E72A2A51C4AFBF0C01AAF44F73843CFB4B74B",
@@ -16,7 +17,8 @@
     ],
     "secnonces_p0": [
         "DB26CEB14C1CF111274574860A4667E3305B9C8D47E48861562445CF2E7D2277D17751A6F6972FD753CF2B2784CF5193ADBEA4DA066526D0A9984E9C1C07179F",
-        "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+        "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+        "DB26CEB14C1CF111274574860A4667E3305B9C8D47E48861562445CF2E7D22770000000000000000000000000000000000000000000000000000000000000000"
     ],
     "pubnonces": [
         "0330935948101543C50AF2FA7A7A4F7073CEB73290CA141497EF06E0269363162D0358785EB5CD7C1626CAB55C59B484E1B3147FA4EB919224ECB04BAB1271022A5C",
@@ -183,7 +185,7 @@
     "sign_error_test_cases": [
         {
             "id_indices": [
-                2,
+                0,
                 1
             ],
             "pubshare_indices": [
@@ -193,13 +195,13 @@
             "aggnonce_index": 0,
             "msg_index": 0,
             "signer_index": null,
-            "signer_id": 0,
+            "signer_id": 2,
             "secnonce_index": 0,
             "error": {
                 "type": "ValueError",
-                "message": "The provided key material is incorrect."
+                "message": "The signer's id must be present in the participant identifier list."
             },
-            "comment": "The signer's id is not in the participant identifier list"
+            "comment": "The signer's id (2) is not in the participant identifier list [0, 1]."
         },
         {
             "id_indices": [
@@ -224,12 +226,12 @@
         },
         {
             "id_indices": [
-                0,
-                1
+                1,
+                2
             ],
             "pubshare_indices": [
-                2,
-                1
+                1,
+                2
             ],
             "aggnonce_index": 0,
             "msg_index": 0,
@@ -237,9 +239,9 @@
             "secnonce_index": 0,
             "error": {
                 "type": "ValueError",
-                "message": "The provided key material is incorrect."
+                "message": "The signer's pubshare must be included in the list of pubshares."
             },
-            "comment": "The signer's pubshare is not in the list of pubshares. This test case is optional: it can be skipped by implementations that do not check that the signer's pubshare is included in the list of pubshares."
+            "comment": "The signer's pubshare (derived from secshare_p0) is not in the pubshares list."
         },
         {
             "id_indices": [
@@ -259,6 +261,44 @@
                 "message": "Invalid pubshare at index 1."
             },
             "comment": "Signer 1 provided an invalid participant public share"
+        },
+        {
+            "id_indices": [
+                3,
+                1
+            ],
+            "pubshare_indices": [
+                0,
+                1
+            ],
+            "aggnonce_index": 0,
+            "msg_index": 0,
+            "signer_index": 1,
+            "secnonce_index": 0,
+            "error": {
+                "type": "ValueError",
+                "message": "The participant identifier at index 0 is out of range."
+            },
+            "comment": "Participant identifier at index 0 has value 3, which is not in the valid range [0, n-1] = [0, 2]"
+        },
+        {
+            "id_indices": [
+                0,
+                1
+            ],
+            "pubshare_indices": [
+                0,
+                2
+            ],
+            "aggnonce_index": 0,
+            "msg_index": 0,
+            "signer_index": 0,
+            "secnonce_index": 0,
+            "error": {
+                "type": "ValueError",
+                "message": "The provided key material is incorrect."
+            },
+            "comment": "Derived threshold public key will be invalid"
         },
         {
             "id_indices": [
@@ -337,7 +377,63 @@
                 "type": "ValueError",
                 "message": "first secnonce value is out of range."
             },
-            "comment": "Secnonce is invalid which may indicate nonce reuse"
+            "comment": "First-half secnonce out of range. May indicate nonce reuse."
+        },
+        {
+            "id_indices": [
+                0,
+                1
+            ],
+            "pubshare_indices": [
+                0,
+                1
+            ],
+            "aggnonce_index": 0,
+            "msg_index": 0,
+            "signer_index": 0,
+            "secnonce_index": 2,
+            "error": {
+                "type": "ValueError",
+                "message": "second secnonce value is out of range."
+            },
+            "comment": "Second-half secnonce out of range."
+        },
+        {
+            "id_indices": [
+                0
+            ],
+            "pubshare_indices": [
+                0
+            ],
+            "aggnonce_index": 0,
+            "msg_index": 0,
+            "signer_index": 0,
+            "secnonce_index": 0,
+            "error": {
+                "type": "ValueError",
+                "message": "The number of signers must be between t and n."
+            },
+            "comment": "Number of signers is less than t."
+        },
+        {
+            "id_indices": [
+                0,
+                1
+            ],
+            "pubshare_indices": [
+                0,
+                1
+            ],
+            "aggnonce_index": 0,
+            "msg_index": 0,
+            "signer_index": 0,
+            "secnonce_index": 0,
+            "secshare_zero": "0000000000000000000000000000000000000000000000000000000000000000",
+            "error": {
+                "type": "ValueError",
+                "message": "The signer's secret share value is out of range."
+            },
+            "comment": "Signer's secret share is zero, which is outside the valid range."
         }
     ],
     "verify_fail_test_cases": [
@@ -441,28 +537,6 @@
                 "message": "Invalid pubshare at index 0."
             },
             "comment": "Invalid pubshare"
-        },
-        {
-            "psig": "79DEFC679CF419BA7C48AF8F9526B5D510AAA4115B04DECDDE10CE9E06105334",
-            "id_indices": [
-                0,
-                1
-            ],
-            "pubshare_indices": [
-                2,
-                1
-            ],
-            "pubnonce_indices": [
-                0,
-                1
-            ],
-            "msg_index": 0,
-            "signer_index": 0,
-            "error": {
-                "type": "ValueError",
-                "message": "The provided key material is incorrect."
-            },
-            "comment": "The signer's pubshare is not in the list of pubshares"
         }
     ]
 }
