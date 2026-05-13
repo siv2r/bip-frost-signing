@@ -2,11 +2,7 @@
     "n": 3,
     "t": 2,
     "threshold_pubkey": "03B02645D79ABFC494338139410F9D7F0A72BE86C952D6BDE1A66447B8A8D69237",
-    "identifiers": [
-        0,
-        1,
-        2
-    ],
+    "identifiers": [0, 1, 2],
     "pubshares": [
         "022B02109FBCFB4DA3F53C7393B22E72A2A51C4AFBF0C01AAF44F73843CFB4B74B",
         "02EC6444271D791A1DA95300329DB2268611B9C60E193DABFDEE0AA816AE512583",
@@ -25,18 +21,9 @@
     "msg": "599C67EA410D005B9DA90817CF03ED3B1C868E4DA4EDF00A5880B0082C237869",
     "valid_test_cases": [
         {
-            "id_indices": [
-                0,
-                1
-            ],
-            "pubshare_indices": [
-                0,
-                1
-            ],
-            "pubnonce_indices": [
-                0,
-                1
-            ],
+            "id_indices": [0, 1],
+            "pubshare_indices": [0, 1],
+            "pubnonce_indices": [0, 1],
             "aggnonce": "022AAC6A4960DE35FC36D8E2DC06255C5CB7FD28250DFD84EBF1AC943B1EA22C3502178AD06BB0490BAD857446FEF55C15FD9FF4329F4EE2F23CA8B7CA0598014910",
             "tweak_indices": [],
             "is_xonly": [],
@@ -48,18 +35,9 @@
             "comment": "Signing with minimum number of participants"
         },
         {
-            "id_indices": [
-                1,
-                0
-            ],
-            "pubshare_indices": [
-                1,
-                0
-            ],
-            "pubnonce_indices": [
-                1,
-                0
-            ],
+            "id_indices": [1, 0],
+            "pubshare_indices": [1, 0],
+            "pubnonce_indices": [1, 0],
             "aggnonce": "022AAC6A4960DE35FC36D8E2DC06255C5CB7FD28250DFD84EBF1AC943B1EA22C3502178AD06BB0490BAD857446FEF55C15FD9FF4329F4EE2F23CA8B7CA0598014910",
             "tweak_indices": [],
             "is_xonly": [],
@@ -71,29 +49,12 @@
             "comment": "Order of the singer set shouldn't affect the aggregate signature. The expected value must match the previous test vector."
         },
         {
-            "id_indices": [
-                0,
-                1
-            ],
-            "pubshare_indices": [
-                0,
-                1
-            ],
-            "pubnonce_indices": [
-                0,
-                1
-            ],
+            "id_indices": [0, 1],
+            "pubshare_indices": [0, 1],
+            "pubnonce_indices": [0, 1],
             "aggnonce": "022AAC6A4960DE35FC36D8E2DC06255C5CB7FD28250DFD84EBF1AC943B1EA22C3502178AD06BB0490BAD857446FEF55C15FD9FF4329F4EE2F23CA8B7CA0598014910",
-            "tweak_indices": [
-                0,
-                1,
-                2
-            ],
-            "is_xonly": [
-                true,
-                false,
-                false
-            ],
+            "tweak_indices": [0, 1, 2],
+            "is_xonly": [true, false, false],
             "psigs": [
                 "19689B0B3F32C7696FF2C90CF1E6DC8311F96EC7D6307EF56085C78C3FF6C828",
                 "B7290A65BE76B17C8756D77EF0395D5F219CDF7EA8D63886132C9011938F241C"
@@ -102,21 +63,9 @@
             "comment": "Signing with tweaked threshold public key"
         },
         {
-            "id_indices": [
-                0,
-                1,
-                2
-            ],
-            "pubshare_indices": [
-                0,
-                1,
-                2
-            ],
-            "pubnonce_indices": [
-                0,
-                1,
-                2
-            ],
+            "id_indices": [0, 1, 2],
+            "pubshare_indices": [0, 1, 2],
+            "pubnonce_indices": [0, 1, 2],
             "aggnonce": "0282E58B733AB1B74D1C54B960D668E4298C3EF9F406D44249FB30C403568A1B14039B38604D0FD33E07C3EB81BBDAE39A38A82A1D9E325112A24F0F5480582C9CEE",
             "tweak_indices": [],
             "is_xonly": [],
@@ -131,18 +80,9 @@
     ],
     "error_test_cases": [
         {
-            "id_indices": [
-                0,
-                1
-            ],
-            "pubshare_indices": [
-                0,
-                1
-            ],
-            "pubnonce_indices": [
-                0,
-                1
-            ],
+            "id_indices": [0, 1],
+            "pubshare_indices": [0, 1],
+            "pubnonce_indices": [0, 1],
             "aggnonce": "022AAC6A4960DE35FC36D8E2DC06255C5CB7FD28250DFD84EBF1AC943B1EA22C3502178AD06BB0490BAD857446FEF55C15FD9FF4329F4EE2F23CA8B7CA0598014910",
             "tweak_indices": [],
             "is_xonly": [],

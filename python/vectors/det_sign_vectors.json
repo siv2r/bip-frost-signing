@@ -3,11 +3,7 @@
     "t": 2,
     "threshold_pubkey": "03B02645D79ABFC494338139410F9D7F0A72BE86C952D6BDE1A66447B8A8D69237",
     "secshare_p0": "CCD2EF4559DB05635091D80189AB3544D6668EFC0500A8D5FF51A1F4D32CC1F1",
-    "identifiers": [
-        0,
-        1,
-        2
-    ],
+    "identifiers": [0, 1, 2],
     "pubshares": [
         "022B02109FBCFB4DA3F53C7393B22E72A2A51C4AFBF0C01AAF44F73843CFB4B74B",
         "02EC6444271D791A1DA95300329DB2268611B9C60E193DABFDEE0AA816AE512583",
@@ -23,14 +19,8 @@
         {
             "rand": "0000000000000000000000000000000000000000000000000000000000000000",
             "aggothernonce": "0353BC2314D46C813AF81317AF1BDF99816B6444E416BB8D3DC04ACB2F5388D1AC02B13BC644F720223B547DB344C94E0F5E769B674D8A9C3F5E86A5231A5B9C3297",
-            "id_indices": [
-                0,
-                1
-            ],
-            "pubshare_indices": [
-                0,
-                1
-            ],
+            "id_indices": [0, 1],
+            "pubshare_indices": [0, 1],
             "tweaks": [],
             "is_xonly": [],
             "msg_index": 0,
@@ -44,14 +34,8 @@
         {
             "rand": "0000000000000000000000000000000000000000000000000000000000000000",
             "aggothernonce": "0353BC2314D46C813AF81317AF1BDF99816B6444E416BB8D3DC04ACB2F5388D1AC02B13BC644F720223B547DB344C94E0F5E769B674D8A9C3F5E86A5231A5B9C3297",
-            "id_indices": [
-                1,
-                0
-            ],
-            "pubshare_indices": [
-                1,
-                0
-            ],
+            "id_indices": [1, 0],
+            "pubshare_indices": [1, 0],
             "tweaks": [],
             "is_xonly": [],
             "msg_index": 0,
@@ -65,14 +49,8 @@
         {
             "rand": "0000000000000000000000000000000000000000000000000000000000000000",
             "aggothernonce": "022260912C9999C9EC5A3B8E493F5DEB76DCA3E772345905E12C24D281612DA403022508B1A355D6E94A5BB239441B38971716031EF05DE9AF952BAB69799621AE52",
-            "id_indices": [
-                0,
-                2
-            ],
-            "pubshare_indices": [
-                0,
-                2
-            ],
+            "id_indices": [0, 2],
+            "pubshare_indices": [0, 2],
             "tweaks": [],
             "is_xonly": [],
             "msg_index": 0,
@@ -86,14 +64,8 @@
         {
             "rand": null,
             "aggothernonce": "0220E5B590F7058B5E88593C8635411767B416EB53378AEE7E40CD1D35329AD2C302164F00762CDFFF9138C43884661CC93FF53D61B4BFD3CD2BD7265F41775A4F0F",
-            "id_indices": [
-                0,
-                1
-            ],
-            "pubshare_indices": [
-                0,
-                1
-            ],
+            "id_indices": [0, 1],
+            "pubshare_indices": [0, 1],
             "tweaks": [],
             "is_xonly": [],
             "msg_index": 0,
@@ -107,14 +79,8 @@
         {
             "rand": "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF",
             "aggothernonce": "0258091883DA3CCA616F8BEC80AAE2E397E3572DFFC3C261EDC695E5FCA0BE00180251EC60E426128FA2370F13A6235040120CCDB0CA97C36BC63693C44FC5B73E44",
-            "id_indices": [
-                0,
-                1
-            ],
-            "pubshare_indices": [
-                0,
-                1
-            ],
+            "id_indices": [0, 1],
+            "pubshare_indices": [0, 1],
             "tweaks": [],
             "is_xonly": [],
             "msg_index": 0,
@@ -128,16 +94,8 @@
         {
             "rand": "0000000000000000000000000000000000000000000000000000000000000000",
             "aggothernonce": "03B7F17DD6A2495898D19BDEA05C46F45B2C14BCA17F61C3DDC1D3C087CD748AB002CF7D031F5075C164D6A9D713F03B56422FD3472BDC8E0E6BB3ED6B6ED9C529AE",
-            "id_indices": [
-                0,
-                1,
-                2
-            ],
-            "pubshare_indices": [
-                0,
-                1,
-                2
-            ],
+            "id_indices": [0, 1, 2],
+            "pubshare_indices": [0, 1, 2],
             "tweaks": [],
             "is_xonly": [],
             "msg_index": 0,
@@ -151,14 +109,8 @@
         {
             "rand": "0000000000000000000000000000000000000000000000000000000000000000",
             "aggothernonce": "02E67053C8D9A6754D8243EF13B722B4909F3037FEAB23600D019E1C307D0BA2E20381207D01C5D6F4E2E654D2CBD23C9B6E8C38407FECAC41571E0EA2B307634004",
-            "id_indices": [
-                0,
-                1
-            ],
-            "pubshare_indices": [
-                0,
-                1
-            ],
+            "id_indices": [0, 1],
+            "pubshare_indices": [0, 1],
             "tweaks": [],
             "is_xonly": [],
             "msg_index": 1,
@@ -172,14 +124,8 @@
         {
             "rand": "0000000000000000000000000000000000000000000000000000000000000000",
             "aggothernonce": "03C71201804A346CCAF2733EB9701302FA50F4C99B053D23C20363ECE2E05DEE97027D4DBE90EC16ACA95DBC921F4BD3FBDBCF1D9F3D01627F6077BE6BD7DAEDB627",
-            "id_indices": [
-                0,
-                1
-            ],
-            "pubshare_indices": [
-                0,
-                1
-            ],
+            "id_indices": [0, 1],
+            "pubshare_indices": [0, 1],
             "tweaks": [],
             "is_xonly": [],
             "msg_index": 2,
@@ -193,20 +139,12 @@
         {
             "rand": "0000000000000000000000000000000000000000000000000000000000000000",
             "aggothernonce": "0353BC2314D46C813AF81317AF1BDF99816B6444E416BB8D3DC04ACB2F5388D1AC02B13BC644F720223B547DB344C94E0F5E769B674D8A9C3F5E86A5231A5B9C3297",
-            "id_indices": [
-                0,
-                1
-            ],
-            "pubshare_indices": [
-                0,
-                1
-            ],
+            "id_indices": [0, 1],
+            "pubshare_indices": [0, 1],
             "tweaks": [
                 "E8F791FF9225A2AF0102AFFF4A9A723D9612A682A25EBE79802B263CDFCD83BB"
             ],
-            "is_xonly": [
-                true
-            ],
+            "is_xonly": [true],
             "msg_index": 0,
             "signer_index": 0,
             "expected": [
@@ -220,14 +158,8 @@
         {
             "rand": "0000000000000000000000000000000000000000000000000000000000000000",
             "aggothernonce": "02DCE719104EE4D5E969FB5BEDB016D55B19A874A3A5EF4506E414EAE1998437D603044D6D6536C2C44136628131E6B3F4A2197E3A0BE2A4E908636B2CDB455DB018",
-            "id_indices": [
-                0,
-                1
-            ],
-            "pubshare_indices": [
-                0,
-                1
-            ],
+            "id_indices": [0, 1],
+            "pubshare_indices": [0, 1],
             "tweaks": [],
             "is_xonly": [],
             "msg_index": 0,
@@ -242,16 +174,8 @@
         {
             "rand": "0000000000000000000000000000000000000000000000000000000000000000",
             "aggothernonce": "02C1D8D5D95E15E4B46B49AF7A309520B0D07E5386995B99A572440C658FE443DF028A89044AE2FFC00131089E7B1EB15FE8DF52282F44D5EE2FA25F0DF437082407",
-            "id_indices": [
-                0,
-                1,
-                1
-            ],
-            "pubshare_indices": [
-                0,
-                1,
-                1
-            ],
+            "id_indices": [0, 1, 1],
+            "pubshare_indices": [0, 1, 1],
             "tweaks": [],
             "is_xonly": [],
             "msg_index": 0,
@@ -265,14 +189,8 @@
         {
             "rand": "0000000000000000000000000000000000000000000000000000000000000000",
             "aggothernonce": "022260912C9999C9EC5A3B8E493F5DEB76DCA3E772345905E12C24D281612DA403022508B1A355D6E94A5BB239441B38971716031EF05DE9AF952BAB69799621AE52",
-            "id_indices": [
-                1,
-                2
-            ],
-            "pubshare_indices": [
-                1,
-                2
-            ],
+            "id_indices": [1, 2],
+            "pubshare_indices": [1, 2],
             "tweaks": [],
             "is_xonly": [],
             "msg_index": 0,
@@ -286,14 +204,8 @@
         {
             "rand": "0000000000000000000000000000000000000000000000000000000000000000",
             "aggothernonce": "0353BC2314D46C813AF81317AF1BDF99816B6444E416BB8D3DC04ACB2F5388D1AC02B13BC644F720223B547DB344C94E0F5E769B674D8A9C3F5E86A5231A5B9C3297",
-            "id_indices": [
-                0,
-                1
-            ],
-            "pubshare_indices": [
-                0,
-                3
-            ],
+            "id_indices": [0, 1],
+            "pubshare_indices": [0, 3],
             "tweaks": [],
             "is_xonly": [],
             "msg_index": 0,
@@ -307,14 +219,8 @@
         {
             "rand": "0000000000000000000000000000000000000000000000000000000000000000",
             "aggothernonce": "0353BC2314D46C813AF81317AF1BDF99816B6444E416BB8D3DC04ACB2F5388D1AC02B13BC644F720223B547DB344C94E0F5E769B674D8A9C3F5E86A5231A5B9C3297",
-            "id_indices": [
-                2,
-                1
-            ],
-            "pubshare_indices": [
-                0,
-                1
-            ],
+            "id_indices": [2, 1],
+            "pubshare_indices": [0, 1],
             "tweaks": [],
             "is_xonly": [],
             "msg_index": 0,
@@ -328,14 +234,8 @@
         {
             "rand": "0000000000000000000000000000000000000000000000000000000000000000",
             "aggothernonce": "048465FCF0BBDBCF443AABCCE533D42B4B5A10966AC09A49655E8C42DAAB8FCD61037496A3CC86926D452CAFCFD55D25972CA1675D549310DE296BFF42F72EEEA8C9",
-            "id_indices": [
-                0,
-                1
-            ],
-            "pubshare_indices": [
-                0,
-                1
-            ],
+            "id_indices": [0, 1],
+            "pubshare_indices": [0, 1],
             "tweaks": [],
             "is_xonly": [],
             "msg_index": 0,
@@ -350,14 +250,8 @@
         {
             "rand": "0000000000000000000000000000000000000000000000000000000000000000",
             "aggothernonce": "0000000000000000000000000000000000000000000000000000000000000000000287BF891D2A6DEAEBADC909352AA9405D1428C15F4B75F04DAE642A95C2548480",
-            "id_indices": [
-                0,
-                1
-            ],
-            "pubshare_indices": [
-                0,
-                1
-            ],
+            "id_indices": [0, 1],
+            "pubshare_indices": [0, 1],
             "tweaks": [],
             "is_xonly": [],
             "msg_index": 0,
@@ -372,14 +266,8 @@
         {
             "rand": "0000000000000000000000000000000000000000000000000000000000000000",
             "aggothernonce": "0353BC2314D46C813AF81317AF1BDF99816B6444E416BB8D3DC04ACB2F5388D1AC020000000000000000000000000000000000000000000000000000000000000009",
-            "id_indices": [
-                0,
-                1
-            ],
-            "pubshare_indices": [
-                0,
-                1
-            ],
+            "id_indices": [0, 1],
+            "pubshare_indices": [0, 1],
             "tweaks": [],
             "is_xonly": [],
             "msg_index": 0,
@@ -394,14 +282,8 @@
         {
             "rand": "0000000000000000000000000000000000000000000000000000000000000000",
             "aggothernonce": "0353BC2314D46C813AF81317AF1BDF99816B6444E416BB8D3DC04ACB2F5388D1AC02FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFFC30",
-            "id_indices": [
-                0,
-                1
-            ],
-            "pubshare_indices": [
-                0,
-                1
-            ],
+            "id_indices": [0, 1],
+            "pubshare_indices": [0, 1],
             "tweaks": [],
             "is_xonly": [],
             "msg_index": 0,
@@ -416,20 +298,12 @@
         {
             "rand": "0000000000000000000000000000000000000000000000000000000000000000",
             "aggothernonce": "0353BC2314D46C813AF81317AF1BDF99816B6444E416BB8D3DC04ACB2F5388D1AC02B13BC644F720223B547DB344C94E0F5E769B674D8A9C3F5E86A5231A5B9C3297",
-            "id_indices": [
-                0,
-                1
-            ],
-            "pubshare_indices": [
-                0,
-                1
-            ],
+            "id_indices": [0, 1],
+            "pubshare_indices": [0, 1],
             "tweaks": [
                 "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141"
             ],
-            "is_xonly": [
-                false
-            ],
+            "is_xonly": [false],
             "msg_index": 0,
             "signer_index": 0,
             "error": {

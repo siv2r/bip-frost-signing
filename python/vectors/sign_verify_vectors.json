@@ -3,12 +3,7 @@
     "t": 2,
     "threshold_pubkey": "03B02645D79ABFC494338139410F9D7F0A72BE86C952D6BDE1A66447B8A8D69237",
     "secshare_p0": "CCD2EF4559DB05635091D80189AB3544D6668EFC0500A8D5FF51A1F4D32CC1F1",
-    "identifiers": [
-        0,
-        1,
-        2,
-        3
-    ],
+    "identifiers": [0, 1, 2, 3],
     "pubshares": [
         "022B02109FBCFB4DA3F53C7393B22E72A2A51C4AFBF0C01AAF44F73843CFB4B74B",
         "02EC6444271D791A1DA95300329DB2268611B9C60E193DABFDEE0AA816AE512583",
@@ -43,18 +38,9 @@
     ],
     "valid_test_cases": [
         {
-            "id_indices": [
-                0,
-                1
-            ],
-            "pubshare_indices": [
-                0,
-                1
-            ],
-            "pubnonce_indices": [
-                0,
-                1
-            ],
+            "id_indices": [0, 1],
+            "pubshare_indices": [0, 1],
+            "pubnonce_indices": [0, 1],
             "aggnonce_index": 0,
             "msg_index": 0,
             "signer_index": 0,
@@ -62,18 +48,9 @@
             "comment": "Signing with minimum number of participants"
         },
         {
-            "id_indices": [
-                1,
-                0
-            ],
-            "pubshare_indices": [
-                1,
-                0
-            ],
-            "pubnonce_indices": [
-                1,
-                0
-            ],
+            "id_indices": [1, 0],
+            "pubshare_indices": [1, 0],
+            "pubnonce_indices": [1, 0],
             "aggnonce_index": 0,
             "msg_index": 0,
             "signer_index": 1,
@@ -81,18 +58,9 @@
             "comment": "Partial-signature doesn't change if the order of signers set changes (without changing secnonces)"
         },
         {
-            "id_indices": [
-                0,
-                2
-            ],
-            "pubshare_indices": [
-                0,
-                2
-            ],
-            "pubnonce_indices": [
-                0,
-                2
-            ],
+            "id_indices": [0, 2],
+            "pubshare_indices": [0, 2],
+            "pubnonce_indices": [0, 2],
             "aggnonce_index": 1,
             "msg_index": 0,
             "signer_index": 0,
@@ -100,21 +68,9 @@
             "comment": "Partial-signature changes if the members of signers set changes"
         },
         {
-            "id_indices": [
-                0,
-                1,
-                2
-            ],
-            "pubshare_indices": [
-                0,
-                1,
-                2
-            ],
-            "pubnonce_indices": [
-                0,
-                1,
-                2
-            ],
+            "id_indices": [0, 1, 2],
+            "pubshare_indices": [0, 1, 2],
+            "pubnonce_indices": [0, 1, 2],
             "aggnonce_index": 2,
             "msg_index": 0,
             "signer_index": 0,
@@ -122,21 +78,9 @@
             "comment": "Signing with max number of participants"
         },
         {
-            "id_indices": [
-                0,
-                1,
-                2
-            ],
-            "pubshare_indices": [
-                0,
-                1,
-                2
-            ],
-            "pubnonce_indices": [
-                0,
-                1,
-                4
-            ],
+            "id_indices": [0, 1, 2],
+            "pubshare_indices": [0, 1, 2],
+            "pubnonce_indices": [0, 1, 4],
             "aggnonce_index": 3,
             "msg_index": 0,
             "signer_index": 0,
@@ -144,18 +88,9 @@
             "comment": "Both halves of aggregate nonce correspond to point at infinity"
         },
         {
-            "id_indices": [
-                0,
-                1
-            ],
-            "pubshare_indices": [
-                0,
-                1
-            ],
-            "pubnonce_indices": [
-                0,
-                1
-            ],
+            "id_indices": [0, 1],
+            "pubshare_indices": [0, 1],
+            "pubnonce_indices": [0, 1],
             "aggnonce_index": 0,
             "msg_index": 1,
             "signer_index": 0,
@@ -163,18 +98,9 @@
             "comment": "Empty message"
         },
         {
-            "id_indices": [
-                0,
-                1
-            ],
-            "pubshare_indices": [
-                0,
-                1
-            ],
-            "pubnonce_indices": [
-                0,
-                1
-            ],
+            "id_indices": [0, 1],
+            "pubshare_indices": [0, 1],
+            "pubnonce_indices": [0, 1],
             "aggnonce_index": 0,
             "msg_index": 2,
             "signer_index": 0,
@@ -184,14 +110,8 @@
     ],
     "sign_error_test_cases": [
         {
-            "id_indices": [
-                0,
-                1
-            ],
-            "pubshare_indices": [
-                0,
-                1
-            ],
+            "id_indices": [0, 1],
+            "pubshare_indices": [0, 1],
             "aggnonce_index": 0,
             "msg_index": 0,
             "signer_index": null,
@@ -204,16 +124,8 @@
             "comment": "The signer's id (2) is not in the participant identifier list [0, 1]."
         },
         {
-            "id_indices": [
-                0,
-                1,
-                1
-            ],
-            "pubshare_indices": [
-                0,
-                1,
-                1
-            ],
+            "id_indices": [0, 1, 1],
+            "pubshare_indices": [0, 1, 1],
             "aggnonce_index": 0,
             "msg_index": 0,
             "signer_index": 0,
@@ -225,14 +137,8 @@
             "comment": "The participant identifier list contains duplicate elements"
         },
         {
-            "id_indices": [
-                1,
-                2
-            ],
-            "pubshare_indices": [
-                1,
-                2
-            ],
+            "id_indices": [1, 2],
+            "pubshare_indices": [1, 2],
             "aggnonce_index": 0,
             "msg_index": 0,
             "signer_index": 0,
@@ -244,14 +150,8 @@
             "comment": "The signer's pubshare (derived from secshare_p0) is not in the pubshares list."
         },
         {
-            "id_indices": [
-                0,
-                1
-            ],
-            "pubshare_indices": [
-                0,
-                3
-            ],
+            "id_indices": [0, 1],
+            "pubshare_indices": [0, 3],
             "aggnonce_index": 0,
             "msg_index": 0,
             "signer_index": 0,
@@ -263,14 +163,8 @@
             "comment": "Signer 1 provided an invalid participant public share"
         },
         {
-            "id_indices": [
-                3,
-                1
-            ],
-            "pubshare_indices": [
-                0,
-                1
-            ],
+            "id_indices": [3, 1],
+            "pubshare_indices": [0, 1],
             "aggnonce_index": 0,
             "msg_index": 0,
             "signer_index": 1,
@@ -282,14 +176,8 @@
             "comment": "Participant identifier at index 0 has value 3, which is not in the valid range [0, n-1] = [0, 2]"
         },
         {
-            "id_indices": [
-                0,
-                1
-            ],
-            "pubshare_indices": [
-                0,
-                2
-            ],
+            "id_indices": [0, 1],
+            "pubshare_indices": [0, 2],
             "aggnonce_index": 0,
             "msg_index": 0,
             "signer_index": 0,
@@ -301,14 +189,8 @@
             "comment": "Derived threshold public key will be invalid"
         },
         {
-            "id_indices": [
-                0,
-                1
-            ],
-            "pubshare_indices": [
-                0,
-                1
-            ],
+            "id_indices": [0, 1],
+            "pubshare_indices": [0, 1],
             "aggnonce_index": 4,
             "msg_index": 0,
             "signer_index": 0,
@@ -321,14 +203,8 @@
             "comment": "Aggregate nonce is invalid due wrong tag, 0x04, in the first half"
         },
         {
-            "id_indices": [
-                0,
-                1
-            ],
-            "pubshare_indices": [
-                0,
-                1
-            ],
+            "id_indices": [0, 1],
+            "pubshare_indices": [0, 1],
             "aggnonce_index": 5,
             "msg_index": 0,
             "signer_index": 0,
@@ -341,14 +217,8 @@
             "comment": "Aggregate nonce is invalid because the second half does not correspond to an X coordinate"
         },
         {
-            "id_indices": [
-                0,
-                1
-            ],
-            "pubshare_indices": [
-                0,
-                1
-            ],
+            "id_indices": [0, 1],
+            "pubshare_indices": [0, 1],
             "aggnonce_index": 6,
             "msg_index": 0,
             "signer_index": 0,
@@ -361,14 +231,8 @@
             "comment": "Aggregate nonce is invalid because second half exceeds field size"
         },
         {
-            "id_indices": [
-                0,
-                1
-            ],
-            "pubshare_indices": [
-                0,
-                1
-            ],
+            "id_indices": [0, 1],
+            "pubshare_indices": [0, 1],
             "aggnonce_index": 0,
             "msg_index": 0,
             "signer_index": 0,
@@ -380,14 +244,8 @@
             "comment": "First-half secnonce out of range. May indicate nonce reuse."
         },
         {
-            "id_indices": [
-                0,
-                1
-            ],
-            "pubshare_indices": [
-                0,
-                1
-            ],
+            "id_indices": [0, 1],
+            "pubshare_indices": [0, 1],
             "aggnonce_index": 0,
             "msg_index": 0,
             "signer_index": 0,
@@ -399,12 +257,8 @@
             "comment": "Second-half secnonce out of range."
         },
         {
-            "id_indices": [
-                0
-            ],
-            "pubshare_indices": [
-                0
-            ],
+            "id_indices": [0],
+            "pubshare_indices": [0],
             "aggnonce_index": 0,
             "msg_index": 0,
             "signer_index": 0,
@@ -416,14 +270,8 @@
             "comment": "Number of signers is less than t."
         },
         {
-            "id_indices": [
-                0,
-                1
-            ],
-            "pubshare_indices": [
-                0,
-                1
-            ],
+            "id_indices": [0, 1],
+            "pubshare_indices": [0, 1],
             "aggnonce_index": 0,
             "msg_index": 0,
             "signer_index": 0,
@@ -439,54 +287,27 @@
     "verify_fail_test_cases": [
         {
             "psig": "86210398630BE64583B750706AD94A29AA0438D55443C16DE1C18FEECA25EE0D",
-            "id_indices": [
-                0,
-                1
-            ],
-            "pubshare_indices": [
-                0,
-                1
-            ],
-            "pubnonce_indices": [
-                0,
-                1
-            ],
+            "id_indices": [0, 1],
+            "pubshare_indices": [0, 1],
+            "pubnonce_indices": [0, 1],
             "msg_index": 0,
             "signer_index": 0,
             "comment": "Wrong signature (which is equal to the negation of valid signature)"
         },
         {
             "psig": "79DEFC679CF419BA7C48AF8F9526B5D510AAA4115B04DECDDE10CE9E06105334",
-            "id_indices": [
-                0,
-                1
-            ],
-            "pubshare_indices": [
-                0,
-                1
-            ],
-            "pubnonce_indices": [
-                0,
-                1
-            ],
+            "id_indices": [0, 1],
+            "pubshare_indices": [0, 1],
+            "pubnonce_indices": [0, 1],
             "msg_index": 0,
             "signer_index": 1,
             "comment": "Wrong signer index"
         },
         {
             "psig": "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141",
-            "id_indices": [
-                0,
-                1
-            ],
-            "pubshare_indices": [
-                0,
-                1
-            ],
-            "pubnonce_indices": [
-                0,
-                1
-            ],
+            "id_indices": [0, 1],
+            "pubshare_indices": [0, 1],
+            "pubnonce_indices": [0, 1],
             "msg_index": 0,
             "signer_index": 0,
             "comment": "Signature value is out of range"
@@ -495,18 +316,9 @@
     "verify_error_test_cases": [
         {
             "psig": "79DEFC679CF419BA7C48AF8F9526B5D510AAA4115B04DECDDE10CE9E06105334",
-            "id_indices": [
-                0,
-                1
-            ],
-            "pubshare_indices": [
-                0,
-                1
-            ],
-            "pubnonce_indices": [
-                3,
-                1
-            ],
+            "id_indices": [0, 1],
+            "pubshare_indices": [0, 1],
+            "pubnonce_indices": [3, 1],
             "msg_index": 0,
             "signer_index": 0,
             "error": {
@@ -518,18 +330,9 @@
         },
         {
             "psig": "79DEFC679CF419BA7C48AF8F9526B5D510AAA4115B04DECDDE10CE9E06105334",
-            "id_indices": [
-                0,
-                1
-            ],
-            "pubshare_indices": [
-                3,
-                1
-            ],
-            "pubnonce_indices": [
-                0,
-                1
-            ],
+            "id_indices": [0, 1],
+            "pubshare_indices": [3, 1],
+            "pubnonce_indices": [0, 1],
             "msg_index": 0,
             "signer_index": 0,
             "error": {

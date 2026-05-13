@@ -3,6 +3,7 @@
 import glob
 import json
 import os
+import re
 import sys
 from typing import Dict, List, Sequence, Union
 import secrets
@@ -111,10 +112,22 @@ INVALID_PUBSHARE = bytes.fromhex(
 )
 
 
+_SCALAR_TOKEN = r"-?\d+|true|false|null"
+_SCALAR_ARRAY_RE = re.compile(
+    rf"\[\s*(?:(?:{_SCALAR_TOKEN})(?:\s*,\s*(?:{_SCALAR_TOKEN}))*)?\s*\]"
+)
+
+
+def _inline_scalar_array(match):
+    tokens = re.findall(_SCALAR_TOKEN, match.group(0))
+    return "[" + ", ".join(tokens) + "]"
+
+
 def write_test_vectors(filename, vectors):
     output_file = os.path.join("vectors", filename)
+    text = _SCALAR_ARRAY_RE.sub(_inline_scalar_array, json.dumps(vectors, indent=4))
     with open(output_file, "w") as f:
-        json.dump(vectors, f, indent=4)
+        f.write(text)
 
 
 def get_common_setup():
@@ -164,6 +177,13 @@ def frost_keygen_fixed():
         ]
     )
     return (t, n, thresh_pubkey_ge, secshares, pubshares)
+
+
+def reconstruct_thresh_sk(ids, secshares):
+    result = Scalar(0)
+    for i, s in zip(ids, secshares):
+        result = result + derive_interpolating_value(ids, i) * Scalar.from_bytes_checked(s)
+    return result
 
 
 # NOTE: This function is used only once to generate a long-term key for frost_keygen_fixed(). It is intentionally not called anywhere else. It will be used in case we decide to change the long-term key, in future.
@@ -897,18 +917,8 @@ def generate_tweak_vectors():
     )
     vectors["aggnonces"] = bytes_list_to_hex(aggnonces)
 
-    # Compute a plain tweak that drives Q + twk*G to the point at infinity.
-    # twk = -thresh_sk (mod n).
-    # Reconstruct thresh_sk via Lagrange interpolation
-    ids_sub = [0, 1]
-    lambda_0 = derive_interpolating_value(ids_sub, 0)
-    lambda_1 = derive_interpolating_value(ids_sub, 1)
-    s_0 = Scalar.from_bytes_checked(secshares[0])
-    s_1 = Scalar.from_bytes_checked(secshares[1])
-    thresh_sk = lambda_0 * s_0 + lambda_1 * s_1
-    infinity_tweak_scalar = -thresh_sk
-
-    # Q + infinity_tweak * G must be the point at infinity.
+    # Compute a plain tweak that drives Q + twk*G to the point at infinity: twk = -thresh_sk.
+    infinity_tweak_scalar = -reconstruct_thresh_sk([0, 1], secshares[:2])
     assert (GE.from_bytes_compressed(thresh_pk) + infinity_tweak_scalar * G).infinity
 
     INFINITY_TWEAK_IDX = len(COMMON_TWEAKS)  # index 5
