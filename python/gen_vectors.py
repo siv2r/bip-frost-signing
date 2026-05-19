@@ -126,6 +126,7 @@ def _inline_scalar_array(match):
 def write_test_vectors(filename, vectors):
     output_file = os.path.join("vectors", filename)
     text = _SCALAR_ARRAY_RE.sub(_inline_scalar_array, json.dumps(vectors, indent=4))
+    json.loads(text)  # guard: inlining must keep the JSON parseable
     with open(output_file, "w") as f:
         f.write(text)
 
@@ -180,9 +181,12 @@ def frost_keygen_fixed():
 
 
 def reconstruct_thresh_sk(ids, secshares):
+    assert len(ids) == len(secshares)
     result = Scalar(0)
     for i, s in zip(ids, secshares):
-        result = result + derive_interpolating_value(ids, i) * Scalar.from_bytes_checked(s)
+        result = result + derive_interpolating_value(
+            ids, i
+        ) * Scalar.from_bytes_checked(s)
     return result
 
 
@@ -416,9 +420,10 @@ def generate_sign_verify_vectors():
     AGGNONCE_INVALID_TAG_IDX = 4  # Invalid tag 0x04
     AGGNONCE_INVALID_XCOORD_IDX = 5  # Invalid X coordinate
     AGGNONCE_INVALID_EXCEEDS_FIELD_IDX = 6  # X exceeds field size
-    OUT_OF_RANGE_ID_IDX = 3  # identifier value n (=3), out of range [0, n-1]
+    OUT_OF_RANGE_ID_IDX = 3  # identifier value n, out of range [0, n-1]
+    assert OUT_OF_RANGE_ID_IDX == n
 
-    # Extend identifiers with an out-of-range value (n=3) for the L91 test case.
+    # Extend identifiers with an out-of-range value (n) for the L91 test case.
     # Existing cases reference indices 0..2 only and are unaffected.
     ids = ids + [n]
 
