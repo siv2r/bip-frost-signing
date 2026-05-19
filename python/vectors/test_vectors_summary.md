@@ -1,4 +1,4 @@
-# FROST Test Vectors
+# FROST Signing Test Vectors
 
 This directory contains JSON test vectors for the BIP-FROST signing
 protocol. They are consumed by `python/tests.py` and are intended for
@@ -6,9 +6,9 @@ cross-implementation compatibility testing.
 
 ## Files
 
-| File | Function under test | Top-level shape |
+| File name | Function under test | Structure |
 |---|---|---|
-| `nonce_gen_vectors.json` | `nonce_gen_internal` | flat `test_cases[]` |
+| `nonce_gen_vectors.json` | `nonce_gen_internal` | flat `valid_test_cases[]` |
 | `nonce_agg_vectors.json` | `nonce_agg` | shared `pubnonces[]` + `valid_test_cases` + `error_test_cases` |
 | `sign_verify_vectors.json` | `sign` and `partial_sig_verify` | shared setup + `valid_test_cases` + `sign_error_test_cases` + `verify_fail_test_cases` + `verify_error_test_cases` |
 | `tweak_vectors.json` | `sign` under tweak combinations | shared setup + `valid_test_cases` + `error_test_cases` |
@@ -25,7 +25,7 @@ reuses the same FROST key material, defined by `frost_keygen_fixed()` in
 03B026…D69237`, `identifiers = [0, 1, 2]`. Three real pubshares are
 followed by a fourth bogus pubshare (`0200…0007`) used to drive
 "invalid pubshare" error cases. Only the first signer's secret share
-(`secshare_p0`) is exposed — all valid cases sign from signer 0's
+(`secshare_p0`) is exposed; all valid cases sign from signer 0's
 perspective (or signer 1 in a reorder-invariance case). `secnonces_p0`
 may include extra entries (e.g. an all-zero entry) used exclusively to
 drive nonce-reuse / out-of-range error cases. Sharing the same
@@ -72,3 +72,35 @@ faulty contribution is aggregator-level (e.g. an `aggnonce` or
 exercises a signer whose id is *not* present in the participant list,
 the case sets `signer_index: null` and provides `signer_id` directly,
 since the id cannot be looked up by index.
+
+### Shared nonce pools and special entries
+
+The `secnonces_p0` pool in `sign_verify_vectors.json` and related files
+contains multiple entries to exercise different code paths. Beyond the
+standard nonces, the pool includes special entries with specific invalid
+properties: an all-zero entry used to drive nonce-reuse errors, and a
+k_2 sibling entry where the second half of the secret nonce is zero,
+used to validate out-of-range nonce component detection.
+
+### Optional per-case field overrides
+
+`sign_verify_vectors.json::sign_error_test_cases` includes one case with
+an optional `secshare_zero` field that overrides the default signer's
+secret share. This field appears only on the zero-valued-secshare error
+case, where the hex-encoded value (64 zeros) drives the expected
+validation error. The field is hex-encoded to match the format of the
+top-level `secshare_p0` pool. All other cases omit this field and use
+the indexed share from the pool.
+
+### Recent test vector expansions
+
+The `sign_verify_vectors.json::sign_error_test_cases` have been expanded
+from 10 to 13 entries to cover additional error conditions: detection of
+fewer-than-t signers in the participant list, validation of the optional
+secshare override field when a secret share equals zero, and detection
+of out-of-range values in the second component of the secret nonce (k_2).
+
+Similarly, `tweak_vectors.json::error_test_cases` was expanded from 1 to
+2 entries to validate that tweaking operations detect and reject the case
+where the tweaked threshold public key evaluates to the point at infinity,
+which would make the signature operation impossible.

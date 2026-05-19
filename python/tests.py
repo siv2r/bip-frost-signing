@@ -98,7 +98,7 @@ def test_nonce_gen_vectors():
     with open(os.path.join(sys.path[0], "vectors", "nonce_gen_vectors.json")) as f:
         test_data = json.load(f)
 
-    for test_case in test_data["test_cases"]:
+    for test_case in test_data["valid_test_cases"]:
 
         def get_value(key) -> bytes:
             return bytes.fromhex(test_case[key])
@@ -213,12 +213,17 @@ def test_sign_verify_vectors():
             test_case["signer_id"] if signer_index is None else ids_tmp[signer_index]
         )
         secnonce_tmp = bytearray(secnonces_p0[test_case["secnonce_index"]])
+        secshare_tmp = (
+            bytes.fromhex(test_case["secshare_zero"])
+            if "secshare_zero" in test_case
+            else secshare_p0
+        )
 
         signers_tmp = SignersContext(n, t, ids_tmp, pubshares_tmp, thresh_pk)
         session_ctx = SessionContext(aggnonce_tmp, signers_tmp, [], [], msg)
         assert_raises(
             exception,
-            lambda: sign(secnonce_tmp, secshare_p0, my_id, session_ctx),
+            lambda: sign(secnonce_tmp, secshare_tmp, my_id, session_ctx),
             except_fn,
         )
 

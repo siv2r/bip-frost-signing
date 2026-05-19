@@ -785,6 +785,7 @@ This document proposes a standard for the FROST threshold signature scheme that 
 
 ## Changelog
 
+- *0.4.3* (2026-05-13): Expand test vector coverage for signing and tweaking error cases, and add a test vectors summary document.
 - *0.4.2* (2026-04-14): Bind *my_id* and the signer identifiers list into the *DeterministicSign* nonce hash to prevent a secret share recovery attack via replayed signing sessions.
 - *0.4.1* (2026-03-03): Assign blame to signer index (of the input list) instead of their identifier value
 - *0.4.0* (2026-01-30): Number 445 was assigned to this BIP.

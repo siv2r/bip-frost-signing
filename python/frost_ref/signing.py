@@ -88,7 +88,9 @@ def validate_signers_ctx(signers_ctx: SignersContext) -> None:
         raise ValueError("The pubshares and ids arrays must have the same length.")
     for idx, (i, pubshare) in enumerate(zip(ids, pubshares)):
         if not 0 <= i <= n - 1:
-            raise ValueError(f"Invalid participant identifier at index {idx}.")
+            raise ValueError(
+                f"The participant identifier at index {idx} is out of range."
+            )
         try:
             _ = GE.from_bytes_compressed(pubshare)
         except ValueError:
@@ -376,7 +378,6 @@ def deterministic_sign(
         secshare_ = xor_bytes(secshare, tagged_hash("FROST/aux", rand))
     else:
         secshare_ = secshare
-    # REVIEW: do we need to add any check for ids & pubshares (in signers_ctx context) here?
     validate_signers_ctx(signers_ctx)
     _, _, ids, _, thresh_pk = signers_ctx
     tweaked_tpk = get_xonly_pk(thresh_pubkey_and_tweak(thresh_pk, tweaks, is_xonly))
