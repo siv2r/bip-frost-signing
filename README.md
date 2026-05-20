@@ -310,21 +310,20 @@ Algorithm *ValidateSignersCtx(signers_ctx)*:
 - Fail if not *t ≤ u ≤ n*
 - For *i = 1 .. u*:
   - Fail if not *0 ≤ id<sub>i</sub> ≤ n - 1*
-  - Fail if *cpoint(pubshare<sub>i</sub>)* fails; blame signer at index *i* for invalid *pubshare*
+  - Let *P<sub>i</sub> = cpoint(pubshare<sub>i</sub>)*; fail if that fails
 - Fail if *has_duplicates(id<sub>1..u</sub>)*
-- Fail if *DeriveThreshPubkey(id<sub>1..u</sub>, pubshare<sub>1..u</sub>) ≠ thresh_pk*
+- Fail if *DeriveThreshPubkey(id<sub>1..u</sub>, P<sub>1..u</sub>) ≠ thresh_pk*
 - No return
 
-Internal Algorithm *DeriveThreshPubkey(id<sub>1..u</sub>,  pubshare<sub>1..u</sub>)*[^derive-thresh-no-validate-inputs]
+Internal Algorithm *DeriveThreshPubkey(id<sub>1..u</sub>, P<sub>1..u</sub>)*[^derive-thresh-no-validate-inputs]
 
 - *Q = inf_point*
 - For *i = 1..u*:
-  - *P* = cpoint(pubshare<sub>i</sub>); fail if that fails
   - *&lambda; = DeriveInterpolatingValue(id<sub>1..u</sub>, id<sub>i</sub>)*
-  - *Q = Q + &lambda; &middot; P*
+  - *Q = Q + &lambda; &middot; P<sub>i</sub>*
 - Return *cbytes(Q)*
 
-[^derive-thresh-no-validate-inputs]: *DeriveThreshPubkey* does not check that its inputs are in range. This validation is performed by *ValidateSignersCtx*, which is its only caller.
+[^derive-thresh-no-validate-inputs]: *DeriveThreshPubkey* does not validate its inputs. Its only caller, *ValidateSignersCtx*, deserializes the public shares into points and validates them (and the identifiers) beforehand.
 
 Internal Algorithm *DeriveInterpolatingValue(id<sub>1..u</sub>, my_id):*
 
