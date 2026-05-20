@@ -783,6 +783,10 @@ This document proposes a standard for the FROST threshold signature scheme that 
 
 ## Changelog
 
+- *0.5.0* (2026-05-21): Introduces the following changes:
+  - Restructure test vectors to use indexed pools, rename per-case *signer_index* to *my_id*, and rewrite per-case comments.
+  - Fix mismatches between the BIP spec and the reference implementation.
+  - Move pubshare deserialization from *DeriveThreshPubkey* into *ValidateSignersCtx*, which now blames the signer on an invalid pubshare.
 - *0.4.3* (2026-05-13): Expand test vector coverage for signing and tweaking error cases, and add a test vectors summary document.
 - *0.4.2* (2026-04-14): Bind *my_id* and the signer identifiers list into the *DeterministicSign* nonce hash to prevent a secret share recovery attack via replayed signing sessions.
 - *0.4.1* (2026-03-03): Assign blame to signer index (of the input list) instead of their identifier value
