@@ -808,7 +808,7 @@ def generate_sign_verify_vectors():
             "pubnonce_indices": pubnonce_indices,
             "msg_index": msg_idx,
             "signer_index": signer_idx + 1,
-            "comment": "A valid partial signature checked against the wrong signer fails the verification equation (the Lagrange coefficient differs per signer)",
+            "comment": "A valid partial signature checked against the wrong signer fails the verification equation",
         }
     )
     # --- Verify Fail Test Cases 3 ---

@@ -47,8 +47,8 @@ fourth identifier `3` also show up, but only error cases use them to trigger
 "invalid public share" and out-of-range-id failures, so don't treat them as
 valid signers.
 
-Only signer 0's secret material is exposed, and valid cases sign as signer 0
-(one reorder case signs as signer 1). In most files that's a single
+Only signer 0's secret material is exposed, and every valid case signs as
+signer 0. In most files that's a single
 `secshare_p0` (and `secnonce_p0`). `sign_verify_vectors.json` instead keeps
 `secshares` and `secnonces_p0` as lists, because it needs a few deliberately
 bad entries (an all-zero nonce, a zero second half, a zero share) that only

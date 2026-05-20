@@ -322,7 +322,7 @@
             "pubnonce_indices": [0, 1],
             "msg_index": 0,
             "signer_index": 1,
-            "comment": "A valid partial signature checked against the wrong signer fails the verification equation (the Lagrange coefficient differs per signer)"
+            "comment": "A valid partial signature checked against the wrong signer fails the verification equation"
         },
         {
             "psig": "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141",
