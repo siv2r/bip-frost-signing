@@ -4,8 +4,13 @@ on:
   pull_request:
     types: [opened, synchronize, reopened]
 
+concurrency:
+  group: claude-review-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
 jobs:
   claude-review:
+    if: github.event.pull_request.draft == false
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -25,48 +30,25 @@ jobs:
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           prompt: |
-            /review
-            REPO: ${{ github.repository }}
-            PR NUMBER: ${{ github.event.pull_request.number }}
+            /review-pr REPO: ${{ github.repository }} PR_NUMBER: ${{ github.event.pull_request.number }}
 
-            You are reviewing a pull request for a **reference implementation** of FROST threshold signatures (BIP-draft). This code prioritizes educational/specification clarity over production security.
+            Repository context for this review:
+            This is a reference implementation of FROST threshold signatures (a BIP draft). It prioritizes specification and educational clarity over production security. Do NOT flag missing production hardening (timing attacks, side-channel resistance, constant-time code) as issues; the vendored secp256k1lab is intentionally insecure for prototyping only.
 
-            1. Review the pull request
+            Read README.md (the BIP spec) and docs/design.md for context, then pay special attention to:
+            - Divergence between the BIP spec (README.md) and the implementation (python/frost_ref/signing.py).
+            - Exception semantics: ValueError for input/format errors vs InvalidContributionError for protocol violations by signers or aggregators.
+            - Participant ids are 0-based (0..n-1), never 1-indexed.
+            - secnonce must never be returned or persisted after sign() completes (reuse leaks the secret share).
+            - No fully deterministic nonces outside deterministic_sign().
+            - Test vectors under python/vectors/ should be regenerated when algorithms change.
 
-            2. Categorize your findings:
-               2.1 INLINE findings (post as inline PR comments):
-                - Issues tied to specific lines of code
-                - Error handling at specific locations
-                - Code clarity issues in specific blocks
-                - Logical errors in functions/methods
-                - Documentation inaccuracies in specific sections
-                - NOTE: each of these should be posted as separate inline comments.
-
-               2.2 ARCHITECTURAL findings (post as single PR comment):
-                - Module organization suggestions
-                - Design pattern recommendations
-                - Cross-file structural issues
-                - Overall code change design feedback
-
-            3. Submit review:
-              3.1 Inline comments (if any):
-                 gh api repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}/comments \
-                   -X POST \
-                   -f commit_id="${{ github.event.pull_request.head.sha }}" \
-                   -f path="FILE_PATH" \
-                   -f line=LINE_NUMBER \
-                   -f body="**[Severity]** Inline comment description here ..."
-
-              3.2 IMPORTANT: Repeat 3.1.for every inline finding
-
-              3.3 Architectural comment (only if needed):
-                 gh api repos/${{ github.repository }}/issues/${{ github.event.pull_request.number }}/comments \
-                   -X POST \
-                   -f body="Architecture comment description here ..."
-
-              3.4 If no findings, post nothing.
-
+            How to post your review (follow this order):
+            1. Prioritize inline comments. Every concrete, line-specific issue MUST be posted as a separate inline comment on the exact line using the inline comment tool. This is the most important output.
+            2. Use at most one top-level summary comment, and only for genuinely cross-cutting observations that cannot be attached to a specific line. Do not move line-specific issues into the summary.
+            3. Report only High or Medium severity findings; skip style nits. Before posting an inline comment, re-read the surrounding diff to confirm the issue is real and drop any finding you are less than ~80% confident about.
+            4. If there are no noteworthy findings, post nothing.
           claude_args: |
-            --model claude-sonnet-4-5-20250929
+            --model claude-opus-4-7
             --max-turns 50
-            --allowedTools "Read,Grep,Glob,WebSearch,WebFetch,Bash(gh pr diff:*),Bash(gh pr view:*),Bash(gh api:*),Bash(git log:*),Bash(git show:*)"
+            --allowedTools "Read,Grep,Glob,WebSearch,WebFetch,Bash(gh pr comment:*),Bash(gh pr diff:*),Bash(gh pr view:*),mcp__github_inline_comment__create_inline_comment"
