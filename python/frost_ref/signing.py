@@ -233,7 +233,7 @@ def nonce_agg(pubnonces: List[bytes]) -> bytes:
             try:
                 R_ij = GE.from_bytes_compressed(pubnonce[(j - 1) * 33 : j * 33])
             except ValueError:
-                raise InvalidContributionError(idx, "pubnonce")
+                raise ValueError("Received an invalid pubnonce.")
             R_j = R_j + R_ij
         aggnonce += R_j.to_bytes_compressed_with_infinity()
     return aggnonce
