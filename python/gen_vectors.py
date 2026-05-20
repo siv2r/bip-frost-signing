@@ -232,7 +232,7 @@ def generate_nonce_gen_vectors():
             "extra_in": bytes_to_hex(extra_in),
             "expected_secnonce": bytes_to_hex(secnonce),
             "expected_pubnonce": bytes_to_hex(pubnonce),
-            "comment": "",
+            "comment": "All optional defense-in-depth arguments present",
         }
     )
     # --- Valid Test Case 2 ---
@@ -254,7 +254,7 @@ def generate_nonce_gen_vectors():
             "extra_in": bytes_to_hex(extra_in),
             "expected_secnonce": bytes_to_hex(secnonce),
             "expected_pubnonce": bytes_to_hex(pubnonce),
-            "comment": "Empty Message",
+            "comment": "Empty message",
         }
     )
     # --- Valid Test Case 3 ---
@@ -276,7 +276,7 @@ def generate_nonce_gen_vectors():
             "extra_in": bytes_to_hex(extra_in),
             "expected_secnonce": bytes_to_hex(secnonce),
             "expected_pubnonce": bytes_to_hex(pubnonce),
-            "comment": "38-byte message",
+            "comment": "Non-standard message length (38 bytes)",
         }
     )
     # --- Valid Test Case 4 ---
@@ -291,7 +291,7 @@ def generate_nonce_gen_vectors():
             "extra_in": None,
             "expected_secnonce": bytes_to_hex(secnonce),
             "expected_pubnonce": bytes_to_hex(pubnonce),
-            "comment": "Every optional parameter is absent",
+            "comment": "All optional defense-in-depth arguments omitted",
         }
     )
     # --- Valid Test Case 5 ---
@@ -308,7 +308,7 @@ def generate_nonce_gen_vectors():
             "extra_in": bytes_to_hex(extra_in),
             "expected_secnonce": bytes_to_hex(secnonce),
             "expected_pubnonce": bytes_to_hex(pubnonce),
-            "comment": "Preprocessing: nonce generated before message is known",
+            "comment": "Message omitted, other optional arguments present",
         }
     )
 
@@ -347,6 +347,7 @@ def generate_nonce_agg_vectors():
         {
             "pubnonce_indices": pubnonce_indices,
             "expected_aggnonce": bytes_to_hex(aggnonce),
+            "comment": "Two well-formed public nonces",
         }
     )
     # --- Valid Test Case 2 ---
@@ -357,7 +358,7 @@ def generate_nonce_agg_vectors():
         {
             "pubnonce_indices": pubnonce_indices,
             "expected_aggnonce": bytes_to_hex(aggnonce),
-            "comment": "Sum of second points encoded in the nonces is point at infinity which is serialized as 33 zero bytes",
+            "comment": "Second halves sum to the point at infinity, which is serialized as the all-zero encoding",
         }
     )
 
@@ -372,7 +373,7 @@ def generate_nonce_agg_vectors():
         {
             "pubnonce_indices": pubnonce_indices,
             "error": error,
-            "comment": "Public nonce from signer 1 is invalid due wrong tag, 0x04, in the first half",
+            "comment": "Public nonce is invalid: first half has an unknown tag 0x04",
         }
     )
     # --- Error Test Case 2 ---
@@ -385,7 +386,7 @@ def generate_nonce_agg_vectors():
         {
             "pubnonce_indices": pubnonce_indices,
             "error": error,
-            "comment": "Public nonce from signer 0 is invalid because the second half does not correspond to an X coordinate",
+            "comment": "Public nonce is invalid: second half is not a point on the curve",
         }
     )
     # --- Error Test Case 3 ---
@@ -398,7 +399,7 @@ def generate_nonce_agg_vectors():
         {
             "pubnonce_indices": pubnonce_indices,
             "error": error,
-            "comment": "Public nonce from signer 0 is invalid because second half exceeds field size",
+            "comment": "Public nonce is invalid: second half's x-coordinate exceeds the field size",
         }
     )
 
@@ -512,7 +513,7 @@ def generate_sign_verify_vectors():
             "aggnonce": 0,
             "msg": 0,
             "my_id": 0,
-            "comment": "Signing with minimum number of participants",
+            "comment": "Minimum threshold subset of signers (t=2 of n=3)",
         },
         {
             "ids": [1, 0],
@@ -521,7 +522,7 @@ def generate_sign_verify_vectors():
             "aggnonce": 0,
             "msg": 0,
             "my_id": 0,
-            "comment": "Partial-signature doesn't change if the order of signers set changes (without changing secnonces)",
+            "comment": "Signer order does not affect the partial signature: the signer set is sorted internally, so this matches the first valid case",
         },
         {
             "ids": [0, 2],
@@ -530,7 +531,7 @@ def generate_sign_verify_vectors():
             "aggnonce": 1,
             "msg": 0,
             "my_id": 0,
-            "comment": "Partial-signature changes if the members of signers set changes",
+            "comment": "A different threshold subset gives a different partial signature, since the Lagrange coefficients depend on the signer set",
         },
         {
             "ids": [0, 1, 2],
@@ -539,7 +540,7 @@ def generate_sign_verify_vectors():
             "aggnonce": 2,
             "msg": 0,
             "my_id": 0,
-            "comment": "Signing with max number of participants",
+            "comment": "All n=3 signers participate (signer set equals the full group)",
         },
         {
             "ids": [0, 1, 2],
@@ -548,7 +549,7 @@ def generate_sign_verify_vectors():
             "aggnonce": AGGNONCE_INF_IDX,
             "msg": 0,
             "my_id": 0,
-            "comment": "Both halves of aggregate nonce correspond to point at infinity",
+            "comment": "Aggregate nonce is the point at infinity, so the final nonce point falls back to the generator G",
         },
         {
             "ids": [0, 1],
@@ -566,7 +567,7 @@ def generate_sign_verify_vectors():
             "aggnonce": 0,
             "msg": 2,
             "my_id": 0,
-            "comment": "Message longer than 32 bytes (38-byte msg)",
+            "comment": "Non-standard message length (38 bytes)",
         },
     ]
     for case in valid_cases:
@@ -607,7 +608,7 @@ def generate_sign_verify_vectors():
             "my_id": 2,
             "secnonce": 0,
             "error": "value",
-            "comment": "The signer's id (2) is not in the participant identifier list [0, 1].",
+            "comment": "Signer's own id is not in the signer set",
         },
         {
             "ids": [0, 1, 1],
@@ -617,7 +618,7 @@ def generate_sign_verify_vectors():
             "my_id": 0,
             "secnonce": 0,
             "error": "value",
-            "comment": "The participant identifier list contains duplicate elements",
+            "comment": "Signer set contains a duplicate id",
         },
         {
             "ids": [1, 2],
@@ -627,7 +628,7 @@ def generate_sign_verify_vectors():
             "my_id": 1,
             "secnonce": 0,
             "error": "value",
-            "comment": "The signer's pubshare (derived from secshare_p0) is not in the pubshares list.",
+            "comment": "Signer's own public share is not in the public share list",
         },
         {
             "ids": [0, 1],
@@ -637,7 +638,7 @@ def generate_sign_verify_vectors():
             "my_id": 0,
             "secnonce": 0,
             "error": "value",
-            "comment": "Signer 1 provided an invalid participant public share",
+            "comment": "A public share is not a valid point",
         },
         {
             "ids": [OUT_OF_RANGE_ID_IDX, 1],
@@ -647,7 +648,7 @@ def generate_sign_verify_vectors():
             "my_id": 1,
             "secnonce": 0,
             "error": "value",
-            "comment": "Participant identifier at index 0 has value 3, which is not in the valid range [0, n-1] = [0, 2]",
+            "comment": "A signer id is outside the valid range [0, n-1]",
         },
         {
             "ids": [0, 1],
@@ -657,7 +658,7 @@ def generate_sign_verify_vectors():
             "my_id": 0,
             "secnonce": 0,
             "error": "value",
-            "comment": "Derived threshold public key will be invalid",
+            "comment": "Signer set's public shares do not match the threshold public key",
         },
         {
             "ids": [0, 1],
@@ -667,7 +668,7 @@ def generate_sign_verify_vectors():
             "my_id": 0,
             "secnonce": 0,
             "error": "invalid_contrib",
-            "comment": "Aggregate nonce is invalid due wrong tag, 0x04, in the first half",
+            "comment": "Aggregate nonce is invalid: first half has an unknown tag 0x04",
         },
         {
             "ids": [0, 1],
@@ -677,7 +678,7 @@ def generate_sign_verify_vectors():
             "my_id": 0,
             "secnonce": 0,
             "error": "invalid_contrib",
-            "comment": "Aggregate nonce is invalid because the second half does not correspond to an X coordinate",
+            "comment": "Aggregate nonce is invalid: second half is not a point on the curve",
         },
         {
             "ids": [0, 1],
@@ -687,7 +688,7 @@ def generate_sign_verify_vectors():
             "my_id": 0,
             "secnonce": 0,
             "error": "invalid_contrib",
-            "comment": "Aggregate nonce is invalid because second half exceeds field size",
+            "comment": "Aggregate nonce is invalid: second half's x-coordinate exceeds the field size",
         },
         {
             "ids": [0, 1],
@@ -697,7 +698,7 @@ def generate_sign_verify_vectors():
             "my_id": 0,
             "secnonce": SECNONCE_ZERO_IDX,
             "error": "value",
-            "comment": "First-half secnonce out of range. May indicate nonce reuse.",
+            "comment": "Secret nonce's first half is out of range (all-zero nonce, which may indicate nonce reuse)",
         },
         {
             "ids": [0, 1],
@@ -707,7 +708,7 @@ def generate_sign_verify_vectors():
             "my_id": 0,
             "secnonce": 2,
             "error": "value",
-            "comment": "Second-half secnonce out of range.",
+            "comment": "Secret nonce's second half is out of range (zero)",
         },
         {
             "ids": [0],
@@ -717,7 +718,7 @@ def generate_sign_verify_vectors():
             "my_id": 0,
             "secnonce": 0,
             "error": "value",
-            "comment": "Number of signers is less than t.",
+            "comment": "Fewer signers than the threshold t",
         },
         {
             "ids": [0, 1],
@@ -728,7 +729,7 @@ def generate_sign_verify_vectors():
             "secnonce": 0,
             "secshare_index": 1,
             "error": "value",
-            "comment": "Signer's secret share is zero, which is outside the valid range.",
+            "comment": "Secret share is out of range (zero)",
         },
     ]
     for case in error_cases:
@@ -795,7 +796,7 @@ def generate_sign_verify_vectors():
             "pubnonce_indices": pubnonce_indices,
             "msg_index": msg_idx,
             "signer_index": signer_idx,
-            "comment": "Wrong signature (which is equal to the negation of valid signature)",
+            "comment": "Negated partial signature fails the verification equation",
         }
     )
     # --- Verify Fail Test Cases 2 ---
@@ -807,7 +808,7 @@ def generate_sign_verify_vectors():
             "pubnonce_indices": pubnonce_indices,
             "msg_index": msg_idx,
             "signer_index": signer_idx + 1,
-            "comment": "Wrong signer index",
+            "comment": "A valid partial signature checked against the wrong signer fails the verification equation (the Lagrange coefficient differs per signer)",
         }
     )
     # --- Verify Fail Test Cases 3 ---
@@ -819,7 +820,7 @@ def generate_sign_verify_vectors():
             "pubnonce_indices": pubnonce_indices,
             "msg_index": msg_idx,
             "signer_index": signer_idx,
-            "comment": "Signature value is out of range",
+            "comment": "Partial signature equals the group order, which is out of range",
         }
     )
 
@@ -833,7 +834,7 @@ def generate_sign_verify_vectors():
             "msg": 0,
             "signer_index": 0,
             "error": "invalid_contrib",
-            "comment": "Invalid pubnonce",
+            "comment": "Public nonce is invalid: first half is not a point on the curve",
         },
         {
             "ids": [0, 1],
@@ -842,7 +843,7 @@ def generate_sign_verify_vectors():
             "msg": 0,
             "signer_index": 0,
             "error": "value",
-            "comment": "Invalid pubshare",
+            "comment": "A public share is not a valid point",
         },
     ]
     for case in verify_error_cases:
@@ -919,9 +920,21 @@ def generate_tweak_vectors():
     vectors["valid_test_cases"] = []
     # --- Valid Test Cases ---
     valid_cases = [
-        {"tweaks_indices": [], "is_xonly": [], "comment": "No tweak"},
-        {"tweaks_indices": [0], "is_xonly": [True], "comment": "A single x-only tweak"},
-        {"tweaks_indices": [0], "is_xonly": [False], "comment": "A single plain tweak"},
+        {
+            "tweaks_indices": [],
+            "is_xonly": [],
+            "comment": "No tweaks applied",
+        },
+        {
+            "tweaks_indices": [0],
+            "is_xonly": [True],
+            "comment": "Single x-only tweak (used for BIP341 Taproot)",
+        },
+        {
+            "tweaks_indices": [0],
+            "is_xonly": [False],
+            "comment": "Single plain tweak (used for BIP32 derivation)",
+        },
         {
             "tweaks_indices": [0, 1],
             "is_xonly": [False, True],
@@ -930,19 +943,19 @@ def generate_tweak_vectors():
         {
             "tweaks_indices": [0, 1, 2, 3],
             "is_xonly": [True, False, True, False],
-            "comment": "Four tweaks: x-only, plain, x-only, plain. If an implementation prohibits applying plain tweaks after x-only tweaks, it can skip this test vector or return an error",
+            "comment": "Four tweaks alternating x-only and plain",
         },
         {
             "tweaks_indices": [0, 1, 2, 3],
             "is_xonly": [False, False, True, True],
-            "comment": "Four tweaks: plain, plain, x-only, x-only",
+            "comment": "Four tweaks: two plain followed by two x-only",
         },
         {
             "tweaks_indices": [0, 1, 2, 3],
             "is_xonly": [False, False, True, True],
             "indices": [0, 1, 2],
             "aggnonce_idx": 1,
-            "comment": "Tweaking with max number of participants. The expected value (partial sig) must match the previous test vector",
+            "comment": "Same tweaks as the previous case but with all 3 signers; the partial signature differs because the Lagrange coefficient depends on the signer set",
         },
     ]
     for case in valid_cases:
@@ -982,12 +995,12 @@ def generate_tweak_vectors():
         {
             "tweaks_indices": [INVALID_TWEAK_IDX],
             "is_xonly": [False],
-            "comment": "Tweak is invalid because it exceeds group size",
+            "comment": "Tweak exceeds the group order",
         },
         {
             "tweaks_indices": [INFINITY_TWEAK_IDX],
             "is_xonly": [False],
-            "comment": "Tweaked threshold public key is the point at infinity",
+            "comment": "Tweak drives the tweaked public key to the point at infinity",
         },
     ]
     for case in error_cases:
@@ -1071,42 +1084,42 @@ def generate_det_sign_vectors():
             "my_id": 0,
             "msg": 0,
             "rand": 0,
-            "comment": "Signing with minimum number of participants",
+            "comment": "Minimum threshold subset of signers (t=2 of n=3)",
         },
         {
             "indices": [1, 0],
             "my_id": 0,
             "msg": 0,
             "rand": 0,
-            "comment": "Partial signature and secnonce are invariant under reordering of ids (serialize_ids sorts first). Expected values match the previous vector.",
+            "comment": "Signer order does not affect the output: the signer set is sorted internally, so this matches the first valid case",
         },
         {
             "indices": [0, 2],
             "my_id": 0,
             "msg": 0,
             "rand": 0,
-            "comment": "Partial signature and secnonce change when the signer subset changes, ids is bound into det_nonce_hash.",
+            "comment": "A different threshold subset gives a different deterministic nonce, since the signer set is bound into the nonce derivation",
         },
         {
             "indices": [0, 1],
             "my_id": 0,
             "msg": 0,
             "rand": RAND_NONE_IDX,
-            "comment": "Signing without auxiliary randomness",
+            "comment": "No auxiliary randomness (rand omitted)",
         },
         {
             "indices": [0, 1],
             "my_id": 0,
             "msg": 0,
             "rand": RAND_MAX_IDX,
-            "comment": "Signing with max auxiliary randomness",
+            "comment": "Maximum auxiliary randomness",
         },
         {
             "indices": [0, 1, 2],
             "my_id": 0,
             "msg": 0,
             "rand": 0,
-            "comment": "Signing with maximum number of participants",
+            "comment": "All n=3 signers participate (signer set equals the full group)",
         },
         {
             "indices": [0, 1],
@@ -1120,7 +1133,7 @@ def generate_det_sign_vectors():
             "my_id": 0,
             "msg": 2,
             "rand": 0,
-            "comment": "Message longer than 32 bytes (38-byte msg)",
+            "comment": "Non-standard message length (38 bytes)",
         },
         {
             "indices": [0, 1],
@@ -1129,7 +1142,7 @@ def generate_det_sign_vectors():
             "rand": 0,
             "tweaks": 0,
             "is_xonly": [True],
-            "comment": "Signing with tweaks",
+            "comment": "Single x-only tweak applied",
         },
     ]
     for case in valid_cases:
@@ -1191,7 +1204,7 @@ def generate_det_sign_vectors():
             "msg": 0,
             "rand": 0,
             "error": "value",
-            "comment": "The signer's id (2) is not in the participant identifier list [0, 1].",
+            "comment": "Signer's own id is not in the signer set",
         },
         {
             "ids": [0, 1, 1],
@@ -1200,7 +1213,7 @@ def generate_det_sign_vectors():
             "msg": 0,
             "rand": 0,
             "error": "value",
-            "comment": "The participant identifier list contains duplicate elements",
+            "comment": "Signer set contains a duplicate id",
         },
         {
             "ids": [1, 2],
@@ -1209,7 +1222,7 @@ def generate_det_sign_vectors():
             "msg": 0,
             "rand": 0,
             "error": "value",
-            "comment": "The signer's pubshare (derived from secshare_p0) is not in the pubshares list.",
+            "comment": "Signer's own public share is not in the public share list",
         },
         {
             "ids": [0, 1],
@@ -1218,7 +1231,7 @@ def generate_det_sign_vectors():
             "msg": 0,
             "rand": 0,
             "error": "value",
-            "comment": "Signer 1 provided an invalid participant public share",
+            "comment": "A public share is not a valid point",
         },
         {
             "ids": [2, 1],
@@ -1227,7 +1240,7 @@ def generate_det_sign_vectors():
             "msg": 0,
             "rand": 0,
             "error": "value",
-            "comment": "Derived threshold public key will be invalid.",
+            "comment": "Signer set's public shares do not match the threshold public key",
         },
         {
             "ids": [0, 1],
@@ -1237,7 +1250,7 @@ def generate_det_sign_vectors():
             "rand": 0,
             "aggothernonce": "048465FCF0BBDBCF443AABCCE533D42B4B5A10966AC09A49655E8C42DAAB8FCD61037496A3CC86926D452CAFCFD55D25972CA1675D549310DE296BFF42F72EEEA8C9",
             "error": "invalid_contrib",
-            "comment": "aggothernonce is invalid due wrong tag, 0x04, in the first half",
+            "comment": "Aggregate of the other signers' nonces is invalid: first half has an unknown tag 0x04",
         },
         {
             "ids": [0, 1],
@@ -1247,7 +1260,7 @@ def generate_det_sign_vectors():
             "rand": 0,
             "aggothernonce": "0000000000000000000000000000000000000000000000000000000000000000000287BF891D2A6DEAEBADC909352AA9405D1428C15F4B75F04DAE642A95C2548480",
             "error": "invalid_contrib",
-            "comment": "aggothernonce is invalid because first half corresponds to point at infinity",
+            "comment": "Aggregate of the other signers' nonces is invalid: first half is all zeros",
         },
         {
             "ids": [0, 1],
@@ -1257,7 +1270,7 @@ def generate_det_sign_vectors():
             "rand": 0,
             "aggothernonce": "0353BC2314D46C813AF81317AF1BDF99816B6444E416BB8D3DC04ACB2F5388D1AC020000000000000000000000000000000000000000000000000000000000000009",
             "error": "invalid_contrib",
-            "comment": "aggothernonce is invalid because the second half does not correspond to an X coordinate",
+            "comment": "Aggregate of the other signers' nonces is invalid: second half is not a point on the curve",
         },
         {
             "ids": [0, 1],
@@ -1267,7 +1280,7 @@ def generate_det_sign_vectors():
             "rand": 0,
             "aggothernonce": "0353BC2314D46C813AF81317AF1BDF99816B6444E416BB8D3DC04ACB2F5388D1AC02FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFFC30",
             "error": "invalid_contrib",
-            "comment": "aggothernonce is invalid because the second half x coordinate is greater than or equal to the field prime",
+            "comment": "Aggregate of the other signers' nonces is invalid: second half's x-coordinate exceeds the field size",
         },
         {
             "ids": [0, 1],
@@ -1278,7 +1291,7 @@ def generate_det_sign_vectors():
             "tweaks": INVALID_TWEAK_IDX,
             "is_xonly": [False],
             "error": "value",
-            "comment": "Tweak is invalid because it exceeds group size",
+            "comment": "Tweak exceeds the group order",
         },
     ]
     for case in error_cases:
@@ -1370,21 +1383,21 @@ def generate_sig_agg_vectors():
     valid_cases = [
         {
             "indices": [0, 1],
-            "comment": "Signing with minimum number of participants",
+            "comment": "Minimum threshold subset of signers (t=2 of n=3), no tweaks",
         },
         {
             "indices": [1, 0],
-            "comment": "Order of the singer set shouldn't affect the aggregate signature. The expected value must match the previous test vector.",
+            "comment": "Signer order does not affect the aggregate signature: partial signatures are summed, so this matches the first valid case",
         },
         {
             "indices": [0, 1],
             "tweaks": [0, 1, 2],
             "is_xonly": [True, False, False],
-            "comment": "Signing with tweaked threshold public key",
+            "comment": "Aggregation with three tweaks applied (one x-only, two plain)",
         },
         {
             "indices": [0, 1, 2],
-            "comment": "Signing with max number of participants and tweaked threshold public key",
+            "comment": "All n=3 signers participate, no tweaks",
         },
     ]
     for case in valid_cases:
@@ -1430,7 +1443,7 @@ def generate_sig_agg_vectors():
         {
             "indices": [0, 1],
             "error": "invalid_contrib",
-            "comment": "Partial signature is invalid because it exceeds group size",
+            "comment": "Partial signature equals the group order, which is out of range",
         },
     ]
     for j, case in enumerate(error_cases):

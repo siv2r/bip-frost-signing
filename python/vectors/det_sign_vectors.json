@@ -29,7 +29,7 @@
                 "03822691A3FD135A5880A12E92ED62F3ECF40BC7AA0339ED2D01FBB3B44F97EE43022215BA386A89E39EE4BAC1B201C69B8706000C402F89D81799B62AAA302F0C0C",
                 "0A81D292AB93FC55EC047619E06A73AA41D20C0A44FF4C19B9F5052BB23F7BE1"
             ],
-            "comment": "Signing with minimum number of participants"
+            "comment": "Minimum threshold subset of signers (t=2 of n=3)"
         },
         {
             "rand": "0000000000000000000000000000000000000000000000000000000000000000",
@@ -44,7 +44,7 @@
                 "03822691A3FD135A5880A12E92ED62F3ECF40BC7AA0339ED2D01FBB3B44F97EE43022215BA386A89E39EE4BAC1B201C69B8706000C402F89D81799B62AAA302F0C0C",
                 "0A81D292AB93FC55EC047619E06A73AA41D20C0A44FF4C19B9F5052BB23F7BE1"
             ],
-            "comment": "Partial signature and secnonce are invariant under reordering of ids (serialize_ids sorts first). Expected values match the previous vector."
+            "comment": "Signer order does not affect the output: the signer set is sorted internally, so this matches the first valid case"
         },
         {
             "rand": "0000000000000000000000000000000000000000000000000000000000000000",
@@ -59,7 +59,7 @@
                 "02DFC4C3077B18640812E646024FC83BD5F5DA614C5AD935E904EB614F0E248D5C028D7D81EF161535E99BEB5EEF45A99F86456985342DF40EEDFD10EC6FDB84D432",
                 "392BD632BEED5A86D3EBAC955D439FA4D4E79B93321A92200D143930C7688DE9"
             ],
-            "comment": "Partial signature and secnonce change when the signer subset changes, ids is bound into det_nonce_hash."
+            "comment": "A different threshold subset gives a different deterministic nonce, since the signer set is bound into the nonce derivation"
         },
         {
             "rand": null,
@@ -74,7 +74,7 @@
                 "0330135F948C53934F8994D5C0F31735D40CC9A898B7DBC567EC846908A99E1A2A02C8B59E0DC9BAFCCF76226C4C0F5D17E1FEC432286B845294AE7A2A36CEAD9CC0",
                 "80B32B5A881FF348CEC8EC2574D743242B0216DD535D89307FCC8F965616184D"
             ],
-            "comment": "Signing without auxiliary randomness"
+            "comment": "No auxiliary randomness (rand omitted)"
         },
         {
             "rand": "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF",
@@ -89,7 +89,7 @@
                 "0227C9876E62236F7C420849F5777C65E67B6242AE72B77D19C029AE454312D4AF03BA958CFFBE91644C272D4DD088AD954C63A70AA2222A96BBA09F74E3EB5F2838",
                 "471FDA0C545781F4EEC9E42392850B753C6AF522C25381BDD16DCE76220D8890"
             ],
-            "comment": "Signing with max auxiliary randomness"
+            "comment": "Maximum auxiliary randomness"
         },
         {
             "rand": "0000000000000000000000000000000000000000000000000000000000000000",
@@ -104,7 +104,7 @@
                 "03FD938346D52D695672684356D4720ABDF4CA7DE59B21DBF409D573591616F7B903B9A3F3E8D2B6886B04D2B2F8277C7858AE6932ECE3A57A65A1D93D42AC0437D4",
                 "436691D38A987273EFFB16CCFD75616BFC0AE9EC122AD9595FE457FDC57A634D"
             ],
-            "comment": "Signing with maximum number of participants"
+            "comment": "All n=3 signers participate (signer set equals the full group)"
         },
         {
             "rand": "0000000000000000000000000000000000000000000000000000000000000000",
@@ -134,7 +134,7 @@
                 "02401CF96ECD35EABCCC1D2A2BBD432D8D4A1272C9FF494AB1EB175D3F42CB33AE0291129205BD04BDF5A69A148C807005A4458D8C2E30DFD8890DD2684456F788F8",
                 "E030D38AE83FB62BFC213FB441D89BD6563200CD8830289F4962211F2921D165"
             ],
-            "comment": "Message longer than 32 bytes (38-byte msg)"
+            "comment": "Non-standard message length (38 bytes)"
         },
         {
             "rand": "0000000000000000000000000000000000000000000000000000000000000000",
@@ -151,7 +151,7 @@
                 "033E9FE457EB18F86436701F822F1B60E67D1BCFBF996ED3D6F410A2551D4295D1033B04944F4C5B7C966FC86CBD495747685C29A8A42430A45EFCFEEC5F987FAC89",
                 "7593B37BB50F8EB2E695D6433ACE1CF3CF5D7EEDA5E14252C7FC3682E2292887"
             ],
-            "comment": "Signing with tweaks"
+            "comment": "Single x-only tweak applied"
         }
     ],
     "error_test_cases": [
@@ -168,7 +168,7 @@
                 "type": "ValueError",
                 "message": "The signer's id must be present in the participant identifier list."
             },
-            "comment": "The signer's id (2) is not in the participant identifier list [0, 1]."
+            "comment": "Signer's own id is not in the signer set"
         },
         {
             "rand": "0000000000000000000000000000000000000000000000000000000000000000",
@@ -183,7 +183,7 @@
                 "type": "ValueError",
                 "message": "The participant identifier list contains duplicate elements."
             },
-            "comment": "The participant identifier list contains duplicate elements"
+            "comment": "Signer set contains a duplicate id"
         },
         {
             "rand": "0000000000000000000000000000000000000000000000000000000000000000",
@@ -198,7 +198,7 @@
                 "type": "ValueError",
                 "message": "The signer's pubshare must be included in the list of pubshares."
             },
-            "comment": "The signer's pubshare (derived from secshare_p0) is not in the pubshares list."
+            "comment": "Signer's own public share is not in the public share list"
         },
         {
             "rand": "0000000000000000000000000000000000000000000000000000000000000000",
@@ -213,7 +213,7 @@
                 "type": "ValueError",
                 "message": "Invalid pubshare at index 1."
             },
-            "comment": "Signer 1 provided an invalid participant public share"
+            "comment": "A public share is not a valid point"
         },
         {
             "rand": "0000000000000000000000000000000000000000000000000000000000000000",
@@ -228,7 +228,7 @@
                 "type": "ValueError",
                 "message": "The provided key material is incorrect."
             },
-            "comment": "Derived threshold public key will be invalid."
+            "comment": "Signer set's public shares do not match the threshold public key"
         },
         {
             "rand": "0000000000000000000000000000000000000000000000000000000000000000",
@@ -244,7 +244,7 @@
                 "signer_index": null,
                 "contrib": "aggothernonce"
             },
-            "comment": "aggothernonce is invalid due wrong tag, 0x04, in the first half"
+            "comment": "Aggregate of the other signers' nonces is invalid: first half has an unknown tag 0x04"
         },
         {
             "rand": "0000000000000000000000000000000000000000000000000000000000000000",
@@ -260,7 +260,7 @@
                 "signer_index": null,
                 "contrib": "aggothernonce"
             },
-            "comment": "aggothernonce is invalid because first half corresponds to point at infinity"
+            "comment": "Aggregate of the other signers' nonces is invalid: first half is all zeros"
         },
         {
             "rand": "0000000000000000000000000000000000000000000000000000000000000000",
@@ -276,7 +276,7 @@
                 "signer_index": null,
                 "contrib": "aggothernonce"
             },
-            "comment": "aggothernonce is invalid because the second half does not correspond to an X coordinate"
+            "comment": "Aggregate of the other signers' nonces is invalid: second half is not a point on the curve"
         },
         {
             "rand": "0000000000000000000000000000000000000000000000000000000000000000",
@@ -292,7 +292,7 @@
                 "signer_index": null,
                 "contrib": "aggothernonce"
             },
-            "comment": "aggothernonce is invalid because the second half x coordinate is greater than or equal to the field prime"
+            "comment": "Aggregate of the other signers' nonces is invalid: second half's x-coordinate exceeds the field size"
         },
         {
             "rand": "0000000000000000000000000000000000000000000000000000000000000000",
@@ -309,7 +309,7 @@
                 "type": "ValueError",
                 "message": "The tweak value is out of range."
             },
-            "comment": "Tweak is invalid because it exceeds group size"
+            "comment": "Tweak exceeds the group order"
         }
     ]
 }

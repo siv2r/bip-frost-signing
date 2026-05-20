@@ -26,7 +26,7 @@
                 "D0750AE90E8475A6E984AE9159E0C4510851672D6D5C26260F643448FF0AC3EB"
             ],
             "expected": "90495647B268390A2ABA2518AEEEF699620C783EF21DF2800BB3C38CAE6755C7DA3F2CE35966A1623373094D62F5DE1971B11E7D312FC23A4665D33FFD773E9F",
-            "comment": "Signing with minimum number of participants"
+            "comment": "Minimum threshold subset of signers (t=2 of n=3), no tweaks"
         },
         {
             "id_indices": [1, 0],
@@ -39,7 +39,7 @@
                 "09CA21FA4AE22BBB49EE5ABC091519C8695FB74FC3D39C1437019EF6FE6C7AB4"
             ],
             "expected": "90495647B268390A2ABA2518AEEEF699620C783EF21DF2800BB3C38CAE6755C7DA3F2CE35966A1623373094D62F5DE1971B11E7D312FC23A4665D33FFD773E9F",
-            "comment": "Order of the singer set shouldn't affect the aggregate signature. The expected value must match the previous test vector."
+            "comment": "Signer order does not affect the aggregate signature: partial signatures are summed, so this matches the first valid case"
         },
         {
             "id_indices": [0, 1],
@@ -52,7 +52,7 @@
                 "B7290A65BE76B17C8756D77EF0395D5F219CDF7EA8D63886132C9011938F241C"
             ],
             "expected": "7430808B048AD9EAA6240B047B790CF24DB878DC3AC31C1B528289ED3AA70C067CA7AA1E418135268A336415D4B634E1F845A981F21B69FD3ADDF7D81D41FAB8",
-            "comment": "Signing with tweaked threshold public key"
+            "comment": "Aggregation with three tweaks applied (one x-only, two plain)"
         },
         {
             "id_indices": [0, 1, 2],
@@ -66,7 +66,7 @@
                 "F5352AB8BD2C34F466ACF16046A222DAFB45FBF6327AC4E8EE6C10C8FED9EF33"
             ],
             "expected": "553247A24AF9A15C4D495968C0467FE6651F3584FDD671CBAE05BBC850577DD8CE9E7445EED77E008333220EE0F254727498994071415EAAC5B0FF62F4986696",
-            "comment": "Signing with max number of participants and tweaked threshold public key"
+            "comment": "All n=3 signers participate, no tweaks"
         }
     ],
     "error_test_cases": [
@@ -85,7 +85,7 @@
                 "signer_index": 1,
                 "contrib": "psig"
             },
-            "comment": "Partial signature is invalid because it exceeds group size"
+            "comment": "Partial signature equals the group order, which is out of range"
         }
     ]
 }

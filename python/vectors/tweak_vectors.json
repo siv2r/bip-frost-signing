@@ -39,7 +39,7 @@
             "is_xonly": [],
             "my_id": 0,
             "expected": "79DEFC679CF419BA7C48AF8F9526B5D510AAA4115B04DECDDE10CE9E06105334",
-            "comment": "No tweak"
+            "comment": "No tweaks applied"
         },
         {
             "id_indices": [0, 1],
@@ -50,7 +50,7 @@
             "is_xonly": [true],
             "my_id": 0,
             "expected": "EED33B9C85BF813CDBE4404DE8E5ACBD8FBF34D53768B45EB21CB8B653F67EA9",
-            "comment": "A single x-only tweak"
+            "comment": "Single x-only tweak (used for BIP341 Taproot)"
         },
         {
             "id_indices": [0, 1],
@@ -61,7 +61,7 @@
             "is_xonly": [false],
             "my_id": 0,
             "expected": "65AA345505968E08C2040BC4F726AA5A382A2E578E8E580719E44B2768975B97",
-            "comment": "A single plain tweak"
+            "comment": "Single plain tweak (used for BIP32 derivation)"
         },
         {
             "id_indices": [0, 1],
@@ -83,7 +83,7 @@
             "is_xonly": [true, false, true, false],
             "my_id": 0,
             "expected": "BF9CD5C5558915E44DDBE6399EBFE824224AB23D331173BE90664ACFA7E2C6EF",
-            "comment": "Four tweaks: x-only, plain, x-only, plain. If an implementation prohibits applying plain tweaks after x-only tweaks, it can skip this test vector or return an error"
+            "comment": "Four tweaks alternating x-only and plain"
         },
         {
             "id_indices": [0, 1],
@@ -94,7 +94,7 @@
             "is_xonly": [false, false, true, true],
             "my_id": 0,
             "expected": "8789A8C4198D125220F693C837CA5896101C4F46D84769E38D284BDD462FDB25",
-            "comment": "Four tweaks: plain, plain, x-only, x-only"
+            "comment": "Four tweaks: two plain followed by two x-only"
         },
         {
             "id_indices": [0, 1, 2],
@@ -105,7 +105,7 @@
             "is_xonly": [false, false, true, true],
             "my_id": 0,
             "expected": "F114B99483FCAF269A955479F60D1AE63CF74FA15330374D2DF8523930B1558A",
-            "comment": "Tweaking with max number of participants. The expected value (partial sig) must match the previous test vector"
+            "comment": "Same tweaks as the previous case but with all 3 signers; the partial signature differs because the Lagrange coefficient depends on the signer set"
         }
     ],
     "error_test_cases": [
@@ -120,7 +120,7 @@
                 "type": "ValueError",
                 "message": "The tweak value is out of range."
             },
-            "comment": "Tweak is invalid because it exceeds group size"
+            "comment": "Tweak exceeds the group order"
         },
         {
             "id_indices": [0, 1],
@@ -133,7 +133,7 @@
                 "type": "ValueError",
                 "message": "The result of tweaking cannot be infinity."
             },
-            "comment": "Tweaked threshold public key is the point at infinity"
+            "comment": "Tweak drives the tweaked public key to the point at infinity"
         }
     ]
 }
