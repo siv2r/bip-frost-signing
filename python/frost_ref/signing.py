@@ -12,7 +12,7 @@ from typing import List, Optional, Tuple, NewType, NamedTuple, Literal
 import secrets
 
 from secp256k1lab.secp256k1 import G, GE, Scalar
-from secp256k1lab.util import int_from_bytes, tagged_hash, xor_bytes
+from secp256k1lab.util import tagged_hash, xor_bytes
 
 PlainPk = NewType("PlainPk", bytes)
 XonlyPk = NewType("XonlyPk", bytes)
@@ -81,7 +81,8 @@ class SignersContext(NamedTuple):
 
 def validate_signers_ctx(signers_ctx: SignersContext) -> None:
     n, t, ids, pubshares, thresh_pk = signers_ctx
-    assert t <= n
+    if t < 1 or t > n:
+        raise ValueError("The threshold must be 1 <= t <= n.")
     if not t <= len(ids) <= n:
         raise ValueError("The number of signers must be between t and n.")
     if len(pubshares) != len(ids):
@@ -135,7 +136,7 @@ def apply_tweak(tweak_ctx: TweakContext, tweak: bytes, is_xonly: bool) -> TweakC
     try:
         twk = Scalar.from_bytes_checked(tweak)
     except ValueError:
-        raise ValueError("The tweak must be less than n.")
+        raise ValueError("The tweak value is out of range.")
     Q_ = g * Q + twk * G
     if Q_.infinity:
         raise ValueError("The result of tweaking cannot be infinity.")
@@ -313,8 +314,9 @@ def sign(
     secnonce[:] = bytearray(b"\x00" * 64)
     k_1 = k_1_ if R.has_even_y() else -k_1_
     k_2 = k_2_ if R.has_even_y() else -k_2_
-    d_ = int_from_bytes(secshare)
-    if not 0 < d_ < GE.ORDER:
+    try:
+        d_ = Scalar.from_bytes_nonzero_checked(secshare)
+    except ValueError:
         raise ValueError("The signer's secret share value is out of range.")
     P = d_ * G
     assert not P.infinity
@@ -400,7 +402,7 @@ def deterministic_sign(
     secnonce = bytearray(k_1.to_bytes() + k_2.to_bytes())
     try:
         aggnonce = nonce_agg([pubnonce, aggothernonce])
-    except Exception:
+    except InvalidContributionError:
         # pubnonce is always valid, so any failure is due to aggothernonce.
         raise InvalidContributionError(None, "aggothernonce")
     session_ctx = SessionContext(aggnonce, signers_ctx, tweaks, is_xonly, msg)
@@ -439,7 +441,7 @@ def partial_sig_verify_internal(
 ) -> bool:
     (Q, gacc, _, ids, pubshares, b, R, e) = get_session_values(session_ctx)
     try:
-        s = Scalar.from_bytes_nonzero_checked(psig)
+        s = Scalar.from_bytes_checked(psig)
     except ValueError:
         return False
     if pubshare not in pubshares:

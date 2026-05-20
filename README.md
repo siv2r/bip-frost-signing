@@ -310,7 +310,7 @@ Algorithm *ValidateSignersCtx(signers_ctx)*:
 - Fail if not *t ≤ u ≤ n*
 - For *i = 1 .. u*:
   - Fail if not *0 ≤ id<sub>i</sub> ≤ n - 1*
-  - Fail if *cpoint(pubshare<sub>i</sub>)* fails
+  - Fail if *cpoint(pubshare<sub>i</sub>)* fails; blame signer at index *i* for invalid *pubshare*
 - Fail if *has_duplicates(id<sub>1..u</sub>)*
 - Fail if *DeriveThreshPubkey(id<sub>1..u</sub>, pubshare<sub>1..u</sub>) ≠ thresh_pk*
 - No return
@@ -426,7 +426,7 @@ Algorithm *NonceGen(secshare, pubshare, thresh_pk, m, extra_in)*:
 - If the optional argument *extra_in* is not present:
   - Let *extra_in = empty_bytestring*
 - Let *k<sub>i</sub> = scalar_from_bytes_wrapping(hash<sub>FROST/nonce</sub>(rand || bytes(1, len(pubshare)) || pubshare || bytes(1, len(thresh_pk)) || thresh_pk || m_prefixed || bytes(4, len(extra_in)) || extra_in || bytes(1, i - 1)))* for *i = 1,2*
-- Fail if *k<sub>1</sub> = Scalar(0)* or *k<sub>2</sub> = Scalar(0)*
+- Fail if *k<sub>1</sub> = Scalar(0)* or *k<sub>2</sub> = Scalar(0)*[^negligible-zero-scalar]
 - Let *R<sub>\*,1</sub> = k<sub>1</sub> &middot; G*, *R<sub>\*,2</sub> = k<sub>2</sub> &middot; G*
 - Let *pubnonce = cbytes(R<sub>\*,1</sub>) || cbytes(R<sub>\*,2</sub>)*
 - Let *secnonce = scalar_to_bytes(k<sub>1</sub>) || scalar_to_bytes(k<sub>2</sub>)*[^secnonce-ser]
@@ -437,6 +437,8 @@ Algorithm *NonceGen(secshare, pubshare, thresh_pk, m, extra_in)*:
 [^secnonce-ser]: The algorithms as specified here assume that the *secnonce* is stored as a 64-byte array using the serialization *secnonce = scalar_to_bytes(k<sub>1</sub>) || scalar_to_bytes(k<sub>2</sub>)*. The same format is used in the reference implementation and in the test vectors. However, since the *secnonce* is (obviously) not meant to be sent over the wire, compatibility between implementations is not a concern, and this method of storing the *secnonce* is merely a suggestion. The *secnonce* is effectively a local data structure of the signer which comprises the value pair *(k<sub>1</sub>, k<sub>2</sub>)*, and implementations may choose any suitable method to carry it from *NonceGen* (first communication round) to *Sign* (second communication round). In particular, implementations may choose to hide the *secnonce* in internal state without exposing it in an API explicitly, e.g., in an effort to prevent callers from reusing a *secnonce* accidentally.
 
 [^max-msg-len]: In theory, the allowed message size is restricted because SHA256 accepts byte strings only up to size of 2^61-1 bytes (and because of the 8-byte length encoding).
+
+[^negligible-zero-scalar]: These are unreachable errors, included for completeness: such a value equals *Scalar(0)* only with negligible probability. The reference implementation checks the condition with an assertion.
 
 ### Nonce Aggregation
 
@@ -475,7 +477,7 @@ Algorithm *GetSessionValues(session_ctx)*:
 - Let *(Q, gacc, tacc) = tweak_ctx<sub>v</sub>*
 - Let *ser_ids* = *SerializeIds(id<sub>1..u</sub>)*
 - Let *b* = *scalar_from_bytes_wrapping(hash<sub>FROST/noncecoef</sub>(ser_ids || aggnonce || xbytes(Q) || m))*
-- Fail if *b = Scalar(0)*
+- Fail if *b = Scalar(0)*[^negligible-zero-scalar]
 - Let *R<sub>1</sub> = cpoint_ext(aggnonce[0:33]), R<sub>2</sub> = cpoint_ext(aggnonce[33:66])*; fail if that fails and blame the coordinator for invalid *aggnonce*.
 - Let *R' = R<sub>1</sub> + b &middot; R<sub>2</sub>*
 - If *is_infinity(R'):*
@@ -483,7 +485,7 @@ Algorithm *GetSessionValues(session_ctx)*:
 - Else:
   - Let final nonce *R = R'*
 - Let *e = scalar_from_bytes_wrapping(hash<sub>BIP0340/challenge</sub>((xbytes(R) || xbytes(Q) || m)))*
-- Fail if *e = Scalar(0)*
+- Fail if *e = Scalar(0)*[^negligible-zero-scalar]
 - Return (Q, gacc, tacc, id<sub>1..u</sub>, pubshare<sub>1..u</sub>, b, R, e)
 
 Internal Algorithm *SerializeIds(id<sub>1..u</sub>)*:
@@ -533,7 +535,7 @@ Algorithm *PartialSigVerify(psig, pubnonce<sub>1..u</sub>, signers_ctx, tweak<su
   - The list of tweaks *tweak<sub>1..v</sub>*: *v* 32-byte arrays, each a serialized scalar
   - The list of tweak modes *is_xonly_t<sub>1..v</sub>* : *v* booleans
   - The message *m*: a byte array[^max-msg-len]
-  - The index *i* of the signer in the list of public nonces where *0 < i < u*
+  - The index *i* of the signer in the list of public nonces where *0 ≤ i ≤ u - 1*
 - ValidateSignersCtx(signers_ctx); fail if that fails
 - Let *(_, _, u, id<sub>1..u</sub>, pubshare<sub>1..u</sub>, _) = signers_ctx*
 - Let *aggnonce = NonceAgg(pubnonce<sub>1..u</sub>)*; fail if that fails
@@ -547,7 +549,7 @@ Internal Algorithm *PartialSigVerifyInternal(psig, my_id, pubnonce, pubshare, se
 - Let *s = scalar_from_bytes_checked(psig)*; fail if that fails
 - Fail if *pubshare* not in *pubshare<sub>1..u</sub>*
 - Fail if *my_id* not in *id<sub>1..u</sub>*
-- Let *R<sub>\*,1</sub> = cpoint(pubnonce[0:33]), R<sub>\*,2</sub> = cpoint(pubnonce[33:66])*
+- Let *R<sub>\*,1</sub> = cpoint(pubnonce[0:33]), R<sub>\*,2</sub> = cpoint(pubnonce[33:66])*; fail if either fails
 - Let *Re<sub>\*</sub>' = R<sub>\*,1</sub> + b &middot; R<sub>\*,2</sub>*
 - Let effective nonce *Re<sub>\*</sub> = Re<sub>\*</sub>'* if *has_even_y(R)*, otherwise let *Re<sub>\*</sub> = -Re<sub>\*</sub>'*
 - Let *P = cpoint(pubshare)*; fail if that fails
@@ -569,7 +571,7 @@ Algorithm *PartialSigAgg(psig<sub>1..u</sub>, session_ctx)*:
   - The *session_ctx*: a [Session Context](#session-context) data structure
 - Let *(Q, _, tacc, _, _, _, R, e) = GetSessionValues(session_ctx)*; fail if that fails
 - For *i = 1 .. u*:
-  - Let *s<sub>i</sub> = scalar_from_bytes_nonzero_checked(psig<sub>i</sub>)*; fail if that fails and blame signer at index *i* for invalid partial signature.
+  - Let *s<sub>i</sub> = scalar_from_bytes_checked(psig<sub>i</sub>)*; fail if that fails and blame signer at index *i* for invalid partial signature.
 - Let *g = Scalar(1)* if *has_even_y(Q)*, otherwise let *g = Scalar(-1)*
 - Let *s = s<sub>1</sub> + ... + s<sub>u</sub> + e &middot; g &middot; tacc &ensp;(mod ord)*
 - Return *sig = xbytes(R) || scalar_to_bytes(s)*
@@ -633,12 +635,9 @@ Algorithm *DeterministicSign(secshare, my_id, aggothernonce, signers_ctx, tweak<
   - Let *tweak_ctx<sub>i</sub> = ApplyTweak(tweak_ctx<sub>i-1</sub>, tweak<sub>i</sub>, is_xonly_t<sub>i</sub>)*; fail if that fails
 - Let *tweaked_tpk = GetXonlyPubkey(tweak_ctx<sub>v</sub>)*
 - Let *k<sub>i</sub> = scalar_from_bytes_wrapping(hash<sub>FROST/deterministic/nonce</sub>(secshare' || bytes(4, my_id) || bytes(4, u) || SerializeIds(id<sub>1..u</sub>) || aggothernonce || tweaked_tpk || bytes(8, len(m)) || m || bytes(1, i - 1)))* for *i = 1,2*
-- Fail if *k<sub>1</sub> = Scalar(0)* or *k<sub>2</sub> = Scalar(0)*
+- Fail if *k<sub>1</sub> = Scalar(0)* or *k<sub>2</sub> = Scalar(0)*[^negligible-zero-scalar]
 - Let *R<sub>\*,1</sub> = k<sub>1</sub> &middot; G, R<sub>\*,2</sub> = k<sub>2</sub> &middot; G*
 - Let *pubnonce = cbytes(R<sub>\*,1</sub>) || cbytes(R<sub>\*,2</sub>)*
-- Let *d = scalar_from_bytes_nonzero_checked(secshare')*; fail if that fails
-- Let *my_pubshare = cbytes(d &middot; G)*
-- Fail if *my_pubshare* is not present in *pubshare<sub>1..u</sub>*
 - Let *secnonce = scalar_to_bytes(k<sub>1</sub>) || scalar_to_bytes(k<sub>2</sub>)*
 - Let *aggnonce = NonceAgg((pubnonce, aggothernonce))*; fail if that fails and blame coordinator for invalid *aggothernonce*.
 - Let *session_ctx = (signers_ctx, aggnonce, v, tweak<sub>1..v</sub>, is_xonly_t<sub>1..v</sub>, m)*

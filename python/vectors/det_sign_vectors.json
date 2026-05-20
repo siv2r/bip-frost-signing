@@ -307,7 +307,7 @@
             "my_id": 0,
             "error": {
                 "type": "ValueError",
-                "message": "The tweak must be less than n."
+                "message": "The tweak value is out of range."
             },
             "comment": "Tweak is invalid because it exceeds group size"
         }
