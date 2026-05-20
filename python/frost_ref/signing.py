@@ -57,13 +57,10 @@ def derive_interpolating_value(ids: List[int], my_id: int) -> Scalar:
     return num / deno
 
 
-def derive_thresh_pubkey(ids: List[int], pubshares: List[PlainPk]) -> PlainPk:
+def derive_thresh_pubkey(ids: List[int], pubshares: List[GE]) -> PlainPk:
+    assert len(ids) == len(pubshares)
     Q = GE()
-    for idx, (my_id, pubshare) in enumerate(zip(ids, pubshares)):
-        try:
-            X_i = GE.from_bytes_compressed(pubshare)
-        except ValueError:
-            raise InvalidContributionError(idx, "pubshare")
+    for my_id, X_i in zip(ids, pubshares):
         lam_i = derive_interpolating_value(ids, my_id)
         Q = Q + lam_i * X_i
     # Q is not the point at infinity except with negligible probability.
@@ -87,18 +84,20 @@ def validate_signers_ctx(signers_ctx: SignersContext) -> None:
         raise ValueError("The number of signers must be between t and n.")
     if len(pubshares) != len(ids):
         raise ValueError("The pubshares and ids arrays must have the same length.")
+    pubshare_points = []
     for idx, (i, pubshare) in enumerate(zip(ids, pubshares)):
         if not 0 <= i <= n - 1:
             raise ValueError(
                 f"The participant identifier at index {idx} is out of range."
             )
         try:
-            _ = GE.from_bytes_compressed(pubshare)
+            P = GE.from_bytes_compressed(pubshare)
         except ValueError:
             raise ValueError(f"Invalid pubshare at index {idx}.")
+        pubshare_points.append(P)
     if len(set(ids)) != len(ids):
         raise ValueError("The participant identifier list contains duplicate elements.")
-    if derive_thresh_pubkey(ids, pubshares) != thresh_pk:
+    if derive_thresh_pubkey(ids, pubshare_points) != thresh_pk:
         raise ValueError("The provided key material is incorrect.")
 
 
