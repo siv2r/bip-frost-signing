@@ -1,7 +1,7 @@
 {
     "n": 3,
     "t": 2,
-    "threshold_pubkey": "03B02645D79ABFC494338139410F9D7F0A72BE86C952D6BDE1A66447B8A8D69237",
+    "thresh_pk": "03B02645D79ABFC494338139410F9D7F0A72BE86C952D6BDE1A66447B8A8D69237",
     "secshare_p0": "CCD2EF4559DB05635091D80189AB3544D6668EFC0500A8D5FF51A1F4D32CC1F1",
     "identifiers": [0, 1, 2],
     "pubshares": [
@@ -18,7 +18,6 @@
     ],
     "aggnonces": [
         "022AAC6A4960DE35FC36D8E2DC06255C5CB7FD28250DFD84EBF1AC943B1EA22C3502178AD06BB0490BAD857446FEF55C15FD9FF4329F4EE2F23CA8B7CA0598014910",
-        "0282E58B733AB1B74D1C54B960D668E4298C3EF9F406D44249FB30C403568A1B14039B38604D0FD33E07C3EB81BBDAE39A38A82A1D9E325112A24F0F5480582C9CEE",
         "0282E58B733AB1B74D1C54B960D668E4298C3EF9F406D44249FB30C403568A1B14039B38604D0FD33E07C3EB81BBDAE39A38A82A1D9E325112A24F0F5480582C9CEE"
     ],
     "tweaks": [
@@ -38,7 +37,7 @@
             "tweak_indices": [],
             "aggnonce_index": 0,
             "is_xonly": [],
-            "signer_index": 0,
+            "my_id": 0,
             "expected": "79DEFC679CF419BA7C48AF8F9526B5D510AAA4115B04DECDDE10CE9E06105334",
             "comment": "No tweak"
         },
@@ -49,7 +48,7 @@
             "tweak_indices": [0],
             "aggnonce_index": 0,
             "is_xonly": [true],
-            "signer_index": 0,
+            "my_id": 0,
             "expected": "EED33B9C85BF813CDBE4404DE8E5ACBD8FBF34D53768B45EB21CB8B653F67EA9",
             "comment": "A single x-only tweak"
         },
@@ -60,7 +59,7 @@
             "tweak_indices": [0],
             "aggnonce_index": 0,
             "is_xonly": [false],
-            "signer_index": 0,
+            "my_id": 0,
             "expected": "65AA345505968E08C2040BC4F726AA5A382A2E578E8E580719E44B2768975B97",
             "comment": "A single plain tweak"
         },
@@ -71,7 +70,7 @@
             "tweak_indices": [0, 1],
             "aggnonce_index": 0,
             "is_xonly": [false, true],
-            "signer_index": 0,
+            "my_id": 0,
             "expected": "10EB2D7E0E1BC46B42C54E739DECCA0BA8CB819D11AF5986CB47B8AF2FA00C91",
             "comment": "A plain tweak followed by an x-only tweak"
         },
@@ -82,7 +81,7 @@
             "tweak_indices": [0, 1, 2, 3],
             "aggnonce_index": 0,
             "is_xonly": [true, false, true, false],
-            "signer_index": 0,
+            "my_id": 0,
             "expected": "BF9CD5C5558915E44DDBE6399EBFE824224AB23D331173BE90664ACFA7E2C6EF",
             "comment": "Four tweaks: x-only, plain, x-only, plain. If an implementation prohibits applying plain tweaks after x-only tweaks, it can skip this test vector or return an error"
         },
@@ -93,7 +92,7 @@
             "tweak_indices": [0, 1, 2, 3],
             "aggnonce_index": 0,
             "is_xonly": [false, false, true, true],
-            "signer_index": 0,
+            "my_id": 0,
             "expected": "8789A8C4198D125220F693C837CA5896101C4F46D84769E38D284BDD462FDB25",
             "comment": "Four tweaks: plain, plain, x-only, x-only"
         },
@@ -104,7 +103,7 @@
             "tweak_indices": [0, 1, 2, 3],
             "aggnonce_index": 1,
             "is_xonly": [false, false, true, true],
-            "signer_index": 0,
+            "my_id": 0,
             "expected": "F114B99483FCAF269A955479F60D1AE63CF74FA15330374D2DF8523930B1558A",
             "comment": "Tweaking with max number of participants. The expected value (partial sig) must match the previous test vector"
         }
@@ -116,7 +115,7 @@
             "tweak_indices": [4],
             "aggnonce_index": 0,
             "is_xonly": [false],
-            "signer_index": 0,
+            "my_id": 0,
             "error": {
                 "type": "ValueError",
                 "message": "The tweak must be less than n."
@@ -129,7 +128,7 @@
             "tweak_indices": [5],
             "aggnonce_index": 0,
             "is_xonly": [false],
-            "signer_index": 0,
+            "my_id": 0,
             "error": {
                 "type": "ValueError",
                 "message": "The result of tweaking cannot be infinity."

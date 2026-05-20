@@ -1,7 +1,7 @@
 {
     "n": 3,
     "t": 2,
-    "threshold_pubkey": "03B02645D79ABFC494338139410F9D7F0A72BE86C952D6BDE1A66447B8A8D69237",
+    "thresh_pk": "03B02645D79ABFC494338139410F9D7F0A72BE86C952D6BDE1A66447B8A8D69237",
     "secshare_p0": "CCD2EF4559DB05635091D80189AB3544D6668EFC0500A8D5FF51A1F4D32CC1F1",
     "identifiers": [0, 1, 2],
     "pubshares": [
@@ -24,7 +24,7 @@
             "tweaks": [],
             "is_xonly": [],
             "msg_index": 0,
-            "signer_index": 0,
+            "my_id": 0,
             "expected": [
                 "03822691A3FD135A5880A12E92ED62F3ECF40BC7AA0339ED2D01FBB3B44F97EE43022215BA386A89E39EE4BAC1B201C69B8706000C402F89D81799B62AAA302F0C0C",
                 "0A81D292AB93FC55EC047619E06A73AA41D20C0A44FF4C19B9F5052BB23F7BE1"
@@ -39,7 +39,7 @@
             "tweaks": [],
             "is_xonly": [],
             "msg_index": 0,
-            "signer_index": 1,
+            "my_id": 0,
             "expected": [
                 "03822691A3FD135A5880A12E92ED62F3ECF40BC7AA0339ED2D01FBB3B44F97EE43022215BA386A89E39EE4BAC1B201C69B8706000C402F89D81799B62AAA302F0C0C",
                 "0A81D292AB93FC55EC047619E06A73AA41D20C0A44FF4C19B9F5052BB23F7BE1"
@@ -54,7 +54,7 @@
             "tweaks": [],
             "is_xonly": [],
             "msg_index": 0,
-            "signer_index": 0,
+            "my_id": 0,
             "expected": [
                 "02DFC4C3077B18640812E646024FC83BD5F5DA614C5AD935E904EB614F0E248D5C028D7D81EF161535E99BEB5EEF45A99F86456985342DF40EEDFD10EC6FDB84D432",
                 "392BD632BEED5A86D3EBAC955D439FA4D4E79B93321A92200D143930C7688DE9"
@@ -69,7 +69,7 @@
             "tweaks": [],
             "is_xonly": [],
             "msg_index": 0,
-            "signer_index": 0,
+            "my_id": 0,
             "expected": [
                 "0330135F948C53934F8994D5C0F31735D40CC9A898B7DBC567EC846908A99E1A2A02C8B59E0DC9BAFCCF76226C4C0F5D17E1FEC432286B845294AE7A2A36CEAD9CC0",
                 "80B32B5A881FF348CEC8EC2574D743242B0216DD535D89307FCC8F965616184D"
@@ -84,7 +84,7 @@
             "tweaks": [],
             "is_xonly": [],
             "msg_index": 0,
-            "signer_index": 0,
+            "my_id": 0,
             "expected": [
                 "0227C9876E62236F7C420849F5777C65E67B6242AE72B77D19C029AE454312D4AF03BA958CFFBE91644C272D4DD088AD954C63A70AA2222A96BBA09F74E3EB5F2838",
                 "471FDA0C545781F4EEC9E42392850B753C6AF522C25381BDD16DCE76220D8890"
@@ -99,7 +99,7 @@
             "tweaks": [],
             "is_xonly": [],
             "msg_index": 0,
-            "signer_index": 0,
+            "my_id": 0,
             "expected": [
                 "03FD938346D52D695672684356D4720ABDF4CA7DE59B21DBF409D573591616F7B903B9A3F3E8D2B6886B04D2B2F8277C7858AE6932ECE3A57A65A1D93D42AC0437D4",
                 "436691D38A987273EFFB16CCFD75616BFC0AE9EC122AD9595FE457FDC57A634D"
@@ -114,7 +114,7 @@
             "tweaks": [],
             "is_xonly": [],
             "msg_index": 1,
-            "signer_index": 0,
+            "my_id": 0,
             "expected": [
                 "03ADA55E7D860F616E1E596A5FC2CEB002B1807A92B7F34B85575996F694C56E4F02CA104F59EE446A7E579D045F9D7900F4FC7980AB6FBEF0A5AB06FD17647D9DC2",
                 "63A31439F1CB15A6E2FE60690074F105D6442B5329B18300CBBE2910BF15429E"
@@ -129,7 +129,7 @@
             "tweaks": [],
             "is_xonly": [],
             "msg_index": 2,
-            "signer_index": 0,
+            "my_id": 0,
             "expected": [
                 "02401CF96ECD35EABCCC1D2A2BBD432D8D4A1272C9FF494AB1EB175D3F42CB33AE0291129205BD04BDF5A69A148C807005A4458D8C2E30DFD8890DD2684456F788F8",
                 "E030D38AE83FB62BFC213FB441D89BD6563200CD8830289F4962211F2921D165"
@@ -146,7 +146,7 @@
             ],
             "is_xonly": [true],
             "msg_index": 0,
-            "signer_index": 0,
+            "my_id": 0,
             "expected": [
                 "033E9FE457EB18F86436701F822F1B60E67D1BCFBF996ED3D6F410A2551D4295D1033B04944F4C5B7C966FC86CBD495747685C29A8A42430A45EFCFEEC5F987FAC89",
                 "7593B37BB50F8EB2E695D6433ACE1CF3CF5D7EEDA5E14252C7FC3682E2292887"
@@ -163,8 +163,7 @@
             "tweaks": [],
             "is_xonly": [],
             "msg_index": 0,
-            "signer_index": null,
-            "signer_id": 2,
+            "my_id": 2,
             "error": {
                 "type": "ValueError",
                 "message": "The signer's id must be present in the participant identifier list."
@@ -179,7 +178,7 @@
             "tweaks": [],
             "is_xonly": [],
             "msg_index": 0,
-            "signer_index": 0,
+            "my_id": 0,
             "error": {
                 "type": "ValueError",
                 "message": "The participant identifier list contains duplicate elements."
@@ -194,7 +193,7 @@
             "tweaks": [],
             "is_xonly": [],
             "msg_index": 0,
-            "signer_index": 0,
+            "my_id": 1,
             "error": {
                 "type": "ValueError",
                 "message": "The signer's pubshare must be included in the list of pubshares."
@@ -209,7 +208,7 @@
             "tweaks": [],
             "is_xonly": [],
             "msg_index": 0,
-            "signer_index": 0,
+            "my_id": 0,
             "error": {
                 "type": "ValueError",
                 "message": "Invalid pubshare at index 1."
@@ -224,7 +223,7 @@
             "tweaks": [],
             "is_xonly": [],
             "msg_index": 0,
-            "signer_index": 0,
+            "my_id": 2,
             "error": {
                 "type": "ValueError",
                 "message": "The provided key material is incorrect."
@@ -239,7 +238,7 @@
             "tweaks": [],
             "is_xonly": [],
             "msg_index": 0,
-            "signer_index": 0,
+            "my_id": 0,
             "error": {
                 "type": "InvalidContributionError",
                 "signer_index": null,
@@ -255,7 +254,7 @@
             "tweaks": [],
             "is_xonly": [],
             "msg_index": 0,
-            "signer_index": 0,
+            "my_id": 0,
             "error": {
                 "type": "InvalidContributionError",
                 "signer_index": null,
@@ -271,7 +270,7 @@
             "tweaks": [],
             "is_xonly": [],
             "msg_index": 0,
-            "signer_index": 0,
+            "my_id": 0,
             "error": {
                 "type": "InvalidContributionError",
                 "signer_index": null,
@@ -287,7 +286,7 @@
             "tweaks": [],
             "is_xonly": [],
             "msg_index": 0,
-            "signer_index": 0,
+            "my_id": 0,
             "error": {
                 "type": "InvalidContributionError",
                 "signer_index": null,
@@ -305,7 +304,7 @@
             ],
             "is_xonly": [false],
             "msg_index": 0,
-            "signer_index": 0,
+            "my_id": 0,
             "error": {
                 "type": "ValueError",
                 "message": "The tweak must be less than n."
