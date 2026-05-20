@@ -227,7 +227,7 @@ def generate_nonce_gen_vectors():
             "rand_": bytes_to_hex(COMMON_RAND),
             "secshare": bytes_to_hex(secshares[0]),
             "pubshare": bytes_to_hex(pubshares[0]),
-            "threshold_pubkey": bytes_to_hex(xonly_thresh_pk),
+            "thresh_pk": bytes_to_hex(xonly_thresh_pk),
             "msg": bytes_to_hex(msg),
             "extra_in": bytes_to_hex(extra_in),
             "expected_secnonce": bytes_to_hex(secnonce),
@@ -249,7 +249,7 @@ def generate_nonce_gen_vectors():
             "rand_": bytes_to_hex(COMMON_RAND),
             "secshare": bytes_to_hex(secshares[0]),
             "pubshare": bytes_to_hex(pubshares[0]),
-            "threshold_pubkey": bytes_to_hex(xonly_thresh_pk),
+            "thresh_pk": bytes_to_hex(xonly_thresh_pk),
             "msg": bytes_to_hex(COMMON_MSGS[1]),
             "extra_in": bytes_to_hex(extra_in),
             "expected_secnonce": bytes_to_hex(secnonce),
@@ -271,7 +271,7 @@ def generate_nonce_gen_vectors():
             "rand_": bytes_to_hex(COMMON_RAND),
             "secshare": bytes_to_hex(secshares[0]),
             "pubshare": bytes_to_hex(pubshares[0]),
-            "threshold_pubkey": bytes_to_hex(xonly_thresh_pk),
+            "thresh_pk": bytes_to_hex(xonly_thresh_pk),
             "msg": bytes_to_hex(COMMON_MSGS[2]),
             "extra_in": bytes_to_hex(extra_in),
             "expected_secnonce": bytes_to_hex(secnonce),
@@ -286,7 +286,7 @@ def generate_nonce_gen_vectors():
             "rand_": bytes_to_hex(COMMON_RAND),
             "secshare": None,
             "pubshare": None,
-            "threshold_pubkey": None,
+            "thresh_pk": None,
             "msg": None,
             "extra_in": None,
             "expected_secnonce": bytes_to_hex(secnonce),
@@ -303,7 +303,7 @@ def generate_nonce_gen_vectors():
             "rand_": bytes_to_hex(COMMON_RAND),
             "secshare": bytes_to_hex(secshares[0]),
             "pubshare": bytes_to_hex(pubshares[0]),
-            "threshold_pubkey": bytes_to_hex(xonly_thresh_pk),
+            "thresh_pk": bytes_to_hex(xonly_thresh_pk),
             "msg": None,
             "extra_in": bytes_to_hex(extra_in),
             "expected_secnonce": bytes_to_hex(secnonce),
@@ -429,8 +429,9 @@ def generate_sign_verify_vectors():
 
     vectors["n"] = n
     vectors["t"] = t
-    vectors["threshold_pubkey"] = bytes_to_hex(thresh_pk)
-    vectors["secshare_p0"] = bytes_to_hex(secshare_p0)
+    vectors["thresh_pk"] = bytes_to_hex(thresh_pk)
+    secshares_p0 = [secshare_p0, b"\x00" * 32]
+    vectors["secshares"] = bytes_list_to_hex(secshares_p0)
     vectors["identifiers"] = ids
     pubshares.append(INVALID_PUBSHARE)
     vectors["pubshares"] = bytes_list_to_hex(pubshares)
@@ -501,7 +502,7 @@ def generate_sign_verify_vectors():
 
     vectors["valid_test_cases"] = []
     # --- Valid Test Cases ---
-    # Every List[int] & int below represents indices
+    # Every List[int] & int below represents indices, except `my_id` (a value)
     # REVIEW: add secnonce here (easy readability), than using `secnonce_p0` list as common prefix
     valid_cases = [
         {
@@ -510,7 +511,7 @@ def generate_sign_verify_vectors():
             "pubnonces": [0, 1],
             "aggnonce": 0,
             "msg": 0,
-            "signer": 0,
+            "my_id": 0,
             "comment": "Signing with minimum number of participants",
         },
         {
@@ -519,7 +520,7 @@ def generate_sign_verify_vectors():
             "pubnonces": [1, 0],
             "aggnonce": 0,
             "msg": 0,
-            "signer": 1,
+            "my_id": 0,
             "comment": "Partial-signature doesn't change if the order of signers set changes (without changing secnonces)",
         },
         {
@@ -528,7 +529,7 @@ def generate_sign_verify_vectors():
             "pubnonces": [0, 2],
             "aggnonce": 1,
             "msg": 0,
-            "signer": 0,
+            "my_id": 0,
             "comment": "Partial-signature changes if the members of signers set changes",
         },
         {
@@ -537,7 +538,7 @@ def generate_sign_verify_vectors():
             "pubnonces": [0, 1, 2],
             "aggnonce": 2,
             "msg": 0,
-            "signer": 0,
+            "my_id": 0,
             "comment": "Signing with max number of participants",
         },
         {
@@ -546,7 +547,7 @@ def generate_sign_verify_vectors():
             "pubnonces": [0, 1, INV_PUBNONCE_IDX],
             "aggnonce": AGGNONCE_INF_IDX,
             "msg": 0,
-            "signer": 0,
+            "my_id": 0,
             "comment": "Both halves of aggregate nonce correspond to point at infinity",
         },
         {
@@ -555,7 +556,7 @@ def generate_sign_verify_vectors():
             "pubnonces": [0, 1],
             "aggnonce": 0,
             "msg": 1,
-            "signer": 0,
+            "my_id": 0,
             "comment": "Empty message",
         },
         {
@@ -564,7 +565,7 @@ def generate_sign_verify_vectors():
             "pubnonces": [0, 1],
             "aggnonce": 0,
             "msg": 2,
-            "signer": 0,
+            "my_id": 0,
             "comment": "Message longer than 32 bytes (38-byte msg)",
         },
     ]
@@ -574,7 +575,7 @@ def generate_sign_verify_vectors():
         curr_pubnonces = [pubnonces[i] for i in case["pubnonces"]]
         curr_aggnonce = aggnonces[case["aggnonce"]]
         curr_msg = COMMON_MSGS[case["msg"]]
-        my_id = curr_ids[case["signer"]]
+        my_id = case["my_id"]
         curr_signers = SignersContext(n, t, curr_ids, curr_pubshares, thresh_pk)
         session_ctx = SessionContext(curr_aggnonce, curr_signers, [], [], curr_msg)
         expected_psig = sign(
@@ -587,7 +588,8 @@ def generate_sign_verify_vectors():
                 "pubnonce_indices": case["pubnonces"],
                 "aggnonce_index": case["aggnonce"],
                 "msg_index": case["msg"],
-                "signer_index": case["signer"],
+                "my_id": my_id,
+                "secshare_index": 0,
                 "expected": bytes_to_hex(expected_psig),
                 "comment": case["comment"],
             }
@@ -602,8 +604,7 @@ def generate_sign_verify_vectors():
             "pubshares": [0, 1],
             "aggnonce": 0,
             "msg": 0,
-            "signer_idx": None,
-            "signer_id": 2,
+            "my_id": 2,
             "secnonce": 0,
             "error": "value",
             "comment": "The signer's id (2) is not in the participant identifier list [0, 1].",
@@ -613,7 +614,7 @@ def generate_sign_verify_vectors():
             "pubshares": [0, 1, 1],
             "aggnonce": 0,
             "msg": 0,
-            "signer_idx": 0,
+            "my_id": 0,
             "secnonce": 0,
             "error": "value",
             "comment": "The participant identifier list contains duplicate elements",
@@ -623,7 +624,7 @@ def generate_sign_verify_vectors():
             "pubshares": [1, 2],
             "aggnonce": 0,
             "msg": 0,
-            "signer_idx": 0,
+            "my_id": 1,
             "secnonce": 0,
             "error": "value",
             "comment": "The signer's pubshare (derived from secshare_p0) is not in the pubshares list.",
@@ -633,7 +634,7 @@ def generate_sign_verify_vectors():
             "pubshares": [0, INVALID_PUBSHARE_IDX],
             "aggnonce": 0,
             "msg": 0,
-            "signer_idx": 0,
+            "my_id": 0,
             "secnonce": 0,
             "error": "value",
             "comment": "Signer 1 provided an invalid participant public share",
@@ -643,7 +644,7 @@ def generate_sign_verify_vectors():
             "pubshares": [0, 1],
             "aggnonce": 0,
             "msg": 0,
-            "signer_idx": 1,
+            "my_id": 1,
             "secnonce": 0,
             "error": "value",
             "comment": "Participant identifier at index 0 has value 3, which is not in the valid range [0, n-1] = [0, 2]",
@@ -653,7 +654,7 @@ def generate_sign_verify_vectors():
             "pubshares": [0, 2],
             "aggnonce": 0,
             "msg": 0,
-            "signer_idx": 0,
+            "my_id": 0,
             "secnonce": 0,
             "error": "value",
             "comment": "Derived threshold public key will be invalid",
@@ -663,7 +664,7 @@ def generate_sign_verify_vectors():
             "pubshares": [0, 1],
             "aggnonce": AGGNONCE_INVALID_TAG_IDX,
             "msg": 0,
-            "signer_idx": 0,
+            "my_id": 0,
             "secnonce": 0,
             "error": "invalid_contrib",
             "comment": "Aggregate nonce is invalid due wrong tag, 0x04, in the first half",
@@ -673,7 +674,7 @@ def generate_sign_verify_vectors():
             "pubshares": [0, 1],
             "aggnonce": AGGNONCE_INVALID_XCOORD_IDX,
             "msg": 0,
-            "signer_idx": 0,
+            "my_id": 0,
             "secnonce": 0,
             "error": "invalid_contrib",
             "comment": "Aggregate nonce is invalid because the second half does not correspond to an X coordinate",
@@ -683,7 +684,7 @@ def generate_sign_verify_vectors():
             "pubshares": [0, 1],
             "aggnonce": AGGNONCE_INVALID_EXCEEDS_FIELD_IDX,
             "msg": 0,
-            "signer_idx": 0,
+            "my_id": 0,
             "secnonce": 0,
             "error": "invalid_contrib",
             "comment": "Aggregate nonce is invalid because second half exceeds field size",
@@ -693,7 +694,7 @@ def generate_sign_verify_vectors():
             "pubshares": [0, 1],
             "aggnonce": 0,
             "msg": 0,
-            "signer_idx": 0,
+            "my_id": 0,
             "secnonce": SECNONCE_ZERO_IDX,
             "error": "value",
             "comment": "First-half secnonce out of range. May indicate nonce reuse.",
@@ -703,7 +704,7 @@ def generate_sign_verify_vectors():
             "pubshares": [0, 1],
             "aggnonce": 0,
             "msg": 0,
-            "signer_idx": 0,
+            "my_id": 0,
             "secnonce": 2,
             "error": "value",
             "comment": "Second-half secnonce out of range.",
@@ -713,7 +714,7 @@ def generate_sign_verify_vectors():
             "pubshares": [0],
             "aggnonce": 0,
             "msg": 0,
-            "signer_idx": 0,
+            "my_id": 0,
             "secnonce": 0,
             "error": "value",
             "comment": "Number of signers is less than t.",
@@ -723,9 +724,9 @@ def generate_sign_verify_vectors():
             "pubshares": [0, 1],
             "aggnonce": 0,
             "msg": 0,
-            "signer_idx": 0,
+            "my_id": 0,
             "secnonce": 0,
-            "secshare_zero": b"\x00" * 32,
+            "secshare_index": 1,
             "error": "value",
             "comment": "Signer's secret share is zero, which is outside the valid range.",
         },
@@ -735,14 +736,12 @@ def generate_sign_verify_vectors():
         curr_pubshares = [pubshares[i] for i in case["pubshares"]]
         curr_aggnonce = aggnonces[case["aggnonce"]]
         curr_msg = COMMON_MSGS[case["msg"]]
-        if case["signer_idx"] is None:
-            my_id = case["signer_id"]
-        else:
-            my_id = curr_ids[case["signer_idx"]]
+        my_id = case["my_id"]
+        secshare_index = case.get("secshare_index", 0)
         curr_signers = SignersContext(n, t, curr_ids, curr_pubshares, thresh_pk)
         session_ctx = SessionContext(curr_aggnonce, curr_signers, [], [], curr_msg)
         curr_secnonce = bytearray(secnonces_p0[case["secnonce"]])
-        curr_secshare = case.get("secshare_zero", secshare_p0)
+        curr_secshare = secshares_p0[secshare_index]
         expected_error = (
             ValueError if case["error"] == "value" else InvalidContributionError
         )
@@ -756,18 +755,9 @@ def generate_sign_verify_vectors():
                 "pubshare_indices": case["pubshares"],
                 "aggnonce_index": case["aggnonce"],
                 "msg_index": case["msg"],
-                "signer_index": case["signer_idx"],
-                **(
-                    {"signer_id": case["signer_id"]}
-                    if case["signer_idx"] is None
-                    else {}
-                ),
+                "my_id": my_id,
                 "secnonce_index": case["secnonce"],
-                **(
-                    {"secshare_zero": case["secshare_zero"].hex().upper()}
-                    if "secshare_zero" in case
-                    else {}
-                ),
+                "secshare_index": secshare_index,
                 "error": error,
                 "comment": case["comment"],
             }
@@ -841,7 +831,7 @@ def generate_sign_verify_vectors():
             "pubshares": [0, 1],
             "pubnonces": [3, 1],
             "msg": 0,
-            "signer": 0,
+            "signer_index": 0,
             "error": "invalid_contrib",
             "comment": "Invalid pubnonce",
         },
@@ -850,7 +840,7 @@ def generate_sign_verify_vectors():
             "pubshares": [INVALID_PUBSHARE_IDX, 1],
             "pubnonces": [0, 1],
             "msg": 0,
-            "signer": 0,
+            "signer_index": 0,
             "error": "value",
             "comment": "Invalid pubshare",
         },
@@ -860,7 +850,7 @@ def generate_sign_verify_vectors():
         curr_pubshares = [pubshares[i] for i in case["pubshares"]]
         curr_pubnonces = [pubnonces[i] for i in case["pubnonces"]]
         msg = case["msg"]
-        signer_idx = case["signer"]
+        signer_index = case["signer_index"]
         curr_signers = SignersContext(n, t, curr_ids, curr_pubshares, thresh_pk)
         expected_error = (
             ValueError if case["error"] == "value" else InvalidContributionError
@@ -868,7 +858,7 @@ def generate_sign_verify_vectors():
         error = expect_exception(
             # reuse the valid `psig` generated at the start of "verify fail test cases"
             lambda: partial_sig_verify(
-                psig, curr_pubnonces, curr_signers, [], [], msg, signer_idx
+                psig, curr_pubnonces, curr_signers, [], [], msg, signer_index
             ),
             expected_error,
         )
@@ -879,7 +869,7 @@ def generate_sign_verify_vectors():
                 "pubshare_indices": case["pubshares"],
                 "pubnonce_indices": case["pubnonces"],
                 "msg_index": case["msg"],
-                "signer_index": case["signer"],
+                "signer_index": case["signer_index"],
                 "error": error,
                 "comment": case["comment"],
             }
@@ -899,7 +889,7 @@ def generate_tweak_vectors():
 
     vectors["n"] = n
     vectors["t"] = t
-    vectors["threshold_pubkey"] = bytes_to_hex(thresh_pk)
+    vectors["thresh_pk"] = bytes_to_hex(thresh_pk)
     vectors["secshare_p0"] = bytes_to_hex(secshare_p0)
     vectors["identifiers"] = ids
     pubshares_with_invalid = pubshares + [INVALID_PUBSHARE]
@@ -914,12 +904,6 @@ def generate_tweak_vectors():
     # create valid aggnonces
     indices_grp = [[0, 1], [0, 1, 2]]
     aggnonces = [nonce_agg([pubnonces[i] for i in indices]) for indices in indices_grp]
-    # aggnonce with inf points
-    aggnonces.append(
-        nonce_agg(
-            [pubnonces[0], pubnonces[1], pubnonces[-1]],
-        )
-    )
     vectors["aggnonces"] = bytes_list_to_hex(aggnonces)
 
     # Compute a plain tweak that drives Q + twk*G to the point at infinity: twk = -thresh_sk.
@@ -986,7 +970,7 @@ def generate_tweak_vectors():
                 "tweak_indices": case["tweaks_indices"],
                 "aggnonce_index": aggnonce_idx,
                 "is_xonly": curr_tweak_modes,
-                "signer_index": signer_idx,
+                "my_id": my_id,
                 "expected": bytes_to_hex(psig),
                 "comment": case["comment"],
             }
@@ -1032,7 +1016,7 @@ def generate_tweak_vectors():
                 "tweak_indices": case["tweaks_indices"],
                 "aggnonce_index": 0,
                 "is_xonly": curr_tweak_modes,
-                "signer_index": signer_idx,
+                "my_id": my_id,
                 "error": error,
                 "comment": case["comment"],
             }
@@ -1055,7 +1039,7 @@ def generate_det_sign_vectors():
 
     vectors["n"] = n
     vectors["t"] = t
-    vectors["threshold_pubkey"] = bytes_to_hex(thresh_pk)
+    vectors["thresh_pk"] = bytes_to_hex(thresh_pk)
     vectors["secshare_p0"] = bytes_to_hex(secshare_p0)
     vectors["identifiers"] = ids
     pubshares.append(INVALID_PUBSHARE)
@@ -1084,63 +1068,63 @@ def generate_det_sign_vectors():
     valid_cases = [
         {
             "indices": [0, 1],
-            "signer": 0,
+            "my_id": 0,
             "msg": 0,
             "rand": 0,
             "comment": "Signing with minimum number of participants",
         },
         {
             "indices": [1, 0],
-            "signer": 1,
+            "my_id": 0,
             "msg": 0,
             "rand": 0,
             "comment": "Partial signature and secnonce are invariant under reordering of ids (serialize_ids sorts first). Expected values match the previous vector.",
         },
         {
             "indices": [0, 2],
-            "signer": 0,
+            "my_id": 0,
             "msg": 0,
             "rand": 0,
             "comment": "Partial signature and secnonce change when the signer subset changes, ids is bound into det_nonce_hash.",
         },
         {
             "indices": [0, 1],
-            "signer": 0,
+            "my_id": 0,
             "msg": 0,
             "rand": RAND_NONE_IDX,
             "comment": "Signing without auxiliary randomness",
         },
         {
             "indices": [0, 1],
-            "signer": 0,
+            "my_id": 0,
             "msg": 0,
             "rand": RAND_MAX_IDX,
             "comment": "Signing with max auxiliary randomness",
         },
         {
             "indices": [0, 1, 2],
-            "signer": 0,
+            "my_id": 0,
             "msg": 0,
             "rand": 0,
             "comment": "Signing with maximum number of participants",
         },
         {
             "indices": [0, 1],
-            "signer": 0,
+            "my_id": 0,
             "msg": 1,
             "rand": 0,
             "comment": "Empty message",
         },
         {
             "indices": [0, 1],
-            "signer": 0,
+            "my_id": 0,
             "msg": 2,
             "rand": 0,
             "comment": "Message longer than 32 bytes (38-byte msg)",
         },
         {
             "indices": [0, 1],
-            "signer": 0,
+            "my_id": 0,
             "msg": 0,
             "rand": 0,
             "tweaks": 0,
@@ -1153,16 +1137,15 @@ def generate_det_sign_vectors():
         curr_pubshares = [pubshares[i] for i in case["indices"]]
         curr_msg = COMMON_MSGS[case["msg"]]
         curr_rand = rands[case["rand"]]
-        signer_index = case["signer"]
-        my_id = curr_ids[signer_index]
+        my_id = case["my_id"]
         tweaks_idx = case.get("tweaks", None)
         curr_tweaks = [] if tweaks_idx is None else tweaks[tweaks_idx]
         curr_tweak_modes = case.get("is_xonly", [])
 
-        # generate `aggothernonce`
+        # generate `aggothernonce` (every signer's nonce except this signer's own)
         other_pubnonces = []
-        for pos, i in enumerate(case["indices"]):
-            if signer_index is not None and pos == signer_index:
+        for i in case["indices"]:
+            if ids[i] == my_id:
                 continue
             tmp = b"" if curr_rand is None else curr_rand
             _, pub = nonce_gen_internal(
@@ -1192,7 +1175,7 @@ def generate_det_sign_vectors():
                 "tweaks": bytes_list_to_hex(curr_tweaks),
                 "is_xonly": curr_tweak_modes,
                 "msg_index": case["msg"],
-                "signer_index": signer_index,
+                "my_id": my_id,
                 "expected": bytes_list_to_hex(list(expected)),
                 "comment": case["comment"],
             }
@@ -1204,8 +1187,7 @@ def generate_det_sign_vectors():
         {
             "ids": [0, 1],
             "pubshares": [0, 1],
-            "signer_idx": None,
-            "signer_id": 2,
+            "my_id": 2,
             "msg": 0,
             "rand": 0,
             "error": "value",
@@ -1214,7 +1196,7 @@ def generate_det_sign_vectors():
         {
             "ids": [0, 1, 1],
             "pubshares": [0, 1, 1],
-            "signer_idx": 0,
+            "my_id": 0,
             "msg": 0,
             "rand": 0,
             "error": "value",
@@ -1223,7 +1205,7 @@ def generate_det_sign_vectors():
         {
             "ids": [1, 2],
             "pubshares": [1, 2],
-            "signer_idx": 0,
+            "my_id": 1,
             "msg": 0,
             "rand": 0,
             "error": "value",
@@ -1232,7 +1214,7 @@ def generate_det_sign_vectors():
         {
             "ids": [0, 1],
             "pubshares": [0, INVALID_PUBSHARE_IDX],
-            "signer_idx": 0,
+            "my_id": 0,
             "msg": 0,
             "rand": 0,
             "error": "value",
@@ -1241,7 +1223,7 @@ def generate_det_sign_vectors():
         {
             "ids": [2, 1],
             "pubshares": [0, 1],
-            "signer_idx": 0,
+            "my_id": 2,
             "msg": 0,
             "rand": 0,
             "error": "value",
@@ -1250,7 +1232,7 @@ def generate_det_sign_vectors():
         {
             "ids": [0, 1],
             "pubshares": [0, 1],
-            "signer_idx": 0,
+            "my_id": 0,
             "msg": 0,
             "rand": 0,
             "aggothernonce": "048465FCF0BBDBCF443AABCCE533D42B4B5A10966AC09A49655E8C42DAAB8FCD61037496A3CC86926D452CAFCFD55D25972CA1675D549310DE296BFF42F72EEEA8C9",
@@ -1260,7 +1242,7 @@ def generate_det_sign_vectors():
         {
             "ids": [0, 1],
             "pubshares": [0, 1],
-            "signer_idx": 0,
+            "my_id": 0,
             "msg": 0,
             "rand": 0,
             "aggothernonce": "0000000000000000000000000000000000000000000000000000000000000000000287BF891D2A6DEAEBADC909352AA9405D1428C15F4B75F04DAE642A95C2548480",
@@ -1270,7 +1252,7 @@ def generate_det_sign_vectors():
         {
             "ids": [0, 1],
             "pubshares": [0, 1],
-            "signer_idx": 0,
+            "my_id": 0,
             "msg": 0,
             "rand": 0,
             "aggothernonce": "0353BC2314D46C813AF81317AF1BDF99816B6444E416BB8D3DC04ACB2F5388D1AC020000000000000000000000000000000000000000000000000000000000000009",
@@ -1280,7 +1262,7 @@ def generate_det_sign_vectors():
         {
             "ids": [0, 1],
             "pubshares": [0, 1],
-            "signer_idx": 0,
+            "my_id": 0,
             "msg": 0,
             "rand": 0,
             "aggothernonce": "0353BC2314D46C813AF81317AF1BDF99816B6444E416BB8D3DC04ACB2F5388D1AC02FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFFC30",
@@ -1290,7 +1272,7 @@ def generate_det_sign_vectors():
         {
             "ids": [0, 1],
             "pubshares": [0, 1],
-            "signer_idx": 0,
+            "my_id": 0,
             "msg": 0,
             "rand": 0,
             "tweaks": INVALID_TWEAK_IDX,
@@ -1304,21 +1286,17 @@ def generate_det_sign_vectors():
         curr_pubshares = [pubshares[i] for i in case["pubshares"]]
         curr_msg = COMMON_MSGS[case["msg"]]
         curr_rand = rands[case["rand"]]
-        signer_index = case["signer_idx"]
-        if case["signer_idx"] is None:
-            my_id = case["signer_id"]
-        else:
-            my_id = curr_ids[case["signer_idx"]]
+        my_id = case["my_id"]
         tweaks_idx = case.get("tweaks", None)
         curr_tweaks = [] if tweaks_idx is None else tweaks[tweaks_idx]
         curr_tweak_modes = case.get("is_xonly", [])
 
-        # generate `aggothernonce`
+        # generate `aggothernonce` (every signer's nonce except this signer's own)
         is_aggothernonce = case.get("aggothernonce", None)
         if is_aggothernonce is None:
             other_pubnonces = []
-            for pos, i in enumerate(case["ids"]):
-                if signer_index is not None and pos == signer_index:
+            for i in case["ids"]:
+                if ids[i] == my_id:
                     continue
                 tmp = b"" if curr_rand is None else curr_rand
                 _, pub = nonce_gen_internal(
@@ -1356,12 +1334,7 @@ def generate_det_sign_vectors():
                 "tweaks": bytes_list_to_hex(curr_tweaks),
                 "is_xonly": curr_tweak_modes,
                 "msg_index": case["msg"],
-                "signer_index": signer_index,
-                **(
-                    {"signer_id": case["signer_id"]}
-                    if case["signer_idx"] is None
-                    else {}
-                ),
+                "my_id": my_id,
                 "error": error,
                 "comment": case["comment"],
             }
@@ -1377,14 +1350,13 @@ def generate_sig_agg_vectors():
 
     vectors["n"] = n
     vectors["t"] = t
-    vectors["threshold_pubkey"] = bytes_to_hex(thresh_pk)
+    vectors["thresh_pk"] = bytes_to_hex(thresh_pk)
     vectors["identifiers"] = ids
     vectors["pubshares"] = bytes_list_to_hex(pubshares)
 
     secnonces, pubnonces = generate_all_nonces(
         COMMON_RAND, secshares, pubshares, xonly_thresh_pk
     )
-    vectors["pubnonces"] = bytes_list_to_hex(pubnonces)
 
     vectors["tweaks"] = bytes_list_to_hex(SIG_AGG_TWEAKS)
 
@@ -1443,7 +1415,6 @@ def generate_sig_agg_vectors():
             {
                 "id_indices": case["indices"],
                 "pubshare_indices": case["indices"],
-                "pubnonce_indices": case["indices"],
                 "aggnonce": bytes_to_hex(curr_aggnonce),
                 "tweak_indices": tweak_indices,
                 "is_xonly": curr_tweak_modes,
@@ -1493,7 +1464,6 @@ def generate_sig_agg_vectors():
             {
                 "id_indices": case["indices"],
                 "pubshare_indices": case["indices"],
-                "pubnonce_indices": case["indices"],
                 "aggnonce": bytes_to_hex(curr_aggnonce),
                 "tweak_indices": [],
                 "is_xonly": [],
