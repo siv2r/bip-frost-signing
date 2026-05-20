@@ -20,6 +20,14 @@ ContribKind = Literal[
     "aggothernonce", "aggnonce", "psig", "pubkey", "pubnonce", "pubshare"
 ]
 
+# Tagged hash domain-separation tags. The challenge tag is inherited from
+# BIP340 for signature compatibility; the rest are specific to this BIP.
+FROST_TAG_AUX = "BIP0445/aux"
+FROST_TAG_NONCE = "BIP0445/nonce"
+FROST_TAG_NONCECOEF = "BIP0445/noncecoef"
+FROST_TAG_DETERMINISTIC_NONCE = "BIP0445/deterministic/nonce"
+BIP340_TAG_CHALLENGE = "BIP0340/challenge"
+
 # There are two types of exceptions that can be raised by this implementation:
 #   - ValueError for indicating that an input doesn't conform to some function
 #     precondition (e.g. an input array is the wrong length, a serialized
@@ -162,7 +170,7 @@ def nonce_hash(
     buf += len(extra_in).to_bytes(4, "big")
     buf += extra_in
     buf += i.to_bytes(1, "big")
-    return tagged_hash("FROST/nonce", buf)
+    return tagged_hash(FROST_TAG_NONCE, buf)
 
 
 def nonce_gen_internal(
@@ -174,7 +182,7 @@ def nonce_gen_internal(
     extra_in: Optional[bytes],
 ) -> Tuple[bytearray, bytes]:
     if secshare is not None:
-        rand = xor_bytes(secshare, tagged_hash("FROST/aux", rand_))
+        rand = xor_bytes(secshare, tagged_hash(FROST_TAG_AUX, rand_))
     else:
         rand = rand_
     if pubshare is None:
@@ -269,7 +277,7 @@ def get_session_values(
     # sort the ids before serializing because ROAST paper considers them as a set
     ser_ids = serialize_ids(ids)
     b = Scalar.from_bytes_wrapping(
-        tagged_hash("FROST/noncecoef", ser_ids + aggnonce + Q.to_bytes_xonly() + msg)
+        tagged_hash(FROST_TAG_NONCECOEF, ser_ids + aggnonce + Q.to_bytes_xonly() + msg)
     )
     assert b != 0
     try:
@@ -282,7 +290,7 @@ def get_session_values(
     R = R_ if not R_.infinity else G
     assert not R.infinity
     e = Scalar.from_bytes_wrapping(
-        tagged_hash("BIP0340/challenge", R.to_bytes_xonly() + Q.to_bytes_xonly() + msg)
+        tagged_hash(BIP340_TAG_CHALLENGE, R.to_bytes_xonly() + Q.to_bytes_xonly() + msg)
     )
     assert e != 0
     return (Q, gacc, tacc, ids, pubshares, b, R, e)
@@ -362,7 +370,7 @@ def det_nonce_hash(
     buf += len(msg).to_bytes(8, "big")
     buf += msg
     buf += i.to_bytes(1, "big")
-    return tagged_hash("FROST/deterministic/nonce", buf)
+    return tagged_hash(FROST_TAG_DETERMINISTIC_NONCE, buf)
 
 
 def deterministic_sign(
@@ -376,7 +384,7 @@ def deterministic_sign(
     rand: Optional[bytes],
 ) -> Tuple[bytes, bytes]:
     if rand is not None:
-        secshare_ = xor_bytes(secshare, tagged_hash("FROST/aux", rand))
+        secshare_ = xor_bytes(secshare, tagged_hash(FROST_TAG_AUX, rand))
     else:
         secshare_ = secshare
     validate_signers_ctx(signers_ctx)

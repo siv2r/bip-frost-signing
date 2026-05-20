@@ -93,7 +93,7 @@ For comprehensive validation of the entire key material, *ValidateSignersCtx* ca
 > [!IMPORTANT]
 > Passing *ValidateSignersCtx* ensures functional compatibility with the signing protocol but does not guarantee the security of the key generation protocol itself.
 
-The output of the FROST signing protocol is a BIP340 Schnorr signature that verifies under the *threshold public key* as if it were produced by a single signer using the *threshold secret key*.
+The output of the FROST signing protocol is a BIP340 Schnorr signature that verifies under the *X-only threshold public key* as if it were produced by a single signer using the *threshold secret key*.
 
 ### General Signing Flow
 
@@ -206,7 +206,7 @@ This typically involves deriving the tweaks from a hash of the threshold public 
 Depending on the specific scheme that is used for tweaking, either the plain or the X-only threshold public key is required.
 For example, to do [BIP32][bip32] derivation, you call *GetPlainPubkey* to be able to compute the tweak, whereas [BIP341][bip341] TapTweaks require X-only public keys that are obtained with *GetXonlyPubkey*.
 
-[^arbitrary-tweaks]: It is an open question whether allowing arbitrary tweaks from an adversary affects the unforgeability of FROST.
+[^arbitrary-tweaks]: It is an open question whether allowing *arbitrary* tweaks from an adversary affects the unforgeability of FROST. The standard tweaking used for [BIP32][bip32] derivation and [BIP341][bip341] Taproot corresponds to re-randomizing the threshold public key with an additive tweak, which has been proven to preserve unforgeability under the same AOMDL assumption (in the random oracle model) that underlies plain FROST[[GK24][rerandomized-frost]].
 
 The tweak mode provided to *ApplyTweak* depends on the application:
 Plain tweaking can be used to derive child public keys from a threshold public key using [BIP32][bip32].
@@ -411,7 +411,7 @@ Algorithm *NonceGen(secshare, pubshare, thresh_pk, m, extra_in)*:
   - The auxiliary input *extra_in*: a byte array with *0 ≤ len(extra_in) ≤ 2<sup>32</sup>-1* (optional argument)
 - Let *rand' = random_bytes(32)*
 - If the optional argument *secshare* is present:
-  - Let *rand = xor_bytes(secshare, hash<sub>FROST/aux</sub>(rand'))*[^sk-xor-rand]
+  - Let *rand = xor_bytes(secshare, hash<sub>BIP0445/aux</sub>(rand'))*[^sk-xor-rand]
 - Else:
   - Let *rand = rand'*
 - If the optional argument *pubshare* is not present:
@@ -424,7 +424,7 @@ Algorithm *NonceGen(secshare, pubshare, thresh_pk, m, extra_in)*:
   - Let *m_prefixed = bytes(1, 1) || bytes(8, len(m)) || m*
 - If the optional argument *extra_in* is not present:
   - Let *extra_in = empty_bytestring*
-- Let *k<sub>i</sub> = scalar_from_bytes_wrapping(hash<sub>FROST/nonce</sub>(rand || bytes(1, len(pubshare)) || pubshare || bytes(1, len(thresh_pk)) || thresh_pk || m_prefixed || bytes(4, len(extra_in)) || extra_in || bytes(1, i - 1)))* for *i = 1,2*
+- Let *k<sub>i</sub> = scalar_from_bytes_wrapping(hash<sub>BIP0445/nonce</sub>(rand || bytes(1, len(pubshare)) || pubshare || bytes(1, len(thresh_pk)) || thresh_pk || m_prefixed || bytes(4, len(extra_in)) || extra_in || bytes(1, i - 1)))* for *i = 1,2*
 - Fail if *k<sub>1</sub> = Scalar(0)* or *k<sub>2</sub> = Scalar(0)*[^negligible-zero-scalar]
 - Let *R<sub>\*,1</sub> = k<sub>1</sub> &middot; G*, *R<sub>\*,2</sub> = k<sub>2</sub> &middot; G*
 - Let *pubnonce = cbytes(R<sub>\*,1</sub>) || cbytes(R<sub>\*,2</sub>)*
@@ -475,7 +475,7 @@ Algorithm *GetSessionValues(session_ctx)*:
   - Let *tweak_ctx<sub>i</sub> = ApplyTweak(tweak_ctx<sub>i-1</sub>, tweak<sub>i</sub>, is_xonly_t<sub>i</sub>)*; fail if that fails
 - Let *(Q, gacc, tacc) = tweak_ctx<sub>v</sub>*
 - Let *ser_ids* = *SerializeIds(id<sub>1..u</sub>)*
-- Let *b* = *scalar_from_bytes_wrapping(hash<sub>FROST/noncecoef</sub>(ser_ids || aggnonce || xbytes(Q) || m))*
+- Let *b* = *scalar_from_bytes_wrapping(hash<sub>BIP0445/noncecoef</sub>(ser_ids || aggnonce || xbytes(Q) || m))*
 - Fail if *b = Scalar(0)*[^negligible-zero-scalar]
 - Let *R<sub>1</sub> = cpoint_ext(aggnonce[0:33]), R<sub>2</sub> = cpoint_ext(aggnonce[33:66])*; fail if that fails and blame the coordinator for invalid *aggnonce*.
 - Let *R' = R<sub>1</sub> + b &middot; R<sub>2</sub>*
@@ -625,7 +625,7 @@ Algorithm *DeterministicSign(secshare, my_id, aggothernonce, signers_ctx, tweak<
   - The message *m*: a byte array[^max-msg-len]
   - The auxiliary randomness *rand*: a 32-byte array (optional argument)
 - If the optional argument *rand* is present:
-  - Let *secshare' = xor_bytes(secshare, hash<sub>FROST/aux</sub>(rand))*
+  - Let *secshare' = xor_bytes(secshare, hash<sub>BIP0445/aux</sub>(rand))*
 - Else:
   - Let *secshare' = secshare*
 - Let *(_, _, u, id<sub>1..u</sub>, pubshare<sub>1..u</sub>, thresh_pk) = signers_ctx*
@@ -633,7 +633,7 @@ Algorithm *DeterministicSign(secshare, my_id, aggothernonce, signers_ctx, tweak<
 - For *i = 1 .. v*:
   - Let *tweak_ctx<sub>i</sub> = ApplyTweak(tweak_ctx<sub>i-1</sub>, tweak<sub>i</sub>, is_xonly_t<sub>i</sub>)*; fail if that fails
 - Let *tweaked_tpk = GetXonlyPubkey(tweak_ctx<sub>v</sub>)*
-- Let *k<sub>i</sub> = scalar_from_bytes_wrapping(hash<sub>FROST/deterministic/nonce</sub>(secshare' || bytes(4, my_id) || bytes(4, u) || SerializeIds(id<sub>1..u</sub>) || aggothernonce || tweaked_tpk || bytes(8, len(m)) || m || bytes(1, i - 1)))* for *i = 1,2*
+- Let *k<sub>i</sub> = scalar_from_bytes_wrapping(hash<sub>BIP0445/deterministic/nonce</sub>(secshare' || bytes(4, my_id) || bytes(4, u) || SerializeIds(id<sub>1..u</sub>) || aggothernonce || tweaked_tpk || bytes(8, len(m)) || m || bytes(1, i - 1)))* for *i = 1,2*
 - Fail if *k<sub>1</sub> = Scalar(0)* or *k<sub>2</sub> = Scalar(0)*[^negligible-zero-scalar]
 - Let *R<sub>\*,1</sub> = k<sub>1</sub> &middot; G, R<sub>\*,2</sub> = k<sub>2</sub> &middot; G*
 - Let *pubnonce = cbytes(R<sub>\*,1</sub>) || cbytes(R<sub>\*,2</sub>)*
@@ -826,5 +826,6 @@ We thank Jonas Nick, Tim Ruffing, Jesse Posner, Sebastian Falbesoner, Chris Stew
 [stronger-security-frost]: https://eprint.iacr.org/2022/833
 [olaf]: https://eprint.iacr.org/2023/899
 [roast]: https://eprint.iacr.org/2022/550
+[rerandomized-frost]: https://eprint.iacr.org/2024/436
 <!-- [thresh-with-dkg]: https://link.springer.com/chapter/10.1007/3-540-36563-x_26 -->
 [rfc9591]: https://www.rfc-editor.org/rfc/rfc9591.html
