@@ -315,8 +315,6 @@ def generate_nonce_gen_vectors():
     write_test_vectors("nonce_gen_vectors.json", vectors)
 
 
-# REVIEW: we can simply use the pubnonces directly in the valid & error
-# test cases, instead of referencing their indices
 def generate_nonce_agg_vectors():
     vectors = dict()
 
@@ -406,7 +404,6 @@ def generate_nonce_agg_vectors():
     write_test_vectors("nonce_agg_vectors.json", vectors)
 
 
-# TODO: Remove `pubnonces` param from these vectors. It's not used.
 def generate_sign_verify_vectors():
     vectors = dict()
 
@@ -504,7 +501,6 @@ def generate_sign_verify_vectors():
     vectors["valid_test_cases"] = []
     # --- Valid Test Cases ---
     # Every List[int] & int below represents indices, except `my_id` (a value)
-    # REVIEW: add secnonce here (easy readability), than using `secnonce_p0` list as common prefix
     valid_cases = [
         {
             "ids": [0, 1],
@@ -582,6 +578,10 @@ def generate_sign_verify_vectors():
         expected_psig = sign(
             bytearray(secnonces_p0[0]), secshare_p0, my_id, session_ctx
         )
+        signer_index = curr_ids.index(my_id)
+        assert partial_sig_verify(
+            expected_psig, curr_pubnonces, curr_signers, [], [], curr_msg, signer_index
+        )
         vectors["valid_test_cases"].append(
             {
                 "id_indices": case["ids"],
@@ -595,7 +595,6 @@ def generate_sign_verify_vectors():
                 "comment": case["comment"],
             }
         )
-        # TODO: verify the signatures here
 
     vectors["sign_error_test_cases"] = []
     # --- Sign Error Test Cases ---
@@ -764,9 +763,6 @@ def generate_sign_verify_vectors():
             }
         )
 
-    # REVIEW: In the following vectors, pubshare_indices are not required,
-    # just aggnonce value would do. But we should include `secshare` and
-    # `secnonce` indices tho.
     vectors["verify_fail_test_cases"] = []
     # --- Verify Fail Test Cases ---
     id_indices = [0, 1]
@@ -1418,11 +1414,19 @@ def generate_sig_agg_vectors():
             curr_tweak_modes,
             curr_msg,
         )
-        for i in case["indices"]:
+        for signer_index, i in enumerate(case["indices"]):
             my_id = ids[i]
             sig = sign(bytearray(secnonces[i]), secshares[i], my_id, session_ctx)
             psigs.append(sig)
-            # TODO: verify the signatures here
+            assert partial_sig_verify(
+                sig,
+                curr_pubnonces,
+                curr_signers,
+                curr_tweaks,
+                curr_tweak_modes,
+                curr_msg,
+                signer_index,
+            )
         bip340_sig = partial_sig_agg(psigs, session_ctx)
         vectors["valid_test_cases"].append(
             {
@@ -1455,11 +1459,19 @@ def generate_sig_agg_vectors():
         psigs = []
         curr_signers = SignersContext(n, t, curr_ids, curr_pubshares, thresh_pk)
         session_ctx = SessionContext(curr_aggnonce, curr_signers, [], [], curr_msg)
-        for i in case["indices"]:
+        for signer_index, i in enumerate(case["indices"]):
             my_id = ids[i]
             sig = sign(bytearray(secnonces[i]), secshares[i], my_id, session_ctx)
             psigs.append(sig)
-            # TODO: verify the signatures here
+            assert partial_sig_verify(
+                sig,
+                curr_pubnonces,
+                curr_signers,
+                [],
+                [],
+                curr_msg,
+                signer_index,
+            )
 
         if j == 0:
             invalid_psig = bytes.fromhex(
