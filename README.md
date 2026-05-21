@@ -71,10 +71,12 @@ Key generation protocols produce *public shares* and *threshold public keys* in 
 
 #### Protocol Parties and Network Setup
 
-There are *u* (where *t <= u <= n < 2^32*) participants and one coordinator initiating the FROST signing protocol.
+There are *u* (where *t <= u <= n < 2^32*)[^n-bound] participants and one coordinator initiating the FROST signing protocol.
 Each participant has a point-to-point communication link to the coordinator (but participants do not have direct communication links to each other).
 
 If there is no dedicated coordinator, one of the participants can act as the coordinator.
+
+[^n-bound]: This bound on *n* comes from the identifier encoding. A participant identifier is serialized as a 4-byte big-endian integer and fed into the tagged hash function that binds the nonces to the signer set, so it must fit in 32 bits. No realistic threshold setup approaches 2^32 participants, so the bound doesn't limit practical implementations.
 
 #### Signing Inputs and Outputs
 
@@ -154,7 +156,7 @@ When a signing session begins, the coordinator selects and aggregates *pubnonces
 This way, the final signature is created quicker and with fewer round trips.
 However, applications that use this method presumably store the nonces for a longer time and must therefore be even more careful not to reuse them.
 Moreover, this method is not compatible with the defense-in-depth mechanism described in the previous paragraph.
-<!-- TODO: learn about security of FROST3 pre-process round. Write remarks about it, in security section -->
+Generating the nonces ahead of time in this manner does not affect the unforgeability of the scheme.
 
 [^preprocess-round1]: When preprocessing *NonceGen* round, the Signers Context can be extended to include the *pubnonces* of the signing participants, as these are generated and stored before the signing session begins.
 
@@ -608,7 +610,6 @@ Note that the only optional argument is *rand*, which can be omitted if randomne
 *DeterministicSign* requires the argument *aggothernonce* which should be set to the output of *NonceAgg* run on the *pubnonce* value of **all** other signers (but can be provided by an untrusted party).
 Hence, using *DeterministicSign* is only possible for the last signer to generate a nonce and makes the signer stateless, similar to the stateless signer described in the [Nonce Generation](#nonce-generation) section.
 In FROST, the deterministic nonce must also bind to the the signer subset *id<sub>1..u</sub>*; otherwise a malicious coordinator can recover the victim's secret share via replayed sessions with varying signer subsets.[^det-signer-set]
-<!-- REVIEW just say n is < 2^32 during intro, than mentioning it everywhere -->
 
 #### Deterministic and Stateless Signing for a Single Signer
 
