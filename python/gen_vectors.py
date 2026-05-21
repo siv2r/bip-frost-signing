@@ -37,10 +37,6 @@ def hex_list_to_bytes(lst: List[str]) -> List[bytes]:
     return [bytes.fromhex(l_i) for l_i in lst]
 
 
-def int_list_to_bytes(lst: List[int]) -> List[bytes]:
-    return [Scalar(x).to_bytes() for x in lst]
-
-
 ErrorInfo = Dict[str, Union[int, str, None, "ErrorInfo"]]
 
 
@@ -159,10 +155,10 @@ def generate_all_nonces(rand, secshares, pubshares, xonly_thresh_pk, msg=None):
 def frost_keygen_fixed():
     n = 3
     t = 2
-    thresh_pubkey_bytes = bytes.fromhex(
+    thresh_pk_bytes = bytes.fromhex(
         "03B02645D79ABFC494338139410F9D7F0A72BE86C952D6BDE1A66447B8A8D69237"
     )
-    thresh_pubkey_ge = GE.from_bytes_compressed(thresh_pubkey_bytes)
+    thresh_pk_ge = GE.from_bytes_compressed(thresh_pk_bytes)
     secshares = hex_list_to_bytes(
         [
             "CCD2EF4559DB05635091D80189AB3544D6668EFC0500A8D5FF51A1F4D32CC1F1",
@@ -177,7 +173,7 @@ def frost_keygen_fixed():
             "03113F810F612567D9552F46AF9BDA21A67D52060F95BD4A723F4B60B1820D3676",
         ]
     )
-    return (t, n, thresh_pubkey_ge, secshares, pubshares)
+    return (t, n, thresh_pk_ge, secshares, pubshares)
 
 
 def reconstruct_thresh_sk(ids, secshares):
@@ -207,7 +203,8 @@ def frost_keygen_random():
 
 
 def generate_nonce_gen_vectors():
-    vectors = {"valid_test_cases": []}
+    vectors = {}
+    vectors["valid_test_cases"] = []
 
     _, _, thresh_pk_ge, secshares, pubshares = frost_keygen_fixed()
     extra_in = bytes.fromhex(
@@ -316,7 +313,7 @@ def generate_nonce_gen_vectors():
 
 
 def generate_nonce_agg_vectors():
-    vectors = dict()
+    vectors = {}
 
     # Special pubnonce indices for test cases
     INVALID_TAG_IDX = 4  # Pubnonce with wrong tag 0x04
@@ -405,7 +402,7 @@ def generate_nonce_agg_vectors():
 
 
 def generate_sign_verify_vectors():
-    vectors = dict()
+    vectors = {}
 
     n, t, thresh_pk, xonly_thresh_pk, ids, secshares, pubshares = get_common_setup()
     secshare_p0 = secshares[0]
@@ -876,7 +873,7 @@ def generate_sign_verify_vectors():
 
 
 def generate_tweak_vectors():
-    vectors = dict()
+    vectors = {}
 
     n, t, thresh_pk, xonly_thresh_pk, ids, secshares, pubshares = get_common_setup()
     secshare_p0 = secshares[0]
@@ -1035,7 +1032,7 @@ def generate_tweak_vectors():
 
 
 def generate_det_sign_vectors():
-    vectors = dict()
+    vectors = {}
 
     n, t, thresh_pk, xonly_thresh_pk, ids, secshares, pubshares = get_common_setup()
     secshare_p0 = secshares[0]
@@ -1353,7 +1350,7 @@ def generate_det_sign_vectors():
 
 
 def generate_sig_agg_vectors():
-    vectors = dict()
+    vectors = {}
 
     n, t, thresh_pk, xonly_thresh_pk, ids, secshares, pubshares = get_common_setup()
 
@@ -1525,8 +1522,8 @@ def main():
     run_gen_vectors("generate_nonce_agg_vectors", generate_nonce_agg_vectors)
     run_gen_vectors("generate_sign_verify_vectors", generate_sign_verify_vectors)
     run_gen_vectors("generate_tweak_vectors", generate_tweak_vectors)
-    run_gen_vectors("generate_sig_agg_vectors", generate_sig_agg_vectors)
     run_gen_vectors("generate_det_sign_vectors", generate_det_sign_vectors)
+    run_gen_vectors("generate_sig_agg_vectors", generate_sig_agg_vectors)
     print("Test vectors generated successfully")
 
 
