@@ -138,8 +138,7 @@ This party would have complete control over the aggregate public key and message
 ### Nonce Generation
 
 *NonceGen* must have access to a high-quality random generator to draw an unbiased, uniformly random value *rand'*.
-In contrast to BIP340 signing, the values *k<sub>1</sub>* and *k<sub>2</sub>* **must not be derived deterministically** from the session parameters because deriving nonces deterministically allows for a [complete key-recovery attack in multi-party discrete logarithm-based signatures](https://medium.com/blockstream/musig-dn-schnorr-multisignatures-with-verifiably-deterministic-nonces-27424b5df9d6#e3b6).
-<!-- TODO: link a research paper, instead of a blog, for the multi-party discrete logarithm-based signatures. Maybe summarize the issue in a foot note? -->
+In contrast to BIP340 signing, the values *k<sub>1</sub>* and *k<sub>2</sub>* **must not be derived deterministically** from the session parameters, because deterministic nonces enable a complete key-recovery attack in multi-party discrete-logarithm signatures[[MPSW18][musig]].[^det-nonce]
 
 The optional arguments to *NonceGen* enable a defense-in-depth mechanism that may prevent secret share exposure if *rand'* is accidentally not drawn uniformly at random.
 If the value *rand'* was identical in two *NonceGen* invocations, but any other argument was different, the *secnonce* would still be guaranteed to be different as well (with overwhelming probability), and thus accidentally using the same *secnonce* for *Sign* in both sessions would be avoided.
@@ -157,6 +156,8 @@ This way, the final signature is created quicker and with fewer round trips.
 However, applications that use this method presumably store the nonces for a longer time and must therefore be even more careful not to reuse them.
 Moreover, this method is not compatible with the defense-in-depth mechanism described in the previous paragraph.
 Generating the nonces ahead of time in this manner does not affect the unforgeability of the scheme.
+
+[^det-nonce]: A signer's partial signature has the form *s = k<sub>1</sub> + b k<sub>2</sub> + c &lambda; d*, where *(k<sub>1</sub>, k<sub>2</sub>)* is the secret nonce, *d* is the secret share, and the coefficients *b* (nonce binding), *c* (challenge), and *&lambda;* (Lagrange interpolation over the signer set) are public. With deterministic nonces, an honest signer reproduces the identical *(k<sub>1</sub>, k<sub>2</sub>)* on every signing attempt for a given message. A malicious co-signer exploits this by replaying the session three times on that message and contributing a different nonce each time, which changes the aggregate nonce and therefore both *b* and *c*, while *&lambda;* stays fixed because the signer set is unchanged. The three resulting partial signatures form three linear equations in the unknowns *(k<sub>1</sub>, k<sub>2</sub>, d)*, which the co-signer solves to recover the victim's secret share *d*. This adapts the derandomization attack from Section 3.2 ("Derandomized Signing") of [[MPSW18][musig]], and a similar replay attack is noted for the stateless deterministic signing case in [^det-signer-set].
 
 [^preprocess-round1]: When preprocessing *NonceGen* round, the Signers Context can be extended to include the *pubnonces* of the signing participants, as these are generated and stored before the signing session begins.
 
@@ -822,6 +823,7 @@ We thank Jonas Nick, Tim Ruffing, Jesse Posner, Sebastian Falbesoner, Chris Stew
 [bip341]: https://github.com/bitcoin/bips/blob/master/bip-0341.mediawiki
 [bip342]: https://github.com/bitcoin/bips/blob/master/bip-0342.mediawiki
 [bip327]: https://github.com/bitcoin/bips/blob/master/bip-0327.mediawiki
+[musig]: https://eprint.iacr.org/2018/068
 [frost1]: https://eprint.iacr.org/2020/852
 [frost2]: https://eprint.iacr.org/2021/1375
 [stronger-security-frost]: https://eprint.iacr.org/2022/833
