@@ -16,9 +16,7 @@ from secp256k1lab.util import tagged_hash, xor_bytes
 
 PlainPk = NewType("PlainPk", bytes)
 XonlyPk = NewType("XonlyPk", bytes)
-ContribKind = Literal[
-    "aggothernonce", "aggnonce", "psig", "pubkey", "pubnonce", "pubshare"
-]
+ContribKind = Literal["aggothernonce", "aggnonce", "psig", "pubnonce", "pubshare"]
 
 # Tagged hash domain-separation tags. The challenge tag is inherited from
 # BIP340 for signature compatibility; the rest are specific to this BIP.
@@ -70,7 +68,7 @@ def derive_thresh_pubkey(ids: List[int], pubshares: List[GE]) -> PlainPk:
     Q = GE()
     for my_id, X_i in zip(ids, pubshares):
         lam_i = derive_interpolating_value(ids, my_id)
-        Q = Q + lam_i * X_i
+        Q += lam_i * X_i
     # Q is not the point at infinity except with negligible probability.
     assert not Q.infinity
     return PlainPk(Q.to_bytes_compressed())
@@ -242,7 +240,7 @@ def nonce_agg(pubnonces: List[bytes]) -> bytes:
                 R_ij = GE.from_bytes_compressed(pubnonce[(j - 1) * 33 : j * 33])
             except ValueError:
                 raise InvalidContributionError(idx, "pubnonce")
-            R_j = R_j + R_ij
+            R_j += R_ij
         aggnonce += R_j.to_bytes_compressed_with_infinity()
     return aggnonce
 
@@ -482,7 +480,7 @@ def partial_sig_agg(psigs: List[bytes], session_ctx: SessionContext) -> bytes:
             s_i = Scalar.from_bytes_checked(psig)
         except ValueError:
             raise InvalidContributionError(idx, "psig")
-        s = s + s_i
+        s += s_i
     g = Scalar(1) if Q.has_even_y() else Scalar(-1)
-    s = s + e * g * tacc
+    s += e * g * tacc
     return R.to_bytes_xonly() + s.to_bytes()

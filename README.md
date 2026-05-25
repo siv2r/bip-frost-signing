@@ -33,7 +33,7 @@ This document specifies the FROST3 variant[^frost3-security]. The FROST3 signing
 
 [^frost3-security]: The FROST3 signing scheme has been proven existentially unforgeable for both trusted dealer and distributed key generation setups. When using a trusted dealer for key generation, security reduces to the standard One-More Discrete Logarithm (OMDL) assumption. When instantiated with a distributed key generation protocol such as SimplPedPoP, security reduces to the Algebraic One-More Discrete Logarithm (AOMDL) assumption.
 
-The on-chain footprint of a FROST Taproot output is essentially a single BIP340 public key, and a transaction spending the output only requires a single signature cooperatively produced by at least *t* signers. This is **more compact** and has **lower verification cost** than each signer providing an individual public key and signature, as would be required by an *t-of-n* policy implemented using `OP_CHECKSIGADD` as introduced in [BIP342][bip342].
+The on-chain footprint of a FROST Taproot output is essentially a single BIP340 public key, and a transaction spending the output only requires a single signature cooperatively produced by at least *t* signers. This is **more compact** and has **lower verification cost** than each signer providing an individual public key and signature, as would be required by a *t-of-n* policy implemented using `OP_CHECKSIGADD` as introduced in [BIP342][bip342].
 As a side effect, the number *n* of signers is not limited by any consensus rules when using FROST.
 
 Moreover, FROST offers a **higher level of privacy** than `OP_CHECKSIGADD`: FROST Taproot outputs are indistinguishable for a blockchain observer from regular, single-signer Taproot outputs even though they are actually controlled by multiple signers. By tweaking the threshold public key, the shared Taproot output can have script spending paths that are hidden unless used.
@@ -322,7 +322,7 @@ Algorithm *ValidateSignersCtx(signers_ctx)*:
 - Fail if not *t ≤ u ≤ n*
 - For *i = 1 .. u*:
   - Fail if not *0 ≤ id<sub>i</sub> ≤ n - 1*
-  - Let *P<sub>i</sub> = cpoint(pubshare<sub>i</sub>)*; fail if that fails
+  - Let *P<sub>i</sub> = cpoint(pubshare<sub>i</sub>)*; fail if that fails and blame signer at index *i* for invalid *pubshare*
 - Fail if *has_duplicates(id<sub>1..u</sub>)*
 - Fail if *DeriveThreshPubkey(id<sub>1..u</sub>, P<sub>1..u</sub>) ≠ thresh_pk*
 - No return
