@@ -74,9 +74,11 @@ Key generation protocols produce *public shares* and *threshold public keys* in 
 There are *u* (where *t <= u <= n < 2^32*)[^n-bound] participants and one coordinator initiating the FROST signing protocol.
 Each participant has a point-to-point communication link to the coordinator (but participants do not have direct communication links to each other).
 
-If there is no dedicated coordinator, one of the participants can act as the coordinator.
-
 [^n-bound]: This bound on *n* comes from the identifier encoding. A participant identifier is serialized as a 4-byte big-endian integer and fed into the tagged hash function that binds the nonces to the signer set, so it must fit in 32 bits. No realistic threshold setup approaches 2^32 participants, so the bound doesn't limit practical implementations.
+
+If there is no dedicated coordinator, one of the participants can act as the coordinator. Alternatively, the protocol can be run without any coordinator, with each signer sending its contributions to every other signer, as described in [BIP327][bip327].
+
+This document is written from the coordinator's perspective because the key generation methods compatible with this BIP, a trusted dealer setup and ChillDKG, also involve a central third party. Implementations are therefore likely to reuse the same setup for signing.
 
 #### Signing Inputs and Outputs
 
@@ -105,7 +107,7 @@ The *threshold public key* may optionally be tweaked by initializing a [Tweak Co
 
 Whenever the signing participants want to sign a message, the basic order of operations to create a threshold-signature is as follows:
 
-**First broadcast round:**
+**First communication round:**
 Signers begin the signing session by running *NonceGen* to compute their *secnonce* and *pubnonce*.[^nonce-serialization-detail]
 Each signer sends their *pubnonce* to the coordinator, who aggregates them using *NonceAgg* to produce an aggregate nonce and sends it back to all signers.
 
@@ -113,10 +115,10 @@ Each signer sends their *pubnonce* to the coordinator, who aggregates them using
 This treatment may be confusing for readers familiar with the [FROST paper][olaf].
 However, serialization is a technical detail that is irrelevant for users of FROST interfaces.
 
-**Second broadcast round:**
+**Second communication round:**
 At this point, every signer has the required data to sign, which, in the algorithms specified below, is stored in a data structure called [Session Context](#session-context).
 Every signer computes a partial signature by running *Sign* with their long-term *secret share*, *secnonce* and the session context.
-Then, the signers broadcast their partial signatures to the coordinator, who runs *PartialSigAgg* to produce the final signature.
+Then, each signer sends their partial signature to the coordinator, who runs *PartialSigAgg* to produce the final signature.
 If all parties behaved honestly, the result passes [BIP340][bip340] verification.
 
 ![Frost signing flow](./docs/frost-signing-flow.png)
@@ -164,24 +166,27 @@ Generating the nonces ahead of time in this manner does not affect the unforgeab
 FROST signers are typically stateful: they generate *secnonce*, store it, and later use it to produce a partial signature after receiving the aggregated nonce.
 However, stateless signing is possible when one signer receives the aggregate nonce of all OTHER signers before generating their own nonce.
 In coordinator-based setups, the coordinator facilitates this by collecting pubnonces from the other signers, computing their aggregate (*aggothernonce*), and providing it to the stateless signer.
-The stateless signer then runs *NonceGen*, *NonceAgg*, and *Sign* in sequence, sending its *pubnonce* and partial signature simultaneously to the coordinator, who computes the final aggregate nonce for all participants.
+The stateless signer then runs *NonceGen*, *NonceAgg*, and *Sign* in sequence, sending its *pubnonce* and partial signature simultaneously to the coordinator, who computes the final aggregate nonce for all OTHER signers.
 In coordinator-less setups, any one signer can achieve stateless operation by generating their nonce after seeing all other signers' *pubnonces*.
 Stateless signers may want to consider signing deterministically (see [Modifications to Nonce Generation](#modifications-to-nonce-generation)) to remove the reliance on the random number generator in the *NonceGen* algorithm.
 
-<!-- TODO: rewrite it for coordinator setup -->
 ### Identifying Disruptive Signers
 
 The signing protocol makes it possible to identify malicious signers who send invalid contributions to a signing session in order to make the signing session abort and prevent the honest signers from obtaining a valid signature.
-This property is called "identifiable aborts" and ensures that honest parties can assign blame to malicious (or incorrectly implemented) signers who cause an abort in the signing protocol.
+This property is called "identifiable aborts" and ensures that honest parties can assign blame to malicious signers who cause an abort in the signing protocol.
 
 Aborts are identifiable for an honest party if the following conditions hold in a signing session:
 
 - The contributions received from all signers have not been tampered with (e.g., because they were sent over authenticated connections).
-- Nonce aggregation is performed honestly (e.g., because the honest signer performs nonce aggregation on its own or because the coordinator is trusted).
+- Nonce aggregation is performed honestly (e.g., because the coordinator is trusted to aggregate the *pubnonces* correctly).
 - The partial signatures received from all signers are verified using the algorithm *PartialSigVerify*.
 
 If these conditions hold and an honest party (signer or coordinator) runs an algorithm that fails due to invalid protocol contributions from malicious signers, then the algorithm run by the honest party will output the index (within the input list) of exactly one malicious signer.
-Additionally, if the honest parties agree on the contributions sent by all signers in the signing session, all the honest parties who run the aborting algorithm will identify the same malicious signer.
+Additionally, whenever more than one honest party runs an aborting algorithm on the same contributions, they all identify the same malicious signer.
+
+In the coordinator setup assumed by this BIP, a signer receives only the aggregate nonce from the coordinator and never the individual *pubnonces* of the other signers, so it cannot recompute the aggregation to confirm it was done honestly and must trust the coordinator for the second condition. Because *PartialSigVerify* requires the full list of *pubnonces* and partial signatures, the coordinator (or a signer acting as the coordinator) is the natural party to run it and assign blame, as it is the only party that receives every signer's contribution.[^coordinator-less]
+
+[^coordinator-less]: In coordinator-less setups (see the [Protocol Parties and Network Setup](#protocol-parties-and-network-setup) section), each signer broadcasts its contributions to every other signer, so every honest signer holds the full set of *pubnonces* and partial signatures and can run *PartialSigVerify* to assign blame on its own.
 
 #### Further Remarks
 
