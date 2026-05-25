@@ -125,7 +125,7 @@ If all parties behaved honestly, the result passes [BIP340][bip340] verification
 
 A malicious coordinator can cause the signing session to fail but cannot compromise the unforgeability of the scheme. Even when colluding with up to *t-1* signers, a malicious coordinator cannot forge a signature.
 
-> [!TIP]
+> [!WARNING]
 > The *Sign* algorithm must **not** be executed twice with the same *secnonce*.
 > Otherwise, it is possible to extract the secret signing key from the two partial signatures output by the two executions of *Sign*.
 > To avoid accidental reuse of *secnonce*, an implementation may securely erase the *secnonce* argument by overwriting it with 64 zero bytes after it has been read by *Sign*.
@@ -134,13 +134,17 @@ A malicious coordinator can cause the signing session to fail but cannot comprom
 To simplify the specification of the algorithms, some intermediary values are unnecessarily recomputed from scratch, e.g., when executing *GetSessionValues* multiple times.
 Actual implementations can cache these values.
 As a result, the [Session Context](#session-context) may look very different in implementations or may not exist at all.
-However, computation of *GetSessionValues* and storage of the result must be protected against modification from an untrusted third party.
-This party would have complete control over the aggregate public key and message to be signed.
+
+> [!WARNING]
+> The computation of *GetSessionValues* and storage of the result must be protected against modification from an untrusted third party.
+> Such a party would have complete control over the aggregate public key and message to be signed.
 
 ### Nonce Generation
 
 *NonceGen* must have access to a high-quality random generator to draw an unbiased, uniformly random value *rand'*.
-In contrast to BIP340 signing, the values *k<sub>1</sub>* and *k<sub>2</sub>* **must not be derived deterministically** from the session parameters, because deterministic nonces enable a complete key-recovery attack in multi-party discrete-logarithm signatures[[MPSW18][musig]].[^det-nonce]
+
+> [!WARNING]
+> In contrast to BIP340 signing, the values *k<sub>1</sub>* and *k<sub>2</sub>* **must not be derived deterministically** from the session parameters, because deterministic nonces enable a complete key-recovery attack in multi-party discrete-logarithm signatures[[MPSW18][musig]].[^det-nonce]
 
 The optional arguments to *NonceGen* enable a defense-in-depth mechanism that may prevent secret share exposure if *rand'* is accidentally not drawn uniformly at random.
 If the value *rand'* was identical in two *NonceGen* invocations, but any other argument was different, the *secnonce* would still be guaranteed to be different as well (with overwhelming probability), and thus accidentally using the same *secnonce* for *Sign* in both sessions would be avoided.
@@ -671,8 +675,7 @@ Algorithm *ApplyXonlyTweak(P, t)*:
 
 ### Negation of the Secret Share when Signing
 
-> [!NOTE]
-> In the following equations, all scalar arithmetic is understood to be modulo the group order, as specified in the [Notation](#notation) section.
+In the following equations, all scalar arithmetic is understood to be modulo the group order, as specified in the [Notation](#notation) section.
 
 During the signing process, the *[Sign](#signing)* algorithm might have to negate the secret share in order to produce a partial signature for an X-only threshold public key, which may be tweaked *v* times (X-only or plain).
 
