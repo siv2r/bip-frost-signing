@@ -94,7 +94,6 @@ COMMON_TWEAKS = hex_list_to_bytes(
     ]
 )
 
-# Invalid (exceeds group size)
 OUT_OF_RANGE_TWEAK = bytes.fromhex(
     "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141"
 )
@@ -318,9 +317,9 @@ def generate_nonce_agg_vectors():
     vectors = {}
 
     # Special pubnonce indices for test cases
-    INVALID_TAG_IDX = 4  # Pubnonce with wrong tag 0x04
-    INVALID_XCOORD_IDX = 5  # Pubnonce with invalid X coordinate
-    INVALID_EXCEEDS_FIELD_IDX = 6  # Pubnonce X exceeds field size
+    INVALID_TAG_IDX = 4
+    INVALID_XCOORD_IDX = 5
+    INVALID_EXCEEDS_FIELD_IDX = 6
 
     pubnonces = hex_list_to_bytes(
         [
@@ -428,7 +427,7 @@ def generate_sign_verify_vectors():
     SECSHARE_ZERO_IDX = n
     SECNONCE_ZERO_IDX = n
     SECNONCE_ZERO_SECOND_IDX = n + 1
-    OUT_OF_RANGE_ID = n  # id value n is out of range [0, n-1]
+    OUT_OF_RANGE_ID = n
 
     assert INVALID_PUBSHARE_IDX == 3
     assert INVERSE_PUBNONCE_IDX == 4
@@ -452,7 +451,6 @@ def generate_sign_verify_vectors():
     secnonce_all_zero = bytes.fromhex(
         "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
     )
-    # zero-second-half: participant 0's first half + zero second half
     zero_second_secnonce = secnonces[0][0:32] + b"\x00" * 32
     assert Scalar.from_bytes_nonzero_checked(zero_second_secnonce[0:32])
     # Append order: all-zero at index n (=3), zero-second-half at index n+1 (=4)
@@ -492,7 +490,6 @@ def generate_sign_verify_vectors():
     tc_id = 1
 
     # --- Valid Test Cases (tc 1-7) ---
-    # sign as participant 0: secshare_index=0, secnonce_index=0, my_id=0
     valid_cases = [
         {
             "my_id": 0,
@@ -539,7 +536,6 @@ def generate_sign_verify_vectors():
             "comment": "All n=3 signers participate (signer set equals the full group)",
         },
         {
-            # tc 5: pubnonce_indices uses inverse at index 4; aggnonce is all-zero infinity aggnonce
             "my_id": 0,
             "ids": [0, 1, 2],
             "pubshare_indices": [0, 1, 2],
@@ -608,12 +604,8 @@ def generate_sign_verify_vectors():
         tc_id += 1
 
     # --- Sign Error Test Cases (tc 8-20) ---
-    # tc 10 (index 2 below): my_id=1, ids=[1,2], secshare_index=0, secnonce_index=0
-    # The fault: signing with participant 0's secret while P0's pubshare is absent
-    # from set [1,2]. Using secshare_index=1 would make the fault vanish.
     sign_error_cases = [
         {
-            # tc 8
             "my_id": 2,
             "ids": [0, 1],
             "pubshare_indices": [0, 1],
@@ -625,7 +617,6 @@ def generate_sign_verify_vectors():
             "comment": "Signer's own id is not in the signer set",
         },
         {
-            # tc 9
             "my_id": 0,
             "ids": [0, 1, 1],
             "pubshare_indices": [0, 1, 1],
@@ -650,7 +641,6 @@ def generate_sign_verify_vectors():
             "comment": "Signer's own public share is not in the public share list",
         },
         {
-            # tc 11: invalid pubshare at position 1 (index INVALID_PUBSHARE_IDX=3)
             "my_id": 0,
             "ids": [0, 1],
             "pubshare_indices": [0, INVALID_PUBSHARE_IDX],
@@ -662,7 +652,6 @@ def generate_sign_verify_vectors():
             "comment": "A public share is not a valid point",
         },
         {
-            # tc 12: ids=[3, 1] where 3 == n is out of range; pubshare_indices=[0,1]
             "my_id": 1,
             "ids": [OUT_OF_RANGE_ID, 1],
             "pubshare_indices": [0, 1],
@@ -674,7 +663,6 @@ def generate_sign_verify_vectors():
             "comment": "A signer id is outside the valid range [0, n-1]",
         },
         {
-            # tc 13: pubshare_indices=[0,2] mismatches ids=[0,1]
             "my_id": 0,
             "ids": [0, 1],
             "pubshare_indices": [0, 2],
@@ -686,7 +674,6 @@ def generate_sign_verify_vectors():
             "comment": "Signer set's public shares do not match the threshold public key",
         },
         {
-            # tc 14: inline invalid aggnonce (wrong tag 0x04)
             "my_id": 0,
             "ids": [0, 1],
             "pubshare_indices": [0, 1],
@@ -698,7 +685,6 @@ def generate_sign_verify_vectors():
             "comment": "Aggregate nonce is invalid: first half has an unknown tag 0x04",
         },
         {
-            # tc 15: inline invalid aggnonce (bad x-coordinate in second half)
             "my_id": 0,
             "ids": [0, 1],
             "pubshare_indices": [0, 1],
@@ -710,7 +696,6 @@ def generate_sign_verify_vectors():
             "comment": "Aggregate nonce is invalid: second half is not a point on the curve",
         },
         {
-            # tc 16: inline invalid aggnonce (x-coordinate exceeds field size)
             "my_id": 0,
             "ids": [0, 1],
             "pubshare_indices": [0, 1],
@@ -722,7 +707,6 @@ def generate_sign_verify_vectors():
             "comment": "Aggregate nonce is invalid: second half's x-coordinate exceeds the field size",
         },
         {
-            # tc 17: secnonce_index=3 (all-zero secnonce)
             "my_id": 0,
             "ids": [0, 1],
             "pubshare_indices": [0, 1],
@@ -734,7 +718,6 @@ def generate_sign_verify_vectors():
             "comment": "Secret nonce's first half is out of range (all-zero nonce, which may indicate nonce reuse)",
         },
         {
-            # tc 18: secnonce_index=4 (zero-second-half secnonce)
             "my_id": 0,
             "ids": [0, 1],
             "pubshare_indices": [0, 1],
@@ -746,7 +729,6 @@ def generate_sign_verify_vectors():
             "comment": "Secret nonce's second half is out of range (zero)",
         },
         {
-            # tc 19: only one signer, fewer than threshold t=2
             "my_id": 0,
             "ids": [0],
             "pubshare_indices": [0],
@@ -758,7 +740,6 @@ def generate_sign_verify_vectors():
             "comment": "Fewer signers than the threshold t",
         },
         {
-            # tc 20: secshare_index=3 (all-zero secshare)
             "my_id": 0,
             "ids": [0, 1],
             "pubshare_indices": [0, 1],
@@ -822,7 +803,6 @@ def generate_sign_verify_vectors():
     psig_scalar = Scalar.from_bytes_checked(psig)
     neg_psig = (-psig_scalar).to_bytes()
 
-    # tc 21: negated psig
     group["verify_fail_tests"].append(
         {
             "tc_id": tc_id,
@@ -837,7 +817,6 @@ def generate_sign_verify_vectors():
     )
     tc_id += 1
 
-    # tc 22: valid psig checked against wrong signer (index 1)
     group["verify_fail_tests"].append(
         {
             "tc_id": tc_id,
@@ -852,7 +831,6 @@ def generate_sign_verify_vectors():
     )
     tc_id += 1
 
-    # tc 23: psig equals group order (out of range)
     group["verify_fail_tests"].append(
         {
             "tc_id": tc_id,
@@ -870,7 +848,6 @@ def generate_sign_verify_vectors():
     # --- Verify Error Test Cases (tc 24-25) ---
     verify_error_cases = [
         {
-            # tc 24: invalid pubnonce at position 0 (index INVALID_PUBNONCE_IDX=3)
             "ids": [0, 1],
             "pubshare_indices": [0, 1],
             "pubnonce_indices": [INVALID_PUBNONCE_IDX, 1],
@@ -880,7 +857,6 @@ def generate_sign_verify_vectors():
             "comment": "Public nonce is invalid: first half is not a point on the curve",
         },
         {
-            # tc 25: invalid pubshare at position 0 (index INVALID_PUBSHARE_IDX=3)
             "ids": [0, 1],
             "pubshare_indices": [INVALID_PUBSHARE_IDX, 1],
             "pubnonce_indices": [0, 1],
@@ -1104,7 +1080,7 @@ def generate_det_sign_vectors():
 
     # Special indices for test cases
     INVALID_PUBSHARE_IDX = n
-    INVALID_TWEAK_IDX = 1  # Out-of-range tweak
+    INVALID_TWEAK_IDX = 1
     RAND_NONE_IDX = 1
     RAND_MAX_IDX = 2
 
