@@ -7,7 +7,6 @@ import re
 import sys
 from typing import Dict, List, Sequence, Union
 import secrets
-import pprint
 
 from frost_ref import (
     InvalidContributionError,
@@ -122,19 +121,6 @@ def write_test_vectors(filename, vectors):
         f.write(text)
 
 
-def get_common_setup():
-    t, n, thresh_pk_ge, secshares, pubshares = frost_keygen_fixed()
-    return (
-        n,
-        t,
-        thresh_pk_ge.to_bytes_compressed(),
-        thresh_pk_ge.to_bytes_xonly(),
-        list(range(n)),
-        secshares,
-        pubshares,
-    )
-
-
 def generate_all_nonces(rand, secshares, pubshares, xonly_thresh_pk, msg=None):
     secnonces = []
     pubnonces = []
@@ -145,30 +131,6 @@ def generate_all_nonces(rand, secshares, pubshares, xonly_thresh_pk, msg=None):
         secnonces.append(sec)
         pubnonces.append(pub)
     return secnonces, pubnonces
-
-
-def frost_keygen_fixed():
-    n = 3
-    t = 2
-    thresh_pk_bytes = bytes.fromhex(
-        "03B02645D79ABFC494338139410F9D7F0A72BE86C952D6BDE1A66447B8A8D69237"
-    )
-    thresh_pk_ge = GE.from_bytes_compressed(thresh_pk_bytes)
-    secshares = hex_list_to_bytes(
-        [
-            "CCD2EF4559DB05635091D80189AB3544D6668EFC0500A8D5FF51A1F4D32CC1F1",
-            "62A04F63F105A40FCF25634AA645D77AAC692641916E4DFC8C1EEC83CAB5BEBA",
-            "F86DAF82883042BC4DB8EE93C2E079AF3D1A9A6DCD24935ED8BE959F9274FCC4",
-        ]
-    )
-    pubshares = hex_list_to_bytes(
-        [
-            "022B02109FBCFB4DA3F53C7393B22E72A2A51C4AFBF0C01AAF44F73843CFB4B74B",
-            "02EC6444271D791A1DA95300329DB2268611B9C60E193DABFDEE0AA816AE512583",
-            "03113F810F612567D9552F46AF9BDA21A67D52060F95BD4A723F4B60B1820D3676",
-        ]
-    )
-    return (t, n, thresh_pk_ge, secshares, pubshares)
 
 
 def reconstruct_thresh_sk(ids, secshares):
@@ -195,21 +157,15 @@ SECKEY_3OF5 = bytes.fromhex(
 )
 
 
-def frost_keygen_random(seckey=None, n=3, t=2) -> None:
+def frost_keygen(seckey=None, n=3, t=2):
     # NOTE: don't default `seckey` to secrets.token_bytes(32) in the signature, as that is evaluated once at import time and every no-arg call would reuse it.
     if seckey is None:
         seckey = secrets.token_bytes(32)
     assert len(seckey) == 32
-    pubkey = pubkey_gen_plain(seckey)
-    output_tpk, secshares, pubshares = trusted_dealer_keygen(seckey, n, t)
-    assert pubkey == output_tpk
-
-    print(f"threshold secret key: {seckey.hex().upper()}")
-    print(f"threshold public key: {pubkey.hex().upper()}")
-    print("secret shares:")
-    pprint.pprint(bytes_list_to_hex(secshares))
-    print("public shares:")
-    pprint.pprint(bytes_list_to_hex(pubshares))
+    assert 1 <= t <= n
+    thresh_pk, secshares, pubshares = trusted_dealer_keygen(seckey, n, t)
+    assert thresh_pk == pubkey_gen_plain(seckey)
+    return (n, t, thresh_pk, list(range(n)), secshares, pubshares)
 
 
 def generate_nonce_gen_vectors():
@@ -217,11 +173,11 @@ def generate_nonce_gen_vectors():
     vectors["valid_tests"] = []
     tc_id = 1
 
-    _, _, thresh_pk_ge, secshares, pubshares = frost_keygen_fixed()
+    _, _, thresh_pk, _, secshares, pubshares = frost_keygen(SECKEY_2OF3)
+    xonly_thresh_pk = thresh_pk[1:]
     extra_in = bytes.fromhex(
         "0808080808080808080808080808080808080808080808080808080808080808"
     )
-    xonly_thresh_pk = thresh_pk_ge.to_bytes_xonly()
 
     # --- Valid Test Case 1 ---
     msg = bytes.fromhex(
@@ -429,7 +385,8 @@ def generate_nonce_agg_vectors():
 
 
 def generate_sign_verify_vectors():
-    n, t, thresh_pk, xonly_thresh_pk, ids, secshares, pubshares = get_common_setup()
+    n, t, thresh_pk, ids, secshares, pubshares = frost_keygen(SECKEY_2OF3)
+    xonly_thresh_pk = thresh_pk[1:]
 
     secnonces, pubnonces = generate_all_nonces(
         COMMON_RAND, secshares, pubshares, xonly_thresh_pk
@@ -929,7 +886,8 @@ def generate_sign_verify_vectors():
 
 
 def generate_tweak_vectors():
-    n, t, thresh_pk, xonly_thresh_pk, ids, secshares, pubshares = get_common_setup()
+    n, t, thresh_pk, ids, secshares, pubshares = frost_keygen(SECKEY_2OF3)
+    xonly_thresh_pk = thresh_pk[1:]
 
     pubshares_with_invalid = pubshares + [INVALID_PUBSHARE]
 
@@ -1105,7 +1063,8 @@ def generate_tweak_vectors():
 
 
 def generate_det_sign_vectors():
-    n, t, thresh_pk, xonly_thresh_pk, ids, secshares, pubshares = get_common_setup()
+    n, t, thresh_pk, ids, secshares, pubshares = frost_keygen(SECKEY_2OF3)
+    xonly_thresh_pk = thresh_pk[1:]
 
     # Special indices for test cases
     INVALID_PUBSHARE_IDX = n
@@ -1449,7 +1408,8 @@ def generate_det_sign_vectors():
 
 
 def generate_sig_agg_vectors():
-    n, t, thresh_pk, xonly_thresh_pk, ids, secshares, pubshares = get_common_setup()
+    n, t, thresh_pk, ids, secshares, pubshares = frost_keygen(SECKEY_2OF3)
+    xonly_thresh_pk = thresh_pk[1:]
 
     secnonces, pubnonces = generate_all_nonces(
         COMMON_RAND, secshares, pubshares, xonly_thresh_pk
