@@ -181,16 +181,31 @@ def reconstruct_thresh_sk(ids, secshares):
     return result
 
 
-# NOTE: This function is used only once to generate a long-term key for frost_keygen_fixed(). It is intentionally not called anywhere else. It will be used in case we decide to change the long-term key, in future.
-def frost_keygen_random():
-    random_scalar = Scalar.from_bytes_nonzero_checked(secrets.token_bytes(32))
-    threshold_seckey = random_scalar.to_bytes()
-    threshold_pubkey = pubkey_gen_plain(threshold_seckey)
-    output_tpk, secshares, pubshares = trusted_dealer_keygen(random_scalar, 3, 2)
-    assert threshold_pubkey == output_tpk
+SECKEY_1OF3 = bytes.fromhex(
+    "06D47E05E97481428654563E5AE69C20C49642773B7334220E63110259A30C32"
+)
+SECKEY_2OF3 = bytes.fromhex(
+    "4C08C37F5B9A88FAE396A06E286BA41B654457BF5E35B4A693096ED9AB1491F5"
+)
+SECKEY_3OF3 = bytes.fromhex(
+    "70E90852E9541FE47552B738A14C2B9B5B38C0979D640BA8C7A5A5EEE1BDA405"
+)
+SECKEY_3OF5 = bytes.fromhex(
+    "827FBF411520966DAF1D5D8BDAFCA4FEC34EEB7A954927D8AA1FD55BDDD15902"
+)
 
-    print(f"threshold secret key: {threshold_seckey.hex().upper()}")
-    print(f"threshold public key: {threshold_pubkey.hex().upper()}")
+
+def frost_keygen_random(seckey=None, n=3, t=2) -> None:
+    # NOTE: don't default `seckey` to secrets.token_bytes(32) in the signature, as that is evaluated once at import time and every no-arg call would reuse it.
+    if seckey is None:
+        seckey = secrets.token_bytes(32)
+    assert len(seckey) == 32
+    pubkey = pubkey_gen_plain(seckey)
+    output_tpk, secshares, pubshares = trusted_dealer_keygen(seckey, n, t)
+    assert pubkey == output_tpk
+
+    print(f"threshold secret key: {seckey.hex().upper()}")
+    print(f"threshold public key: {pubkey.hex().upper()}")
     print("secret shares:")
     pprint.pprint(bytes_list_to_hex(secshares))
     print("public shares:")
