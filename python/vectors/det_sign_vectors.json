@@ -1,315 +1,356 @@
 {
-    "n": 3,
-    "t": 2,
-    "thresh_pk": "03B02645D79ABFC494338139410F9D7F0A72BE86C952D6BDE1A66447B8A8D69237",
-    "secshare_p0": "CCD2EF4559DB05635091D80189AB3544D6668EFC0500A8D5FF51A1F4D32CC1F1",
-    "identifiers": [0, 1, 2],
-    "pubshares": [
-        "022B02109FBCFB4DA3F53C7393B22E72A2A51C4AFBF0C01AAF44F73843CFB4B74B",
-        "02EC6444271D791A1DA95300329DB2268611B9C60E193DABFDEE0AA816AE512583",
-        "03113F810F612567D9552F46AF9BDA21A67D52060F95BD4A723F4B60B1820D3676",
-        "020000000000000000000000000000000000000000000000000000000000000007"
-    ],
-    "msgs": [
-        "F95466D086770E689964664219266FE5ED215C92AE20BAB5C9D79ADDDDF3C0CF",
-        "",
-        "2626262626262626262626262626262626262626262626262626262626262626262626262626"
-    ],
-    "valid_test_cases": [
+    "test_groups": [
         {
-            "rand": "0000000000000000000000000000000000000000000000000000000000000000",
-            "aggothernonce": "03A3746AC2BFAACEF4BF47E2FF3F2F63254F244B5BCDDFB16505EC9B8E7B0D20D203FD9BE9B3F2CC06BDFDEF02240955FB9E49E70D4DCD6ACDB94200E3C9E9A901AB",
-            "id_indices": [0, 1],
-            "pubshare_indices": [0, 1],
-            "tweaks": [],
-            "is_xonly": [],
-            "msg_index": 0,
-            "my_id": 0,
-            "expected": [
-                "0365A43C15167359032EBE58FA63BB86220FB7CF90DCC7881451EF821BC731EBC803F9E7CD0B62187FD859CF1D11574A2E012A3A7FE0791BE6AEAFD472E2F5C8611F",
-                "CB63BC295752D35E94BB696D861EB72B1A9C4ABB9D90DCDEC1EEDBDE92FD06C6"
+            "tg_id": "2of3",
+            "t": 2,
+            "n": 3,
+            "thresh_pk": "03B02645D79ABFC494338139410F9D7F0A72BE86C952D6BDE1A66447B8A8D69237",
+            "pubshares": [
+                "022B02109FBCFB4DA3F53C7393B22E72A2A51C4AFBF0C01AAF44F73843CFB4B74B",
+                "02EC6444271D791A1DA95300329DB2268611B9C60E193DABFDEE0AA816AE512583",
+                "03113F810F612567D9552F46AF9BDA21A67D52060F95BD4A723F4B60B1820D3676",
+                "020000000000000000000000000000000000000000000000000000000000000007"
             ],
-            "comment": "Minimum threshold subset of signers (t=2 of n=3)"
-        },
-        {
-            "rand": "0000000000000000000000000000000000000000000000000000000000000000",
-            "aggothernonce": "03A3746AC2BFAACEF4BF47E2FF3F2F63254F244B5BCDDFB16505EC9B8E7B0D20D203FD9BE9B3F2CC06BDFDEF02240955FB9E49E70D4DCD6ACDB94200E3C9E9A901AB",
-            "id_indices": [1, 0],
-            "pubshare_indices": [1, 0],
-            "tweaks": [],
-            "is_xonly": [],
-            "msg_index": 0,
-            "my_id": 0,
-            "expected": [
-                "0365A43C15167359032EBE58FA63BB86220FB7CF90DCC7881451EF821BC731EBC803F9E7CD0B62187FD859CF1D11574A2E012A3A7FE0791BE6AEAFD472E2F5C8611F",
-                "CB63BC295752D35E94BB696D861EB72B1A9C4ABB9D90DCDEC1EEDBDE92FD06C6"
+            "secshares": [
+                "CCD2EF4559DB05635091D80189AB3544D6668EFC0500A8D5FF51A1F4D32CC1F1",
+                "62A04F63F105A40FCF25634AA645D77AAC692641916E4DFC8C1EEC83CAB5BEBA",
+                "F86DAF82883042BC4DB8EE93C2E079AF3D1A9A6DCD24935ED8BE959F9274FCC4"
             ],
-            "comment": "Signer order does not affect the output: the signer set is sorted internally, so this matches the first valid case"
-        },
-        {
-            "rand": "0000000000000000000000000000000000000000000000000000000000000000",
-            "aggothernonce": "02E4AF943436F3AEB0BFE3968A508CD81090F9CDBF76DDB4FC252B9C2F4F62772B03E4847AA42D408C67557F82D86C0559155331F6804CF50DAECE1D5250CE5C768F",
-            "id_indices": [0, 2],
-            "pubshare_indices": [0, 2],
-            "tweaks": [],
-            "is_xonly": [],
-            "msg_index": 0,
-            "my_id": 0,
-            "expected": [
-                "02D9B26BC2B580CE65A82FCF245C88105B1AD254639690956CB61166AF9225C685036F5B4C864C8C7679DBBB8CF7098E5D2F35FE57E64AA41428301443E0241EB87E",
-                "0565B2713608CCF708292FF83ED879BB1DAE3AD4E84FF977245111501C4A04E7"
+            "valid_tests": [
+                {
+                    "tc_id": 1,
+                    "comment": "Minimum threshold subset of signers (t=2 of n=3)",
+                    "my_id": 0,
+                    "ids": [0, 1],
+                    "pubshare_indices": [0, 1],
+                    "secshare_index": 0,
+                    "aggothernonce": "03A3746AC2BFAACEF4BF47E2FF3F2F63254F244B5BCDDFB16505EC9B8E7B0D20D203FD9BE9B3F2CC06BDFDEF02240955FB9E49E70D4DCD6ACDB94200E3C9E9A901AB",
+                    "rand": "0000000000000000000000000000000000000000000000000000000000000000",
+                    "msg": "F95466D086770E689964664219266FE5ED215C92AE20BAB5C9D79ADDDDF3C0CF",
+                    "tweaks": [],
+                    "is_xonly": [],
+                    "expected": [
+                        "0365A43C15167359032EBE58FA63BB86220FB7CF90DCC7881451EF821BC731EBC803F9E7CD0B62187FD859CF1D11574A2E012A3A7FE0791BE6AEAFD472E2F5C8611F",
+                        "CB63BC295752D35E94BB696D861EB72B1A9C4ABB9D90DCDEC1EEDBDE92FD06C6"
+                    ]
+                },
+                {
+                    "tc_id": 2,
+                    "comment": "Signer order does not affect the output: the signer set is sorted internally, so this matches the first valid case",
+                    "my_id": 0,
+                    "ids": [1, 0],
+                    "pubshare_indices": [1, 0],
+                    "secshare_index": 0,
+                    "aggothernonce": "03A3746AC2BFAACEF4BF47E2FF3F2F63254F244B5BCDDFB16505EC9B8E7B0D20D203FD9BE9B3F2CC06BDFDEF02240955FB9E49E70D4DCD6ACDB94200E3C9E9A901AB",
+                    "rand": "0000000000000000000000000000000000000000000000000000000000000000",
+                    "msg": "F95466D086770E689964664219266FE5ED215C92AE20BAB5C9D79ADDDDF3C0CF",
+                    "tweaks": [],
+                    "is_xonly": [],
+                    "expected": [
+                        "0365A43C15167359032EBE58FA63BB86220FB7CF90DCC7881451EF821BC731EBC803F9E7CD0B62187FD859CF1D11574A2E012A3A7FE0791BE6AEAFD472E2F5C8611F",
+                        "CB63BC295752D35E94BB696D861EB72B1A9C4ABB9D90DCDEC1EEDBDE92FD06C6"
+                    ]
+                },
+                {
+                    "tc_id": 3,
+                    "comment": "A different threshold subset gives a different deterministic nonce, since the signer set is bound into the nonce derivation",
+                    "my_id": 0,
+                    "ids": [0, 2],
+                    "pubshare_indices": [0, 2],
+                    "secshare_index": 0,
+                    "aggothernonce": "02E4AF943436F3AEB0BFE3968A508CD81090F9CDBF76DDB4FC252B9C2F4F62772B03E4847AA42D408C67557F82D86C0559155331F6804CF50DAECE1D5250CE5C768F",
+                    "rand": "0000000000000000000000000000000000000000000000000000000000000000",
+                    "msg": "F95466D086770E689964664219266FE5ED215C92AE20BAB5C9D79ADDDDF3C0CF",
+                    "tweaks": [],
+                    "is_xonly": [],
+                    "expected": [
+                        "02D9B26BC2B580CE65A82FCF245C88105B1AD254639690956CB61166AF9225C685036F5B4C864C8C7679DBBB8CF7098E5D2F35FE57E64AA41428301443E0241EB87E",
+                        "0565B2713608CCF708292FF83ED879BB1DAE3AD4E84FF977245111501C4A04E7"
+                    ]
+                },
+                {
+                    "tc_id": 4,
+                    "comment": "No auxiliary randomness (rand omitted)",
+                    "my_id": 0,
+                    "ids": [0, 1],
+                    "pubshare_indices": [0, 1],
+                    "secshare_index": 0,
+                    "aggothernonce": "03B6459DC1883E3A927F07FE9FBE7EBB44E6E840F33D643FB4E8E5972E6ED4111803F6571A4AF601D5C4AF531ADC16E1691A75810D3F2386DFD3E9678BC5109BDC89",
+                    "rand": null,
+                    "msg": "F95466D086770E689964664219266FE5ED215C92AE20BAB5C9D79ADDDDF3C0CF",
+                    "tweaks": [],
+                    "is_xonly": [],
+                    "expected": [
+                        "02E55DE972CF1D0D2F52B66854B0E055FCFE574DB9A7A34B44E797F3844A6B8866032526EDC62111FD1EDB78BDB53D59466ED5F5B3E6EC8FC92E9F16A604FAC2983D",
+                        "3B06E2B5CAFAA1F97CE43F030C13C027293C806411A0C8780447158BD7222839"
+                    ]
+                },
+                {
+                    "tc_id": 5,
+                    "comment": "Maximum auxiliary randomness",
+                    "my_id": 0,
+                    "ids": [0, 1],
+                    "pubshare_indices": [0, 1],
+                    "secshare_index": 0,
+                    "aggothernonce": "02FCCD2DC55FD9B5406C3EAEC261E78787FB21D019BC935590D24A272BF5042936032F176261E30682E516BE55BDA93227E094F1B2E936E108E1F4567E502D873B25",
+                    "rand": "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF",
+                    "msg": "F95466D086770E689964664219266FE5ED215C92AE20BAB5C9D79ADDDDF3C0CF",
+                    "tweaks": [],
+                    "is_xonly": [],
+                    "expected": [
+                        "025B273D6CDC00F04B824EE136BA029131C5ABC41888E7D41620A0857D1B582E560260F32796D6A30C4B73D8FF2EC0AECD8730552C8C3C6E0F669AF5EBF346E0CCFA",
+                        "5CA7C2EDB8E4C5CAFB0B6788B5FFB43B27DE7FF6E14305F2A53609B2EBD34937"
+                    ]
+                },
+                {
+                    "tc_id": 6,
+                    "comment": "All n=3 signers participate (signer set equals the full group)",
+                    "my_id": 0,
+                    "ids": [0, 1, 2],
+                    "pubshare_indices": [0, 1, 2],
+                    "secshare_index": 0,
+                    "aggothernonce": "027478FBDE0588629CB3603BA4BDF05C56A87E3C5CF233090039298BE93789CEB602457C9E82492C768D1EF44E0E393A6A5407918D900F7FFC4AB57714CFACCAFE9D",
+                    "rand": "0000000000000000000000000000000000000000000000000000000000000000",
+                    "msg": "F95466D086770E689964664219266FE5ED215C92AE20BAB5C9D79ADDDDF3C0CF",
+                    "tweaks": [],
+                    "is_xonly": [],
+                    "expected": [
+                        "02AEEA246CE90C7556C8C41D74735174D5E3A11F75298255C8DB9362683AB2F29C02CCB4F97B46044E6273FE75CA537BD6695BAEADEF8D38BFBFD0DF93ED50B01CB2",
+                        "A8A30D843752BBA003A6D069716AE9DBB6B6C6956D2BF64E1AE3C321AC1182B8"
+                    ]
+                },
+                {
+                    "tc_id": 7,
+                    "comment": "Empty message",
+                    "my_id": 0,
+                    "ids": [0, 1],
+                    "pubshare_indices": [0, 1],
+                    "secshare_index": 0,
+                    "aggothernonce": "03FAA3B890E3DC9A6364625EDD981B78CAB17521122AC6A22CE73CD189C609A6DA02A65EB9E8522EAF7A7A85F39FAD5DB24D58C40EBE97B083A7C74B0EB0F56EE6A5",
+                    "rand": "0000000000000000000000000000000000000000000000000000000000000000",
+                    "msg": "",
+                    "tweaks": [],
+                    "is_xonly": [],
+                    "expected": [
+                        "03D8F4E7246F0888B451FFCE3B1E65CE3C91664125BBF63952BDECF25F3781105E024EF4C83DAA024515392F2062430FE13A22E94B5C878DF1D69247E65B076B6DB5",
+                        "0E3569347B1B83ACB48156F6E76AD00BEC07F3CA1A24E9BFA9DFA216D3FA7CDC"
+                    ]
+                },
+                {
+                    "tc_id": 8,
+                    "comment": "Non-standard message length (38 bytes)",
+                    "my_id": 0,
+                    "ids": [0, 1],
+                    "pubshare_indices": [0, 1],
+                    "secshare_index": 0,
+                    "aggothernonce": "0399E3316C96CDDABDC7E4E2B95A4DB7462E901474E278BC8138B4DA080E3652C8026F77BC22EF5C99490B24B874A003970F0019C294CF535A8409809E6FA621C472",
+                    "rand": "0000000000000000000000000000000000000000000000000000000000000000",
+                    "msg": "2626262626262626262626262626262626262626262626262626262626262626262626262626",
+                    "tweaks": [],
+                    "is_xonly": [],
+                    "expected": [
+                        "03650817D548D9EBBE8312A25DC67DDCD84B09271EB0A8FA4ACB665E10DFEC69C702D2322870FEF7A440FB616FEA3E86637AA0BD9072255061020031AB3D3E23EB04",
+                        "40B7D0B3F11EA96EDDFB44C448824712242A10034DF2231E842E19C2A4D30603"
+                    ]
+                },
+                {
+                    "tc_id": 9,
+                    "comment": "Single x-only tweak applied",
+                    "my_id": 0,
+                    "ids": [0, 1],
+                    "pubshare_indices": [0, 1],
+                    "secshare_index": 0,
+                    "aggothernonce": "03A3746AC2BFAACEF4BF47E2FF3F2F63254F244B5BCDDFB16505EC9B8E7B0D20D203FD9BE9B3F2CC06BDFDEF02240955FB9E49E70D4DCD6ACDB94200E3C9E9A901AB",
+                    "rand": "0000000000000000000000000000000000000000000000000000000000000000",
+                    "msg": "F95466D086770E689964664219266FE5ED215C92AE20BAB5C9D79ADDDDF3C0CF",
+                    "tweaks": [
+                        "E8F791FF9225A2AF0102AFFF4A9A723D9612A682A25EBE79802B263CDFCD83BB"
+                    ],
+                    "is_xonly": [true],
+                    "expected": [
+                        "03EEAD6E74735B5550AB3E8BBCBAEA1CBE98DFE87C73D6A99E0E2F0A6AD7A93DCF03C3712D6F174D7D630EEA2199A248C490B638C739617C47898470FE910A23CB4A",
+                        "06E05C092EB773FEEA06C953681BD7D1A65FF90CCC7D9C6EF22A438D106B65C6"
+                    ]
+                }
             ],
-            "comment": "A different threshold subset gives a different deterministic nonce, since the signer set is bound into the nonce derivation"
-        },
-        {
-            "rand": null,
-            "aggothernonce": "03B6459DC1883E3A927F07FE9FBE7EBB44E6E840F33D643FB4E8E5972E6ED4111803F6571A4AF601D5C4AF531ADC16E1691A75810D3F2386DFD3E9678BC5109BDC89",
-            "id_indices": [0, 1],
-            "pubshare_indices": [0, 1],
-            "tweaks": [],
-            "is_xonly": [],
-            "msg_index": 0,
-            "my_id": 0,
-            "expected": [
-                "02E55DE972CF1D0D2F52B66854B0E055FCFE574DB9A7A34B44E797F3844A6B8866032526EDC62111FD1EDB78BDB53D59466ED5F5B3E6EC8FC92E9F16A604FAC2983D",
-                "3B06E2B5CAFAA1F97CE43F030C13C027293C806411A0C8780447158BD7222839"
-            ],
-            "comment": "No auxiliary randomness (rand omitted)"
-        },
-        {
-            "rand": "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF",
-            "aggothernonce": "02FCCD2DC55FD9B5406C3EAEC261E78787FB21D019BC935590D24A272BF5042936032F176261E30682E516BE55BDA93227E094F1B2E936E108E1F4567E502D873B25",
-            "id_indices": [0, 1],
-            "pubshare_indices": [0, 1],
-            "tweaks": [],
-            "is_xonly": [],
-            "msg_index": 0,
-            "my_id": 0,
-            "expected": [
-                "025B273D6CDC00F04B824EE136BA029131C5ABC41888E7D41620A0857D1B582E560260F32796D6A30C4B73D8FF2EC0AECD8730552C8C3C6E0F669AF5EBF346E0CCFA",
-                "5CA7C2EDB8E4C5CAFB0B6788B5FFB43B27DE7FF6E14305F2A53609B2EBD34937"
-            ],
-            "comment": "Maximum auxiliary randomness"
-        },
-        {
-            "rand": "0000000000000000000000000000000000000000000000000000000000000000",
-            "aggothernonce": "027478FBDE0588629CB3603BA4BDF05C56A87E3C5CF233090039298BE93789CEB602457C9E82492C768D1EF44E0E393A6A5407918D900F7FFC4AB57714CFACCAFE9D",
-            "id_indices": [0, 1, 2],
-            "pubshare_indices": [0, 1, 2],
-            "tweaks": [],
-            "is_xonly": [],
-            "msg_index": 0,
-            "my_id": 0,
-            "expected": [
-                "02AEEA246CE90C7556C8C41D74735174D5E3A11F75298255C8DB9362683AB2F29C02CCB4F97B46044E6273FE75CA537BD6695BAEADEF8D38BFBFD0DF93ED50B01CB2",
-                "A8A30D843752BBA003A6D069716AE9DBB6B6C6956D2BF64E1AE3C321AC1182B8"
-            ],
-            "comment": "All n=3 signers participate (signer set equals the full group)"
-        },
-        {
-            "rand": "0000000000000000000000000000000000000000000000000000000000000000",
-            "aggothernonce": "03FAA3B890E3DC9A6364625EDD981B78CAB17521122AC6A22CE73CD189C609A6DA02A65EB9E8522EAF7A7A85F39FAD5DB24D58C40EBE97B083A7C74B0EB0F56EE6A5",
-            "id_indices": [0, 1],
-            "pubshare_indices": [0, 1],
-            "tweaks": [],
-            "is_xonly": [],
-            "msg_index": 1,
-            "my_id": 0,
-            "expected": [
-                "03D8F4E7246F0888B451FFCE3B1E65CE3C91664125BBF63952BDECF25F3781105E024EF4C83DAA024515392F2062430FE13A22E94B5C878DF1D69247E65B076B6DB5",
-                "0E3569347B1B83ACB48156F6E76AD00BEC07F3CA1A24E9BFA9DFA216D3FA7CDC"
-            ],
-            "comment": "Empty message"
-        },
-        {
-            "rand": "0000000000000000000000000000000000000000000000000000000000000000",
-            "aggothernonce": "0399E3316C96CDDABDC7E4E2B95A4DB7462E901474E278BC8138B4DA080E3652C8026F77BC22EF5C99490B24B874A003970F0019C294CF535A8409809E6FA621C472",
-            "id_indices": [0, 1],
-            "pubshare_indices": [0, 1],
-            "tweaks": [],
-            "is_xonly": [],
-            "msg_index": 2,
-            "my_id": 0,
-            "expected": [
-                "03650817D548D9EBBE8312A25DC67DDCD84B09271EB0A8FA4ACB665E10DFEC69C702D2322870FEF7A440FB616FEA3E86637AA0BD9072255061020031AB3D3E23EB04",
-                "40B7D0B3F11EA96EDDFB44C448824712242A10034DF2231E842E19C2A4D30603"
-            ],
-            "comment": "Non-standard message length (38 bytes)"
-        },
-        {
-            "rand": "0000000000000000000000000000000000000000000000000000000000000000",
-            "aggothernonce": "03A3746AC2BFAACEF4BF47E2FF3F2F63254F244B5BCDDFB16505EC9B8E7B0D20D203FD9BE9B3F2CC06BDFDEF02240955FB9E49E70D4DCD6ACDB94200E3C9E9A901AB",
-            "id_indices": [0, 1],
-            "pubshare_indices": [0, 1],
-            "tweaks": [
-                "E8F791FF9225A2AF0102AFFF4A9A723D9612A682A25EBE79802B263CDFCD83BB"
-            ],
-            "is_xonly": [true],
-            "msg_index": 0,
-            "my_id": 0,
-            "expected": [
-                "03EEAD6E74735B5550AB3E8BBCBAEA1CBE98DFE87C73D6A99E0E2F0A6AD7A93DCF03C3712D6F174D7D630EEA2199A248C490B638C739617C47898470FE910A23CB4A",
-                "06E05C092EB773FEEA06C953681BD7D1A65FF90CCC7D9C6EF22A438D106B65C6"
-            ],
-            "comment": "Single x-only tweak applied"
-        }
-    ],
-    "error_test_cases": [
-        {
-            "rand": "0000000000000000000000000000000000000000000000000000000000000000",
-            "aggothernonce": "027D24A61CC151AC503209F0E05299790841DF739D3B02CCB43AF3599133DF579D0210D23994D988FEC54A64F283F08D29174CA3D541D06A150279253018CE9723CC",
-            "id_indices": [0, 1],
-            "pubshare_indices": [0, 1],
-            "tweaks": [],
-            "is_xonly": [],
-            "msg_index": 0,
-            "my_id": 2,
-            "error": {
-                "type": "ValueError",
-                "message": "The signer's id must be present in the participant identifier list."
-            },
-            "comment": "Signer's own id is not in the signer set"
-        },
-        {
-            "rand": "0000000000000000000000000000000000000000000000000000000000000000",
-            "aggothernonce": "034AA0248F1B86CBD14E8C01373527D2CB33CD2E5BE378AC236A29FD64526AABF5026EDD91220FD5C2FA71388870E802A021E49DC8D336CEB28ADB1F1674BEF8DDD9",
-            "id_indices": [0, 1, 1],
-            "pubshare_indices": [0, 1, 1],
-            "tweaks": [],
-            "is_xonly": [],
-            "msg_index": 0,
-            "my_id": 0,
-            "error": {
-                "type": "ValueError",
-                "message": "The participant identifier list contains duplicate elements."
-            },
-            "comment": "Signer set contains a duplicate id"
-        },
-        {
-            "rand": "0000000000000000000000000000000000000000000000000000000000000000",
-            "aggothernonce": "02E4AF943436F3AEB0BFE3968A508CD81090F9CDBF76DDB4FC252B9C2F4F62772B03E4847AA42D408C67557F82D86C0559155331F6804CF50DAECE1D5250CE5C768F",
-            "id_indices": [1, 2],
-            "pubshare_indices": [1, 2],
-            "tweaks": [],
-            "is_xonly": [],
-            "msg_index": 0,
-            "my_id": 1,
-            "error": {
-                "type": "ValueError",
-                "message": "The signer's pubshare must be included in the list of pubshares."
-            },
-            "comment": "Signer's own public share is not in the public share list"
-        },
-        {
-            "rand": "0000000000000000000000000000000000000000000000000000000000000000",
-            "aggothernonce": "03A3746AC2BFAACEF4BF47E2FF3F2F63254F244B5BCDDFB16505EC9B8E7B0D20D203FD9BE9B3F2CC06BDFDEF02240955FB9E49E70D4DCD6ACDB94200E3C9E9A901AB",
-            "id_indices": [0, 1],
-            "pubshare_indices": [0, 3],
-            "tweaks": [],
-            "is_xonly": [],
-            "msg_index": 0,
-            "my_id": 0,
-            "error": {
-                "type": "ValueError",
-                "message": "Invalid pubshare at index 1."
-            },
-            "comment": "A public share is not a valid point"
-        },
-        {
-            "rand": "0000000000000000000000000000000000000000000000000000000000000000",
-            "aggothernonce": "03A3746AC2BFAACEF4BF47E2FF3F2F63254F244B5BCDDFB16505EC9B8E7B0D20D203FD9BE9B3F2CC06BDFDEF02240955FB9E49E70D4DCD6ACDB94200E3C9E9A901AB",
-            "id_indices": [2, 1],
-            "pubshare_indices": [0, 1],
-            "tweaks": [],
-            "is_xonly": [],
-            "msg_index": 0,
-            "my_id": 2,
-            "error": {
-                "type": "ValueError",
-                "message": "The provided key material is incorrect."
-            },
-            "comment": "Signer set's public shares do not match the threshold public key"
-        },
-        {
-            "rand": "0000000000000000000000000000000000000000000000000000000000000000",
-            "aggothernonce": "048465FCF0BBDBCF443AABCCE533D42B4B5A10966AC09A49655E8C42DAAB8FCD61037496A3CC86926D452CAFCFD55D25972CA1675D549310DE296BFF42F72EEEA8C9",
-            "id_indices": [0, 1],
-            "pubshare_indices": [0, 1],
-            "tweaks": [],
-            "is_xonly": [],
-            "msg_index": 0,
-            "my_id": 0,
-            "error": {
-                "type": "InvalidContributionError",
-                "signer_index": null,
-                "contrib": "aggothernonce"
-            },
-            "comment": "Aggregate of the other signers' nonces is invalid: first half has an unknown tag 0x04"
-        },
-        {
-            "rand": "0000000000000000000000000000000000000000000000000000000000000000",
-            "aggothernonce": "0000000000000000000000000000000000000000000000000000000000000000000287BF891D2A6DEAEBADC909352AA9405D1428C15F4B75F04DAE642A95C2548480",
-            "id_indices": [0, 1],
-            "pubshare_indices": [0, 1],
-            "tweaks": [],
-            "is_xonly": [],
-            "msg_index": 0,
-            "my_id": 0,
-            "error": {
-                "type": "InvalidContributionError",
-                "signer_index": null,
-                "contrib": "aggothernonce"
-            },
-            "comment": "Aggregate of the other signers' nonces is invalid: first half is all zeros"
-        },
-        {
-            "rand": "0000000000000000000000000000000000000000000000000000000000000000",
-            "aggothernonce": "0353BC2314D46C813AF81317AF1BDF99816B6444E416BB8D3DC04ACB2F5388D1AC020000000000000000000000000000000000000000000000000000000000000009",
-            "id_indices": [0, 1],
-            "pubshare_indices": [0, 1],
-            "tweaks": [],
-            "is_xonly": [],
-            "msg_index": 0,
-            "my_id": 0,
-            "error": {
-                "type": "InvalidContributionError",
-                "signer_index": null,
-                "contrib": "aggothernonce"
-            },
-            "comment": "Aggregate of the other signers' nonces is invalid: second half is not a point on the curve"
-        },
-        {
-            "rand": "0000000000000000000000000000000000000000000000000000000000000000",
-            "aggothernonce": "0353BC2314D46C813AF81317AF1BDF99816B6444E416BB8D3DC04ACB2F5388D1AC02FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFFC30",
-            "id_indices": [0, 1],
-            "pubshare_indices": [0, 1],
-            "tweaks": [],
-            "is_xonly": [],
-            "msg_index": 0,
-            "my_id": 0,
-            "error": {
-                "type": "InvalidContributionError",
-                "signer_index": null,
-                "contrib": "aggothernonce"
-            },
-            "comment": "Aggregate of the other signers' nonces is invalid: second half's x-coordinate exceeds the field size"
-        },
-        {
-            "rand": "0000000000000000000000000000000000000000000000000000000000000000",
-            "aggothernonce": "03A3746AC2BFAACEF4BF47E2FF3F2F63254F244B5BCDDFB16505EC9B8E7B0D20D203FD9BE9B3F2CC06BDFDEF02240955FB9E49E70D4DCD6ACDB94200E3C9E9A901AB",
-            "id_indices": [0, 1],
-            "pubshare_indices": [0, 1],
-            "tweaks": [
-                "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141"
-            ],
-            "is_xonly": [false],
-            "msg_index": 0,
-            "my_id": 0,
-            "error": {
-                "type": "ValueError",
-                "message": "The tweak value is out of range."
-            },
-            "comment": "Tweak exceeds the group order"
+            "error_tests": [
+                {
+                    "tc_id": 10,
+                    "comment": "my_id is not in the signer set",
+                    "my_id": 2,
+                    "ids": [0, 1],
+                    "pubshare_indices": [0, 1],
+                    "secshare_index": 0,
+                    "aggothernonce": "027D24A61CC151AC503209F0E05299790841DF739D3B02CCB43AF3599133DF579D0210D23994D988FEC54A64F283F08D29174CA3D541D06A150279253018CE9723CC",
+                    "rand": "0000000000000000000000000000000000000000000000000000000000000000",
+                    "msg": "F95466D086770E689964664219266FE5ED215C92AE20BAB5C9D79ADDDDF3C0CF",
+                    "tweaks": [],
+                    "is_xonly": [],
+                    "error": {
+                        "type": "ValueError",
+                        "message": "The signer's id must be present in the participant identifier list."
+                    }
+                },
+                {
+                    "tc_id": 11,
+                    "comment": "Signer set contains a duplicate id",
+                    "my_id": 0,
+                    "ids": [0, 1, 1],
+                    "pubshare_indices": [0, 1, 1],
+                    "secshare_index": 0,
+                    "aggothernonce": "034AA0248F1B86CBD14E8C01373527D2CB33CD2E5BE378AC236A29FD64526AABF5026EDD91220FD5C2FA71388870E802A021E49DC8D336CEB28ADB1F1674BEF8DDD9",
+                    "rand": "0000000000000000000000000000000000000000000000000000000000000000",
+                    "msg": "F95466D086770E689964664219266FE5ED215C92AE20BAB5C9D79ADDDDF3C0CF",
+                    "tweaks": [],
+                    "is_xonly": [],
+                    "error": {
+                        "type": "ValueError",
+                        "message": "The participant identifier list contains duplicate elements."
+                    }
+                },
+                {
+                    "tc_id": 12,
+                    "comment": "Signer's public share is not in the public share list",
+                    "my_id": 1,
+                    "ids": [1, 2],
+                    "pubshare_indices": [1, 2],
+                    "secshare_index": 0,
+                    "aggothernonce": "02E4AF943436F3AEB0BFE3968A508CD81090F9CDBF76DDB4FC252B9C2F4F62772B03E4847AA42D408C67557F82D86C0559155331F6804CF50DAECE1D5250CE5C768F",
+                    "rand": "0000000000000000000000000000000000000000000000000000000000000000",
+                    "msg": "F95466D086770E689964664219266FE5ED215C92AE20BAB5C9D79ADDDDF3C0CF",
+                    "tweaks": [],
+                    "is_xonly": [],
+                    "error": {
+                        "type": "ValueError",
+                        "message": "The signer's pubshare must be included in the list of pubshares."
+                    }
+                },
+                {
+                    "tc_id": 13,
+                    "comment": "A public share is not a valid point",
+                    "my_id": 0,
+                    "ids": [0, 1],
+                    "pubshare_indices": [0, 3],
+                    "secshare_index": 0,
+                    "aggothernonce": "03A3746AC2BFAACEF4BF47E2FF3F2F63254F244B5BCDDFB16505EC9B8E7B0D20D203FD9BE9B3F2CC06BDFDEF02240955FB9E49E70D4DCD6ACDB94200E3C9E9A901AB",
+                    "rand": "0000000000000000000000000000000000000000000000000000000000000000",
+                    "msg": "F95466D086770E689964664219266FE5ED215C92AE20BAB5C9D79ADDDDF3C0CF",
+                    "tweaks": [],
+                    "is_xonly": [],
+                    "error": {
+                        "type": "ValueError",
+                        "message": "Invalid pubshare at index 1."
+                    }
+                },
+                {
+                    "tc_id": 14,
+                    "comment": "Signer set's public shares do not match the threshold public key",
+                    "my_id": 2,
+                    "ids": [2, 1],
+                    "pubshare_indices": [0, 1],
+                    "secshare_index": 2,
+                    "aggothernonce": "03A3746AC2BFAACEF4BF47E2FF3F2F63254F244B5BCDDFB16505EC9B8E7B0D20D203FD9BE9B3F2CC06BDFDEF02240955FB9E49E70D4DCD6ACDB94200E3C9E9A901AB",
+                    "rand": "0000000000000000000000000000000000000000000000000000000000000000",
+                    "msg": "F95466D086770E689964664219266FE5ED215C92AE20BAB5C9D79ADDDDF3C0CF",
+                    "tweaks": [],
+                    "is_xonly": [],
+                    "error": {
+                        "type": "ValueError",
+                        "message": "The provided key material is incorrect."
+                    }
+                },
+                {
+                    "tc_id": 15,
+                    "comment": "Aggregate of the other signers' nonces is invalid: first half has an unknown tag 0x04",
+                    "my_id": 0,
+                    "ids": [0, 1],
+                    "pubshare_indices": [0, 1],
+                    "secshare_index": 0,
+                    "aggothernonce": "048465FCF0BBDBCF443AABCCE533D42B4B5A10966AC09A49655E8C42DAAB8FCD61037496A3CC86926D452CAFCFD55D25972CA1675D549310DE296BFF42F72EEEA8C9",
+                    "rand": "0000000000000000000000000000000000000000000000000000000000000000",
+                    "msg": "F95466D086770E689964664219266FE5ED215C92AE20BAB5C9D79ADDDDF3C0CF",
+                    "tweaks": [],
+                    "is_xonly": [],
+                    "error": {
+                        "type": "InvalidContributionError",
+                        "signer_index": null,
+                        "contrib": "aggothernonce"
+                    }
+                },
+                {
+                    "tc_id": 16,
+                    "comment": "Aggregate of the other signers' nonces is invalid: first half is all zeros",
+                    "my_id": 0,
+                    "ids": [0, 1],
+                    "pubshare_indices": [0, 1],
+                    "secshare_index": 0,
+                    "aggothernonce": "0000000000000000000000000000000000000000000000000000000000000000000287BF891D2A6DEAEBADC909352AA9405D1428C15F4B75F04DAE642A95C2548480",
+                    "rand": "0000000000000000000000000000000000000000000000000000000000000000",
+                    "msg": "F95466D086770E689964664219266FE5ED215C92AE20BAB5C9D79ADDDDF3C0CF",
+                    "tweaks": [],
+                    "is_xonly": [],
+                    "error": {
+                        "type": "InvalidContributionError",
+                        "signer_index": null,
+                        "contrib": "aggothernonce"
+                    }
+                },
+                {
+                    "tc_id": 17,
+                    "comment": "Aggregate of the other signers' nonces is invalid: second half is not a point on the curve",
+                    "my_id": 0,
+                    "ids": [0, 1],
+                    "pubshare_indices": [0, 1],
+                    "secshare_index": 0,
+                    "aggothernonce": "0353BC2314D46C813AF81317AF1BDF99816B6444E416BB8D3DC04ACB2F5388D1AC020000000000000000000000000000000000000000000000000000000000000009",
+                    "rand": "0000000000000000000000000000000000000000000000000000000000000000",
+                    "msg": "F95466D086770E689964664219266FE5ED215C92AE20BAB5C9D79ADDDDF3C0CF",
+                    "tweaks": [],
+                    "is_xonly": [],
+                    "error": {
+                        "type": "InvalidContributionError",
+                        "signer_index": null,
+                        "contrib": "aggothernonce"
+                    }
+                },
+                {
+                    "tc_id": 18,
+                    "comment": "Aggregate of the other signers' nonces is invalid: second half's x-coordinate exceeds the field size",
+                    "my_id": 0,
+                    "ids": [0, 1],
+                    "pubshare_indices": [0, 1],
+                    "secshare_index": 0,
+                    "aggothernonce": "0353BC2314D46C813AF81317AF1BDF99816B6444E416BB8D3DC04ACB2F5388D1AC02FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFFC30",
+                    "rand": "0000000000000000000000000000000000000000000000000000000000000000",
+                    "msg": "F95466D086770E689964664219266FE5ED215C92AE20BAB5C9D79ADDDDF3C0CF",
+                    "tweaks": [],
+                    "is_xonly": [],
+                    "error": {
+                        "type": "InvalidContributionError",
+                        "signer_index": null,
+                        "contrib": "aggothernonce"
+                    }
+                },
+                {
+                    "tc_id": 19,
+                    "comment": "Tweak exceeds the group order",
+                    "my_id": 0,
+                    "ids": [0, 1],
+                    "pubshare_indices": [0, 1],
+                    "secshare_index": 0,
+                    "aggothernonce": "03A3746AC2BFAACEF4BF47E2FF3F2F63254F244B5BCDDFB16505EC9B8E7B0D20D203FD9BE9B3F2CC06BDFDEF02240955FB9E49E70D4DCD6ACDB94200E3C9E9A901AB",
+                    "rand": "0000000000000000000000000000000000000000000000000000000000000000",
+                    "msg": "F95466D086770E689964664219266FE5ED215C92AE20BAB5C9D79ADDDDF3C0CF",
+                    "tweaks": [
+                        "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141"
+                    ],
+                    "is_xonly": [false],
+                    "error": {
+                        "type": "ValueError",
+                        "message": "The tweak value is out of range."
+                    }
+                }
+            ]
         }
     ]
 }
