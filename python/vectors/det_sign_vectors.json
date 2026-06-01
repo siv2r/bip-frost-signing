@@ -176,7 +176,7 @@
             "error_tests": [
                 {
                     "tc_id": 10,
-                    "comment": "Signer's own id is not in the signer set",
+                    "comment": "my_id is not in the signer set",
                     "my_id": 2,
                     "ids": [0, 1],
                     "pubshare_indices": [0, 1],
@@ -210,7 +210,7 @@
                 },
                 {
                     "tc_id": 12,
-                    "comment": "Signer's own public share is not in the public share list",
+                    "comment": "Signer's public share is not in the public share list",
                     "my_id": 1,
                     "ids": [1, 2],
                     "pubshare_indices": [1, 2],

@@ -421,6 +421,9 @@ def generate_sign_verify_vectors():
     )
 
     # Build participant-aligned pools: first n values are for participants followed by invalids/specials.
+    # Referencing convention in the emitted cases: literal integers for
+    # participant indices (e.g. pubshare_indices=[0, 1]), named constants for
+    # the appended specials (e.g. INVALID_PUBSHARE_IDX, OUT_OF_RANGE_ID).
     INVALID_PUBSHARE_IDX = n
     INVALID_PUBNONCE_IDX = n
     INVERSE_PUBNONCE_IDX = n + 1
@@ -489,7 +492,7 @@ def generate_sign_verify_vectors():
     }
     tc_id = 1
 
-    # --- Valid Test Cases (tc 1-7) ---
+    # --- Valid Test Cases ---
     valid_cases = [
         {
             "my_id": 0,
@@ -603,9 +606,12 @@ def generate_sign_verify_vectors():
         )
         tc_id += 1
 
-    # --- Sign Error Test Cases (tc 8-20) ---
+    # --- Sign Error Test Cases ---
     sign_error_cases = [
         {
+            # my_id=2 is outside ids=[0,1]. The signer presents participant 0's
+            # valid in-set material (secshare_index=0), since the id-membership
+            # check is only reached after the pubshare-membership check passes.
             "my_id": 2,
             "ids": [0, 1],
             "pubshare_indices": [0, 1],
@@ -614,7 +620,7 @@ def generate_sign_verify_vectors():
             "secshare_index": 0,
             "secnonce_index": 0,
             "error": "value",
-            "comment": "Signer's own id is not in the signer set",
+            "comment": "my_id is not in the signer set",
         },
         {
             "my_id": 0,
@@ -628,8 +634,9 @@ def generate_sign_verify_vectors():
             "comment": "Signer set contains a duplicate id",
         },
         {
-            # tc 10: my_id=1, ids=[1,2], but secshare_index=0 (participant 0's secret).
-            # P0's pubshare is absent from the set, so the signer's own pubshare is missing.
+            # The signer is set member my_id=1 but loads participant 0's secret
+            # share (secshare_index=0, the single bad field), so the derived public
+            # share is absent from the set {1,2}.
             "my_id": 1,
             "ids": [1, 2],
             "pubshare_indices": [1, 2],
@@ -638,7 +645,7 @@ def generate_sign_verify_vectors():
             "secshare_index": 0,
             "secnonce_index": 0,
             "error": "value",
-            "comment": "Signer's own public share is not in the public share list",
+            "comment": "Signer's public share is not in the public share list",
         },
         {
             "my_id": 0,
@@ -652,13 +659,15 @@ def generate_sign_verify_vectors():
             "comment": "A public share is not a valid point",
         },
         {
+            # ids=[3, 1] where 3 == n is out of range. The signer is the in-range
+            # member my_id=1, using participant 1's own secret share and nonce.
             "my_id": 1,
             "ids": [OUT_OF_RANGE_ID, 1],
             "pubshare_indices": [0, 1],
             "aggnonce": aggnonce_01,
             "msg": COMMON_MSGS[0],
-            "secshare_index": 0,
-            "secnonce_index": 0,
+            "secshare_index": 1,
+            "secnonce_index": 1,
             "error": "value",
             "comment": "A signer id is outside the valid range [0, n-1]",
         },
@@ -729,6 +738,8 @@ def generate_sign_verify_vectors():
             "comment": "Secret nonce's second half is out of range (zero)",
         },
         {
+            # aggnonce_01 doesn't match the single-signer set, but it's never
+            # inspected: SignersContext rejects the sub-threshold set first.
             "my_id": 0,
             "ids": [0],
             "pubshare_indices": [0],
@@ -799,7 +810,7 @@ def generate_sign_verify_vectors():
     vf_secnonce = bytearray(pool_secnonces[0])
     psig = sign(vf_secnonce, pool_secshares[0], vf_my_id, vf_session)
 
-    # --- Verify Fail Test Cases (tc 21-23) ---
+    # --- Verify Fail Test Cases ---
     psig_scalar = Scalar.from_bytes_checked(psig)
     neg_psig = (-psig_scalar).to_bytes()
 
@@ -845,7 +856,7 @@ def generate_sign_verify_vectors():
     )
     tc_id += 1
 
-    # --- Verify Error Test Cases (tc 24-25) ---
+    # --- Verify Error Test Cases ---
     verify_error_cases = [
         {
             "ids": [0, 1],
@@ -919,12 +930,11 @@ def generate_tweak_vectors():
     infinity_tweak_scalar = -reconstruct_thresh_sk([0, 1], secshares[:2])
     assert (GE.from_bytes_compressed(thresh_pk) + infinity_tweak_scalar * G).infinity
 
-    # Participant-aligned secret pools; zero variants appended at index n=3
-    secshares_pool = list(secshares) + [b"\x00" * 32]
-    secnonces_pool = list(secnonces) + [b"\x00" * 64]
     # 6 entries: indices 0-3 valid (COMMON_TWEAKS), index 4 out-of-range,
     # index 5 drives the tweaked threshold public key to infinity
-    tweaks_pool = list(COMMON_TWEAKS) + [
+    OUT_OF_RANGE_TWEAK_IDX = len(COMMON_TWEAKS)
+    INFINITY_TWEAK_IDX = len(COMMON_TWEAKS) + 1
+    tweaks_pool = COMMON_TWEAKS + [
         OUT_OF_RANGE_TWEAK,
         infinity_tweak_scalar.to_bytes(),
     ]
@@ -936,8 +946,8 @@ def generate_tweak_vectors():
         "thresh_pk": bytes_to_hex(thresh_pk),
         "pubshares": bytes_list_to_hex(pubshares_with_invalid),
         "pubnonces": bytes_list_to_hex(pubnonces),
-        "secshares": bytes_list_to_hex(secshares_pool),
-        "secnonces": bytes_list_to_hex(secnonces_pool),
+        "secshares": bytes_list_to_hex(secshares),
+        "secnonces": bytes_list_to_hex(secnonces),
         "tweaks": bytes_list_to_hex(tweaks_pool),
         "valid_tests": [],
         "error_tests": [],
@@ -995,7 +1005,7 @@ def generate_tweak_vectors():
         curr_ids = [ids[i] for i in indices]
         curr_pubshares = [pubshares_with_invalid[i] for i in indices]
         curr_aggnonce = bytes.fromhex(case["aggnonce"])
-        curr_tweaks = [list(COMMON_TWEAKS)[i] for i in case["tweaks_indices"]]
+        curr_tweaks = [tweaks_pool[i] for i in case["tweaks_indices"]]
         curr_tweak_modes = case["is_xonly"]
         my_id = curr_ids[0]
 
@@ -1027,12 +1037,12 @@ def generate_tweak_vectors():
     # --- Error Test Cases ---
     error_cases = [
         {
-            "tweaks_indices": [4],
+            "tweaks_indices": [OUT_OF_RANGE_TWEAK_IDX],
             "is_xonly": [False],
             "comment": "Tweak exceeds the group order",
         },
         {
-            "tweaks_indices": [5],
+            "tweaks_indices": [INFINITY_TWEAK_IDX],
             "is_xonly": [False],
             "comment": "Plain tweak drives the tweaked threshold public key to the point at infinity",
         },
@@ -1231,7 +1241,7 @@ def generate_det_sign_vectors():
                 "msg": bytes_to_hex(curr_msg),
                 "tweaks": bytes_list_to_hex(curr_tweaks),
                 "is_xonly": curr_tweak_modes,
-                "expected": bytes_list_to_hex(list(expected)),
+                "expected": bytes_list_to_hex(expected),
             }
         )
         tc_id += 1
@@ -1239,6 +1249,9 @@ def generate_det_sign_vectors():
     # --- Error Test Cases ---
     error_cases = [
         {
+            # my_id=2 is outside ids=[0,1]. The signer presents participant 0's
+            # valid in-set material (secshare_index=0), since the id-membership
+            # check is only reached after the pubshare-membership check passes.
             "ids": [0, 1],
             "pubshares": [0, 1],
             "my_id": 2,
@@ -1246,7 +1259,7 @@ def generate_det_sign_vectors():
             "msg": 0,
             "rand": 0,
             "error": "value",
-            "comment": "Signer's own id is not in the signer set",
+            "comment": "my_id is not in the signer set",
         },
         {
             "ids": [0, 1, 1],
@@ -1259,8 +1272,9 @@ def generate_det_sign_vectors():
             "comment": "Signer set contains a duplicate id",
         },
         {
-            # my_id=1 but signing with participant 0's secret (secshare_index=0),
-            # so participant 0's pubshare is absent from the set [1,2]: that is the fault.
+            # The signer is set member my_id=1 but loads participant 0's secret
+            # share (secshare_index=0, the single bad field), so the derived public
+            # share is absent from the set {1,2}.
             "ids": [1, 2],
             "pubshares": [1, 2],
             "my_id": 1,
@@ -1268,7 +1282,7 @@ def generate_det_sign_vectors():
             "msg": 0,
             "rand": 0,
             "error": "value",
-            "comment": "Signer's own public share is not in the public share list",
+            "comment": "Signer's public share is not in the public share list",
         },
         {
             "ids": [0, 1],

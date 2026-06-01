@@ -127,7 +127,7 @@
             "sign_error_tests": [
                 {
                     "tc_id": 8,
-                    "comment": "Signer's own id is not in the signer set",
+                    "comment": "my_id is not in the signer set",
                     "my_id": 2,
                     "ids": [0, 1],
                     "pubshare_indices": [0, 1],
@@ -157,7 +157,7 @@
                 },
                 {
                     "tc_id": 10,
-                    "comment": "Signer's own public share is not in the public share list",
+                    "comment": "Signer's public share is not in the public share list",
                     "my_id": 1,
                     "ids": [1, 2],
                     "pubshare_indices": [1, 2],
@@ -191,8 +191,8 @@
                     "my_id": 1,
                     "ids": [3, 1],
                     "pubshare_indices": [0, 1],
-                    "secshare_index": 0,
-                    "secnonce_index": 0,
+                    "secshare_index": 1,
+                    "secnonce_index": 1,
                     "aggnonce": "02ABA4374155062E973007AC12D2CB1BCB70A76ACF3CFCE6F9E2160CF5D7DD4CCB03EB324CCEF66810F01197F28E63B97B50D7F6503940709E8DDD0313144D039568",
                     "msg": "F95466D086770E689964664219266FE5ED215C92AE20BAB5C9D79ADDDDF3C0CF",
                     "error": {
