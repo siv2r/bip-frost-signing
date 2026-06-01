@@ -68,5 +68,4 @@ jobs:
 
           claude_args: |
             --model claude-opus-4-7
-            --max-turns 50
             --allowedTools "Read,Grep,Glob,WebSearch,WebFetch,Bash(gh pr diff:*),Bash(gh pr view:*),Bash(gh api:*),Bash(git log:*),Bash(git show:*)"
