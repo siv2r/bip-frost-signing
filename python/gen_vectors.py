@@ -528,15 +528,15 @@ def generate_sign_verify_vectors():
             "comment": "A different threshold subset gives a different partial signature, since the Lagrange coefficients depend on the signer set",
         },
         {
-            "my_id": 0,
+            "my_id": 1,
             "ids": [0, 1, 2],
             "pubshare_indices": [0, 1, 2],
             "pubnonce_indices": [0, 1, 2],
             "aggnonce": aggnonce_012,
             "msg": COMMON_MSGS[0],
-            "secshare_index": 0,
-            "secnonce_index": 0,
-            "comment": "All n=3 signers participate (signer set equals the full group)",
+            "secshare_index": 1,
+            "secnonce_index": 1,
+            "comment": "All n=3 signers participate, signed by a non-first member in the set",
         },
         {
             "my_id": 0,
@@ -996,8 +996,9 @@ def generate_tweak_vectors():
             "tweaks_indices": [0, 1, 2, 3],
             "is_xonly": [False, False, True, True],
             "indices": [0, 1, 2],
+            "signer_idx": 1,
             "aggnonce": bytes_to_hex(aggnonce_012),
-            "comment": "Same tweaks as the previous case but with all 3 signers, so the partial signature differs because the Lagrange coefficient depends on the signer set",
+            "comment": "Same tweaks as the previous case but with all 3 signers and signed by a non-first member of the signer set",
         },
     ]
     for case in valid_cases:
@@ -1007,13 +1008,16 @@ def generate_tweak_vectors():
         curr_aggnonce = bytes.fromhex(case["aggnonce"])
         curr_tweaks = [tweaks_pool[i] for i in case["tweaks_indices"]]
         curr_tweak_modes = case["is_xonly"]
-        my_id = curr_ids[0]
+        signer_idx = case.get("signer_idx", 0)
+        my_id = ids[signer_idx]
 
         curr_signers = SignersContext(n, t, curr_ids, curr_pubshares, thresh_pk)
         session_ctx = SessionContext(
             curr_aggnonce, curr_signers, curr_tweaks, curr_tweak_modes, COMMON_MSGS[0]
         )
-        psig = sign(bytearray(secnonces[0]), secshares[0], my_id, session_ctx)
+        psig = sign(
+            bytearray(secnonces[signer_idx]), secshares[signer_idx], my_id, session_ctx
+        )
 
         group["valid_tests"].append(
             {
@@ -1023,8 +1027,8 @@ def generate_tweak_vectors():
                 "ids": curr_ids,
                 "pubshare_indices": indices,
                 "pubnonce_indices": indices,
-                "secshare_index": 0,
-                "secnonce_index": 0,
+                "secshare_index": signer_idx,
+                "secnonce_index": signer_idx,
                 "aggnonce": case["aggnonce"],
                 "msg": bytes_to_hex(COMMON_MSGS[0]),
                 "tweak_indices": case["tweaks_indices"],
@@ -1164,10 +1168,10 @@ def generate_det_sign_vectors():
         },
         {
             "indices": [0, 1, 2],
-            "my_id": 0,
+            "my_id": 1,
             "msg": 0,
             "rand": 0,
-            "comment": "All n=3 signers participate (signer set equals the full group)",
+            "comment": "All n=3 signers participate, signed by a non-first member of the signer set",
         },
         {
             "indices": [0, 1],
@@ -1202,7 +1206,7 @@ def generate_det_sign_vectors():
         tweaks_idx = case.get("tweaks", None)
         curr_tweaks = [] if tweaks_idx is None else tweaks[tweaks_idx]
         curr_tweak_modes = case.get("is_xonly", [])
-        secshare_index = 0
+        secshare_index = ids.index(my_id)
 
         # generate `aggothernonce` (every signer's nonce except this signer's own)
         other_pubnonces = []

@@ -127,18 +127,18 @@
                 },
                 {
                     "tc_id": 7,
-                    "comment": "Same tweaks as the previous case but with all 3 signers, so the partial signature differs because the Lagrange coefficient depends on the signer set",
-                    "my_id": 0,
+                    "comment": "Same tweaks as the previous case but with all 3 signers and signed by a non-first member of the signer set",
+                    "my_id": 1,
                     "ids": [0, 1, 2],
                     "pubshare_indices": [0, 1, 2],
                     "pubnonce_indices": [0, 1, 2],
-                    "secshare_index": 0,
-                    "secnonce_index": 0,
+                    "secshare_index": 1,
+                    "secnonce_index": 1,
                     "aggnonce": "021F4A843C6740C0F36AF26DF2D3DBBD5DF5A79037579F4C979B2FE0B047FE2A88035DE91B1E9BFC222DCF83A8D2C7C468EB3B2F104661F6358257E7A90EA9BA7B92",
                     "msg": "F95466D086770E689964664219266FE5ED215C92AE20BAB5C9D79ADDDDF3C0CF",
                     "tweak_indices": [0, 1, 2, 3],
                     "is_xonly": [false, false, true, true],
-                    "expected": "FCDADA0021DC1C7C96A0097A596912382BD08757297E4024FAADF428368418EC"
+                    "expected": "6C64B2EB6C5C996B3D4CC7532BF2120D4688770EAE9903AFEE25FE70052DA315"
                 }
             ],
             "error_tests": [

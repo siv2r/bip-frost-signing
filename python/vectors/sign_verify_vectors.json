@@ -73,16 +73,16 @@
                 },
                 {
                     "tc_id": 4,
-                    "comment": "All n=3 signers participate (signer set equals the full group)",
-                    "my_id": 0,
+                    "comment": "All n=3 signers participate, signed by a non-first member in the set",
+                    "my_id": 1,
                     "ids": [0, 1, 2],
                     "pubshare_indices": [0, 1, 2],
                     "pubnonce_indices": [0, 1, 2],
-                    "secshare_index": 0,
-                    "secnonce_index": 0,
+                    "secshare_index": 1,
+                    "secnonce_index": 1,
                     "aggnonce": "021F4A843C6740C0F36AF26DF2D3DBBD5DF5A79037579F4C979B2FE0B047FE2A88035DE91B1E9BFC222DCF83A8D2C7C468EB3B2F104661F6358257E7A90EA9BA7B92",
                     "msg": "F95466D086770E689964664219266FE5ED215C92AE20BAB5C9D79ADDDDF3C0CF",
-                    "expected": "006B9CB48E3EC79F0DB2D640CFA75DFA223C27C96728C615733C1EBFC8CB3B20"
+                    "expected": "D9E83C48BFAFD293D252BA2BC188E866D70E5BCD56E5C177AA54936CE19BB44C"
                 },
                 {
                     "tc_id": 5,

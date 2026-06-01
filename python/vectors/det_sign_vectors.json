@@ -104,19 +104,19 @@
                 },
                 {
                     "tc_id": 6,
-                    "comment": "All n=3 signers participate (signer set equals the full group)",
-                    "my_id": 0,
+                    "comment": "All n=3 signers participate, signed by a non-first member of the signer set",
+                    "my_id": 1,
                     "ids": [0, 1, 2],
                     "pubshare_indices": [0, 1, 2],
-                    "secshare_index": 0,
-                    "aggothernonce": "027478FBDE0588629CB3603BA4BDF05C56A87E3C5CF233090039298BE93789CEB602457C9E82492C768D1EF44E0E393A6A5407918D900F7FFC4AB57714CFACCAFE9D",
+                    "secshare_index": 1,
+                    "aggothernonce": "026A459C937FC7BF5BFFB95EFA156D4D9AA7354D93FFECF2EE57AD640187F6A39703EFE3580FBB2D8519648591B22E7AD2803D8B33F3D46B5482E1648D4AEF2C13B9",
                     "rand": "0000000000000000000000000000000000000000000000000000000000000000",
                     "msg": "F95466D086770E689964664219266FE5ED215C92AE20BAB5C9D79ADDDDF3C0CF",
                     "tweaks": [],
                     "is_xonly": [],
                     "expected": [
-                        "02AEEA246CE90C7556C8C41D74735174D5E3A11F75298255C8DB9362683AB2F29C02CCB4F97B46044E6273FE75CA537BD6695BAEADEF8D38BFBFD0DF93ED50B01CB2",
-                        "A8A30D843752BBA003A6D069716AE9DBB6B6C6956D2BF64E1AE3C321AC1182B8"
+                        "0355BBB93493C2CD02C796B4D6E6E0C88359BCF2DBF4B254F70FBF1C88D2F53D950297608824DECEC5C3115F1FC4E9E4C5C0886DD86F539EFEE2512D9D466055D975",
+                        "1FF23B36591D957C2751B8AB4B89CEE15CECA705929FFC44977FF43928F25625"
                     ]
                 },
                 {
