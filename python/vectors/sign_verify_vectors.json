@@ -47,7 +47,7 @@
                 },
                 {
                     "tc_id": 2,
-                    "comment": "Signer order does not affect the partial signature: the signer set is sorted internally, so this matches the first valid case",
+                    "comment": "Reordering the signer set leaves the partial signature unchanged, because the identifiers are sorted before they are bound into the binding value",
                     "my_id": 0,
                     "ids": [1, 0],
                     "pubshare_indices": [1, 0],
@@ -359,7 +359,7 @@
             "verify_error_tests": [
                 {
                     "tc_id": 24,
-                    "comment": "Public nonce is invalid: first half is not a point on the curve",
+                    "comment": "Verification rejects an invalid public nonce, attributing the contribution fault to the offending signer",
                     "psig": "2B69442F9BCE21BB722831A2150FB9A6DF6D0288D39E2E4F5687E92A3C4A7862",
                     "ids": [0, 1],
                     "pubshare_indices": [0, 1],

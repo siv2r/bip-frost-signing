@@ -52,7 +52,7 @@ def generate_sig_agg_vectors():
         },
         {
             "indices": [1, 0],
-            "comment": "Signer order does not affect the aggregate signature: partial signatures are summed, so this matches the first valid case",
+            "comment": "Reordering the signer set leaves the aggregate signature unchanged, because the partial signatures are summed and the identifiers are sorted before they are bound into the binding value",
         },
         {
             "indices": [0, 1],
@@ -117,11 +117,18 @@ def generate_sig_agg_vectors():
     error_cases = [
         {
             "indices": [0, 1],
+            "fault": "psig_out_of_range",
             "error": "invalid_contrib",
             "comment": "Partial signature equals the group order, which is out of range",
         },
+        {
+            "indices": [0, 1],
+            "fault": "psig_count_mismatch",
+            "error": "value",
+            "comment": "Number of partial signatures does not match the number of signers",
+        },
     ]
-    for j, case in enumerate(error_cases):
+    for case in error_cases:
         curr_ids = [ids[i] for i in case["indices"]]
         curr_pubshares = [pubshares[i] for i in case["indices"]]
         curr_pubnonces = [pubnonces[i] for i in case["indices"]]
@@ -144,11 +151,13 @@ def generate_sig_agg_vectors():
                 signer_index,
             )
 
-        if j == 0:
+        if case["fault"] == "psig_out_of_range":
             invalid_psig = bytes.fromhex(
                 "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141"
             )
             psigs[1] = invalid_psig
+        elif case["fault"] == "psig_count_mismatch":
+            psigs = psigs[:-1]
 
         expected_exception = (
             ValueError if case["error"] == "value" else InvalidContributionError

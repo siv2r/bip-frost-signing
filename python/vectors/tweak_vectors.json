@@ -32,7 +32,8 @@
                 "F52ECBC565B3D8BEA2DFD5B75A4F457E54369809322E4120831626F290FA87E0",
                 "1969AD73CC177FA0B4FCED6DF1F7BF9907E665FDE9BA196A74FED0A3CF5AEF9D",
                 "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141",
-                "B3F73C80A46577051C695F91D7945BE3556A85275112EB952CC8EFB32521AF4C"
+                "B3F73C80A46577051C695F91D7945BE3556A85275112EB952CC8EFB32521AF4C",
+                "E8F791FF9225A2AF0102AFFF4A9A723D9612A682A25EBE79802B263CDFCD83BBFF"
             ],
             "valid_tests": [
                 {
@@ -174,6 +175,40 @@
                     "error": {
                         "type": "ValueError",
                         "message": "The result of tweaking cannot be infinity."
+                    }
+                },
+                {
+                    "tc_id": 10,
+                    "comment": "Number of tweaks does not match the number of tweak modes",
+                    "my_id": 0,
+                    "ids": [0, 1],
+                    "pubshare_indices": [0, 1],
+                    "secshare_index": 0,
+                    "secnonce_index": 0,
+                    "aggnonce": "030F261BFE5DF0AE3EC06BB7A1D6394A3AF206968281F03B70D25FB84D49036CE203BE48277630579C72160430C819AABB1DFA20FF70749666080BB886B728476261",
+                    "msg": "F95466D086770E689964664219266FE5ED215C92AE20BAB5C9D79ADDDDF3C0CF",
+                    "tweak_indices": [0],
+                    "is_xonly": [],
+                    "error": {
+                        "type": "ValueError",
+                        "message": "The tweaks and is_xonly arrays must have the same length."
+                    }
+                },
+                {
+                    "tc_id": 11,
+                    "comment": "Tweak is not a 32-byte array",
+                    "my_id": 0,
+                    "ids": [0, 1],
+                    "pubshare_indices": [0, 1],
+                    "secshare_index": 0,
+                    "secnonce_index": 0,
+                    "aggnonce": "030F261BFE5DF0AE3EC06BB7A1D6394A3AF206968281F03B70D25FB84D49036CE203BE48277630579C72160430C819AABB1DFA20FF70749666080BB886B728476261",
+                    "msg": "F95466D086770E689964664219266FE5ED215C92AE20BAB5C9D79ADDDDF3C0CF",
+                    "tweak_indices": [6],
+                    "is_xonly": [false],
+                    "error": {
+                        "type": "ValueError",
+                        "message": "The tweak must be a 32-byte array."
                     }
                 }
             ]

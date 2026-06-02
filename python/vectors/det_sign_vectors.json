@@ -36,7 +36,7 @@
                 },
                 {
                     "tc_id": 2,
-                    "comment": "Signer order does not affect the output: the signer set is sorted internally, so this matches the first valid case",
+                    "comment": "Reordering the signer set leaves the deterministic output unchanged, because the identifiers are sorted before they are bound into the nonce derivation and the binding value",
                     "my_id": 0,
                     "ids": [1, 0],
                     "pubshare_indices": [1, 0],
@@ -70,7 +70,7 @@
                 },
                 {
                     "tc_id": 4,
-                    "comment": "No auxiliary randomness (rand omitted)",
+                    "comment": "Auxiliary randomness omitted (null), which is not equivalent to all-zeros randomness",
                     "my_id": 0,
                     "ids": [0, 1],
                     "pubshare_indices": [0, 1],
@@ -87,7 +87,7 @@
                 },
                 {
                     "tc_id": 5,
-                    "comment": "Maximum auxiliary randomness",
+                    "comment": "Auxiliary randomness is all ones, distinct from the all-zeros and omitted cases",
                     "my_id": 0,
                     "ids": [0, 1],
                     "pubshare_indices": [0, 1],

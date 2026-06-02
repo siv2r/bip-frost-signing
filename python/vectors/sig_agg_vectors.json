@@ -34,7 +34,7 @@
                 },
                 {
                     "tc_id": 2,
-                    "comment": "Signer order does not affect the aggregate signature: partial signatures are summed, so this matches the first valid case",
+                    "comment": "Reordering the signer set leaves the aggregate signature unchanged, because the partial signatures are summed and the identifiers are sorted before they are bound into the binding value",
                     "ids": [1, 0],
                     "pubshare_indices": [1, 0],
                     "aggnonce": "030F261BFE5DF0AE3EC06BB7A1D6394A3AF206968281F03B70D25FB84D49036CE203BE48277630579C72160430C819AABB1DFA20FF70749666080BB886B728476261",
@@ -97,6 +97,23 @@
                         "type": "InvalidContributionError",
                         "signer_index": 1,
                         "contrib": "psig"
+                    }
+                },
+                {
+                    "tc_id": 6,
+                    "comment": "Number of partial signatures does not match the number of signers",
+                    "ids": [0, 1],
+                    "pubshare_indices": [0, 1],
+                    "aggnonce": "030F261BFE5DF0AE3EC06BB7A1D6394A3AF206968281F03B70D25FB84D49036CE203BE48277630579C72160430C819AABB1DFA20FF70749666080BB886B728476261",
+                    "tweak_indices": [],
+                    "is_xonly": [],
+                    "psigs": [
+                        "2B69442F9BCE21BB722831A2150FB9A6DF6D0288D39E2E4F5687E92A3C4A7862"
+                    ],
+                    "msg": "F95466D086770E689964664219266FE5ED215C92AE20BAB5C9D79ADDDDF3C0CF",
+                    "error": {
+                        "type": "ValueError",
+                        "message": "The psigs and ids arrays must have the same length."
                     }
                 }
             ]

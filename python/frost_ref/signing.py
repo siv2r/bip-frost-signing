@@ -472,7 +472,7 @@ def partial_sig_verify_internal(
 
 def partial_sig_agg(psigs: List[bytes], session_ctx: SessionContext) -> bytes:
     (Q, _, tacc, ids, _, _, R, e) = get_session_values(session_ctx)
-    if len(psigs) != len(ids):
+    if len(psigs) != len(ids):  # get_session_values asserts len(pubshares) == len(ids)
         raise ValueError("The psigs and ids arrays must have the same length.")
     s = Scalar(0)
     for idx, psig in enumerate(psigs):

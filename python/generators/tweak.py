@@ -17,6 +17,11 @@ from generators.common import (
     write_test_vectors,
 )
 
+# an invalid 33-byte tweak value
+INVALID_33_BYTE_TWEAK = bytes.fromhex(
+    "E8F791FF9225A2AF0102AFFF4A9A723D9612A682A25EBE79802B263CDFCD83BBFF"
+)
+
 
 def generate_tweak_vectors():
     n, t, thresh_pk, ids, secshares, pubshares = frost_keygen(SECKEY_2OF3)
@@ -36,13 +41,16 @@ def generate_tweak_vectors():
     infinity_tweak_scalar = -reconstruct_thresh_sk([0, 1], secshares[:2])
     assert (GE.from_bytes_compressed(thresh_pk) + infinity_tweak_scalar * G).infinity
 
-    # 6 entries: indices 0-3 valid (COMMON_TWEAKS), index 4 out-of-range,
-    # index 5 drives the tweaked threshold public key to infinity
+    # 7 entries: indices 0-3 valid (COMMON_TWEAKS), index 4 out-of-range,
+    # index 5 drives the tweaked threshold public key to infinity,
+    # index 6 is not a 32-byte array
     OUT_OF_RANGE_TWEAK_IDX = len(COMMON_TWEAKS)
     INFINITY_TWEAK_IDX = len(COMMON_TWEAKS) + 1
+    INVALID_33_BYTE_TWEAK_IDX = len(COMMON_TWEAKS) + 2
     tweaks_pool = COMMON_TWEAKS + [
         OUT_OF_RANGE_TWEAK,
         infinity_tweak_scalar.to_bytes(),
+        INVALID_33_BYTE_TWEAK,
     ]
 
     group = {
@@ -155,6 +163,16 @@ def generate_tweak_vectors():
             "tweaks_indices": [INFINITY_TWEAK_IDX],
             "is_xonly": [False],
             "comment": "Plain tweak drives the tweaked threshold public key to the point at infinity",
+        },
+        {
+            "tweaks_indices": [0],
+            "is_xonly": [],
+            "comment": "Number of tweaks does not match the number of tweak modes",
+        },
+        {
+            "tweaks_indices": [INVALID_33_BYTE_TWEAK_IDX],
+            "is_xonly": [False],
+            "comment": "Tweak is not a 32-byte array",
         },
     ]
     for case in error_cases:

@@ -75,7 +75,7 @@ def generate_det_sign_vectors():
             "my_id": 0,
             "msg": 0,
             "rand": 0,
-            "comment": "Signer order does not affect the output: the signer set is sorted internally, so this matches the first valid case",
+            "comment": "Reordering the signer set leaves the deterministic output unchanged, because the identifiers are sorted before they are bound into the nonce derivation and the binding value",
         },
         {
             "indices": [0, 2],
@@ -89,14 +89,14 @@ def generate_det_sign_vectors():
             "my_id": 0,
             "msg": 0,
             "rand": RAND_NONE_IDX,
-            "comment": "No auxiliary randomness (rand omitted)",
+            "comment": "Auxiliary randomness omitted (null), which is not equivalent to all-zeros randomness",
         },
         {
             "indices": [0, 1],
             "my_id": 0,
             "msg": 0,
             "rand": RAND_MAX_IDX,
-            "comment": "Maximum auxiliary randomness",
+            "comment": "Auxiliary randomness is all ones, distinct from the all-zeros and omitted cases",
         },
         {
             "indices": [0, 1, 2],

@@ -124,7 +124,7 @@ def generate_sign_verify_vectors():
             "msg": COMMON_MSGS[0],
             "secshare_index": 0,
             "secnonce_index": 0,
-            "comment": "Signer order does not affect the partial signature: the signer set is sorted internally, so this matches the first valid case",
+            "comment": "Reordering the signer set leaves the partial signature unchanged, because the identifiers are sorted before they are bound into the binding value",
         },
         {
             "my_id": 0,
@@ -475,7 +475,7 @@ def generate_sign_verify_vectors():
             "msg": COMMON_MSGS[0],
             "signer_index": 0,
             "error": "invalid_contrib",
-            "comment": "Public nonce is invalid: first half is not a point on the curve",
+            "comment": "Verification rejects an invalid public nonce, attributing the contribution fault to the offending signer",
         },
         {
             "ids": [0, 1],
