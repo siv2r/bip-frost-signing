@@ -1,5 +1,9 @@
 # TODO: remove this file, and use trusted dealer BIP's reference code instead, after it gets published.
 
+# WARNING: Do not use this as an implementation reference. This trusted dealer is
+# only used to generate the FROST keys needed for signing in the test vectors, and
+# it is insecure (see secp256k1lab). Do not use it in production.
+
 # Implementation of the Trusted Dealer Key Generation approach for FROST mentioned
 # in https://datatracker.ietf.org/doc/draft-irtf-cfrg-frost/15/ (Appendix D).
 #
@@ -66,7 +70,7 @@ def trusted_dealer_keygen(
     # Derive coefficient i deterministically from the threshold secret and the
     # index, so the same input always yields the same shares.
     coeffs = [
-        Scalar.from_bytes_wrapping(
+        Scalar.from_bytes_nonzero_checked(
             tagged_hash(COEFF_DERIVATION_TAG, thresh_sk_ + i.to_bytes(4, "big"))
         )
         for i in range(1, t)
