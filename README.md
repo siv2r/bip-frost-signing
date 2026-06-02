@@ -486,7 +486,7 @@ Algorithm *GetSessionValues(session_ctx)*:
 - For *i = 1 .. v*:
   - Let *tweak_ctx<sub>i</sub> = ApplyTweak(tweak_ctx<sub>i-1</sub>, tweak<sub>i</sub>, is_xonly_t<sub>i</sub>)*; fail if that fails
 - Let *(Q, gacc, tacc) = tweak_ctx<sub>v</sub>*
-- Let *ser_ids* = *SerializeIds(id<sub>1..u</sub>)*
+- Let *ser_ids* = *SerializeIds(id<sub>1..u</sub>)*[^canonical-ids-det-sign]
 - Let *b* = *scalar_from_bytes_wrapping(hash<sub>BIP0445/noncecoef</sub>(ser_ids || aggnonce || xbytes(Q) || m))*
 - Fail if *b = Scalar(0)*[^negligible-zero-scalar]
 - Let *R<sub>1</sub> = cpoint_ext(aggnonce[0:33]), R<sub>2</sub> = cpoint_ext(aggnonce[33:66])*; fail if that fails and blame the coordinator for invalid *aggnonce*.
@@ -505,6 +505,8 @@ Internal Algorithm *SerializeIds(id<sub>1..u</sub>)*:
 - For *id* in *sorted(id<sub>1..u</sub>)*:
   - *res = res || bytes(4, id)*
 - Return *res*
+
+[^canonical-ids-det-sign]: The identifiers are sorted so that *b* commits to the signer *set*, not the order they appear in. This matters for *DeterministicSign*, where a signer reproduces the same secret nonce *(k<sub>1</sub>, k<sub>2</sub>)* whenever its inputs are unchanged. Suppose an implementation sorts the identifiers when deriving this nonce but not when deriving *b*. A malicious coordinator can then replay one signing session under three orderings of the same signer set: the victim returns the same nonce each time, but *b* and the challenge *e* change with the order. The three partial signatures *s = k<sub>1</sub> + b k<sub>2</sub> + e &lambda; d* form a system of three linear equations in *(k<sub>1</sub>, k<sub>2</sub>, d)*, which the coordinator solves to recover the secret share *d*. Sorting prevents this. It is the order analog of the attack in [^det-signer-set].
 
 ### Signing
 
@@ -793,6 +795,7 @@ This document proposes a standard for the FROST threshold signature scheme that 
 
 ## Changelog
 
+- *0.5.1* (2026-06-02): Add a footnote explaining why the signer identifiers are sorted when deriving the nonce coefficient *b*, which prevents a secret share recovery attack in *DeterministicSign*.
 - *0.5.0* (2026-05-21): Introduces the following changes:
   - Restructure test vectors to use indexed pools, rename per-case *signer_index* to *my_id*, and rewrite per-case comments.
   - Fix mismatches between the BIP spec and the reference implementation.
