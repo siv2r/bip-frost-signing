@@ -618,9 +618,9 @@ The security of the resulting scheme then depends on the requirement that readin
 
 Second, if there is a unique signer who generates their nonce last (i.e., after receiving the aggregate nonce from all other signers), it is possible to modify nonce generation for this single signer to not require high-quality randomness.
 Such a nonce generation algorithm *DeterministicSign* is specified below.
-Note that the only optional argument is *rand*, which can be omitted if randomness is entirely unavailable.
-*DeterministicSign* requires the argument *aggothernonce* which should be set to the output of *NonceAgg* run on the *pubnonce* value of **all** other signers (but can be provided by an untrusted party).
-Hence, using *DeterministicSign* is only possible for the last signer to generate a nonce and makes the signer stateless, similar to the stateless signer described in the [Nonce Generation](#nonce-generation) section.
+It has two optional arguments: *rand*, which can be omitted if randomness is entirely unavailable, and *aggothernonce*, which is omitted by a sole signer (*u = 1*) who has no other signers' nonces to aggregate.
+When present, *aggothernonce* should be set to the output of *NonceAgg* run on the *pubnonce* value of **all** other signers (but can be provided by an untrusted party).
+Hence, using *DeterministicSign* is only possible for the last signer to generate a nonce, or for a sole signer who is the only participant signing, and it makes the signer stateless, similar to the stateless signer described in the [Nonce Generation](#nonce-generation) section.
 In FROST, the deterministic nonce must also bind to the the signer subset *id<sub>1..u</sub>*; otherwise a malicious coordinator can recover the victim's secret share via replayed sessions with varying signer subsets.[^det-signer-set]
 
 #### Deterministic and Stateless Signing for a Single Signer
@@ -630,7 +630,7 @@ Algorithm *DeterministicSign(secshare, my_id, aggothernonce, signers_ctx, tweak<
 - Inputs:
   - The participant secret signing share *secshare*: a 32-byte array, serialized scalar
   - The participant identifier *my_id*: an integer with *0 ≤ my_id ≤ n-1*
-  - The aggregate public nonce *aggothernonce* (see [above](#modifications-to-nonce-generation)): a 66-byte array, output of *NonceAgg*
+  - The aggregate public nonce *aggothernonce* (see [above](#modifications-to-nonce-generation)): a 66-byte array, output of *NonceAgg* (optional argument)[^det-threshold-one]
   - The *signers_ctx*: a [Signers Context](#signers-context) data structure
   - The number *v* of tweaks with *0 ≤ v < 2^32*
   - The list of tweaks *tweak<sub>1..v</sub>*: *v* 32-byte arrays, each a serialized scalar
@@ -641,21 +641,30 @@ Algorithm *DeterministicSign(secshare, my_id, aggothernonce, signers_ctx, tweak<
   - Let *secshare' = xor_bytes(secshare, hash<sub>BIP0445/aux</sub>(rand))*
 - Else:
   - Let *secshare' = secshare*
+- If the optional argument *aggothernonce* is present:
+  - Let *aggothernonce' = aggothernonce*
+- Else:
+  - Let *aggothernonce' = empty byte string*
 - Let *(_, _, u, id<sub>1..u</sub>, pubshare<sub>1..u</sub>, thresh_pk) = signers_ctx*
 - Let *tweak_ctx<sub>0</sub> = TweakCtxInit(thresh_pk)*; fail if that fails
 - For *i = 1 .. v*:
   - Let *tweak_ctx<sub>i</sub> = ApplyTweak(tweak_ctx<sub>i-1</sub>, tweak<sub>i</sub>, is_xonly_t<sub>i</sub>)*; fail if that fails
 - Let *tweaked_tpk = GetXonlyPubkey(tweak_ctx<sub>v</sub>)*
-- Let *k<sub>i</sub> = scalar_from_bytes_wrapping(hash<sub>BIP0445/deterministic/nonce</sub>(secshare' || bytes(4, my_id) || bytes(4, u) || SerializeIds(id<sub>1..u</sub>) || aggothernonce || tweaked_tpk || bytes(8, len(m)) || m || bytes(1, i - 1)))* for *i = 1,2*
+- Let *k<sub>i</sub> = scalar_from_bytes_wrapping(hash<sub>BIP0445/deterministic/nonce</sub>(secshare' || bytes(4, my_id) || bytes(4, u) || SerializeIds(id<sub>1..u</sub>) || aggothernonce' || tweaked_tpk || bytes(8, len(m)) || m || bytes(1, i - 1)))* for *i = 1,2*
 - Fail if *k<sub>1</sub> = Scalar(0)* or *k<sub>2</sub> = Scalar(0)*[^negligible-zero-scalar]
 - Let *R<sub>\*,1</sub> = k<sub>1</sub> &middot; G, R<sub>\*,2</sub> = k<sub>2</sub> &middot; G*
 - Let *pubnonce = cbytes(R<sub>\*,1</sub>) || cbytes(R<sub>\*,2</sub>)*
 - Let *secnonce = scalar_to_bytes(k<sub>1</sub>) || scalar_to_bytes(k<sub>2</sub>)*
-- Let *aggnonce = NonceAgg((pubnonce, aggothernonce))*; fail if that fails and blame coordinator for invalid *aggothernonce*.
+- If the optional argument *aggothernonce* is present:
+  - Let *aggnonce = NonceAgg((pubnonce, aggothernonce))*; fail if that fails and blame coordinator for invalid *aggothernonce*.
+- Else:
+  - Let *aggnonce = pubnonce*
 - Let *session_ctx = (signers_ctx, aggnonce, v, tweak<sub>1..v</sub>, is_xonly_t<sub>1..v</sub>, m)*
 - Return (pubnonce, Sign(secnonce, secshare, my_id, session_ctx))
 
 [^det-signer-set]: Without binding to the signer subset, a malicious coordinator can replay the same *aggothernonce* to the last signer across three sessions while varying *id<sub>1..u</sub>*. The victim produces byte-identical secret nonces *(k<sub>1</sub>, k<sub>2</sub>)* across sessions, but because the Lagrange interpolating coefficient *&lambda;* and nonce coefficient *b* depend on the signer subset, the three partial signatures form a system of three linear equations in *(k<sub>1</sub>, k<sub>2</sub>, d)* where *d* is the victim's secret share — enough to recover *d* by solving the system. This consideration does not apply to MuSig2's *DeterministicSign* because MuSig2 is always *n*-of-*n* and the signer subset is fixed by the protocol.
+
+[^det-threshold-one]: The threshold *t = 1* is a special case. In a *1-of-n* setup, every participant's *secret share* equals the *threshold secret key* itself, so any single participant can produce a signature alone (*u = 1*). The lone signer calls *DeterministicSign* without the *aggothernonce* argument, which makes the derived nonce fully deterministic, just as in ordinary single-signer [BIP340][bip340] signing. The signer may instead run *Sign*, but that path still draws fresh randomness through *NonceGen*. Simplest of all, because a *1-of-n* group is effectively one secret key held by everyone, the participant can skip the FROST algorithms and sign with the ordinary [BIP340][bip340] signing algorithm[^t-edge-cases].
 
 ### Tweaking Definition
 
@@ -795,6 +804,7 @@ This document proposes a standard for the FROST threshold signature scheme that 
 
 ## Changelog
 
+- *0.5.2* (2026-06-03): Make *aggothernonce* an optional argument in *DeterministicSign*, allowing a sole signer in a *1-of-n* setup to sign without aggregating other signers' nonces.
 - *0.5.1* (2026-06-02): Add a footnote explaining why the signer identifiers are sorted when deriving the nonce coefficient *b*, which prevents a secret share recovery attack in *DeterministicSign*.
 - *0.5.0* (2026-05-21): Introduces the following changes:
   - Restructure test vectors to use indexed pools, rename per-case *signer_index* to *my_id*, and rewrite per-case comments.

@@ -374,7 +374,7 @@ def det_nonce_hash(
 def deterministic_sign(
     secshare: bytes,
     my_id: int,
-    aggothernonce: bytes,
+    aggothernonce: Optional[bytes],
     signers_ctx: SignersContext,
     tweaks: List[bytes],
     is_xonly: List[bool],
@@ -389,11 +389,19 @@ def deterministic_sign(
     _, _, ids, _, thresh_pk = signers_ctx
     tweaked_tpk = get_xonly_pk(thresh_pubkey_and_tweak(thresh_pk, tweaks, is_xonly))
 
+    # A sole signer (u = 1) has no other nonces to aggregate, so aggothernonce is
+    # omitted. Bind the empty byte string into the nonce hash and use the signer's
+    # own pubnonce as the aggregate nonce below.
+    if aggothernonce is None:
+        aggothernonce_ = b""
+    else:
+        aggothernonce_ = aggothernonce
+
     k_1 = Scalar.from_bytes_wrapping(
-        det_nonce_hash(secshare_, my_id, ids, aggothernonce, tweaked_tpk, msg, 0)
+        det_nonce_hash(secshare_, my_id, ids, aggothernonce_, tweaked_tpk, msg, 0)
     )
     k_2 = Scalar.from_bytes_wrapping(
-        det_nonce_hash(secshare_, my_id, ids, aggothernonce, tweaked_tpk, msg, 1)
+        det_nonce_hash(secshare_, my_id, ids, aggothernonce_, tweaked_tpk, msg, 1)
     )
     # k_1 == 0 or k_2 == 0 cannot occur except with negligible probability.
     assert k_1 != 0
@@ -405,11 +413,14 @@ def deterministic_sign(
     assert not R2_partial.infinity
     pubnonce = R1_partial.to_bytes_compressed() + R2_partial.to_bytes_compressed()
     secnonce = bytearray(k_1.to_bytes() + k_2.to_bytes())
-    try:
-        aggnonce = nonce_agg([pubnonce, aggothernonce])
-    except InvalidContributionError:
-        # pubnonce is always valid, so any failure is due to aggothernonce.
-        raise InvalidContributionError(None, "aggothernonce")
+    if aggothernonce is None:
+        aggnonce = pubnonce
+    else:
+        try:
+            aggnonce = nonce_agg([pubnonce, aggothernonce])
+        except InvalidContributionError:
+            # pubnonce is always valid, so any failure is due to aggothernonce.
+            raise InvalidContributionError(None, "aggothernonce")
     session_ctx = SessionContext(aggnonce, signers_ctx, tweaks, is_xonly, msg)
     psig = sign(secnonce, secshare, my_id, session_ctx)
     return (pubnonce, psig)
