@@ -48,7 +48,7 @@ def generate_sig_agg_vectors():
     valid_cases = [
         {
             "indices": [0, 1],
-            "comment": "Minimum threshold subset of signers (t=2 of n=3), no tweaks",
+            "comment": "Minimum threshold subset of signers, no tweaks",
         },
         {
             "indices": [1, 0],

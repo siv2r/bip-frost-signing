@@ -19,7 +19,7 @@
             "valid_tests": [
                 {
                     "tc_id": 1,
-                    "comment": "Minimum threshold subset of signers (t=2 of n=3)",
+                    "comment": "Minimum threshold subset of signers",
                     "my_id": 0,
                     "ids": [0, 1],
                     "pubshare_indices": [0, 1],

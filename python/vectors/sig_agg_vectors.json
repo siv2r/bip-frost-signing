@@ -19,7 +19,7 @@
             "valid_tests": [
                 {
                     "tc_id": 1,
-                    "comment": "Minimum threshold subset of signers (t=2 of n=3), no tweaks",
+                    "comment": "Minimum threshold subset of signers, no tweaks",
                     "ids": [0, 1],
                     "pubshare_indices": [0, 1],
                     "aggnonce": "030F261BFE5DF0AE3EC06BB7A1D6394A3AF206968281F03B70D25FB84D49036CE203BE48277630579C72160430C819AABB1DFA20FF70749666080BB886B728476261",

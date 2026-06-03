@@ -113,7 +113,7 @@ def generate_sign_verify_vectors():
             "msg": COMMON_MSGS[0],
             "secshare_index": 0,
             "secnonce_index": 0,
-            "comment": "Minimum threshold subset of signers (t=2 of n=3)",
+            "comment": "Minimum threshold subset of signers",
         },
         {
             "my_id": 0,
@@ -475,7 +475,7 @@ def generate_sign_verify_vectors():
             "msg": COMMON_MSGS[0],
             "signer_index": 0,
             "error": "invalid_contrib",
-            "comment": "Verification rejects an invalid public nonce, attributing the contribution fault to the offending signer",
+            "comment": "Verification rejects an invalid public nonce, blaming the malicious signer",
         },
         {
             "ids": [0, 1],

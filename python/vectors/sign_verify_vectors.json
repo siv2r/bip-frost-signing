@@ -34,7 +34,7 @@
             "valid_tests": [
                 {
                     "tc_id": 1,
-                    "comment": "Minimum threshold subset of signers (t=2 of n=3)",
+                    "comment": "Minimum threshold subset of signers",
                     "my_id": 0,
                     "ids": [0, 1],
                     "pubshare_indices": [0, 1],
@@ -359,7 +359,7 @@
             "verify_error_tests": [
                 {
                     "tc_id": 24,
-                    "comment": "Verification rejects an invalid public nonce, attributing the contribution fault to the offending signer",
+                    "comment": "Verification rejects an invalid public nonce, blaming the malicious signer",
                     "psig": "2B69442F9BCE21BB722831A2150FB9A6DF6D0288D39E2E4F5687E92A3C4A7862",
                     "ids": [0, 1],
                     "pubshare_indices": [0, 1],

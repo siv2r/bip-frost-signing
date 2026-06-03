@@ -68,7 +68,7 @@ def generate_det_sign_vectors():
             "my_id": 0,
             "msg": 0,
             "rand": 0,
-            "comment": "Minimum threshold subset of signers (t=2 of n=3)",
+            "comment": "Minimum threshold subset of signers",
         },
         {
             "indices": [1, 0],
