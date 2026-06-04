@@ -6,518 +6,542 @@ from frost_ref import (
     partial_sig_verify,
     sign,
 )
-from secp256k1lab.secp256k1 import GE, Scalar
+from secp256k1lab.secp256k1 import Scalar
 
 from generators.common import (
     COMMON_MSGS,
-    COMMON_RAND,
-    INVALID_PUBSHARE,
-    SECKEY_2OF3,
+    CONFIGS,
+    SharedGroupInputs,
+    assign_tc_ids,
     bytes_list_to_hex,
     bytes_to_hex,
     expect_exception,
-    frost_keygen,
-    generate_all_nonces,
+    get_subset,
+    set_group_config,
+    swap_last_two,
     write_test_vectors,
 )
 
+# Fault literals that are case payloads rather than pool material (config-independent,
+# never indexed from a pool), so they stay local to this generator.
+AGGNONCE_WRONG_TAG = bytes.fromhex(
+    "048465FCF0BBDBCF443AABCCE533D42B4B5A10966AC09A49655E8C42DAAB8FCD61037496A3CC86926D452CAFCFD55D25972CA1675D549310DE296BFF42F72EEEA8C9"
+)
+AGGNONCE_BAD_XCOORD = bytes.fromhex(
+    "028465FCF0BBDBCF443AABCCE533D42B4B5A10966AC09A49655E8C42DAAB8FCD61020000000000000000000000000000000000000000000000000000000000000009"
+)
+AGGNONCE_EXCEEDS_FIELD = bytes.fromhex(
+    "028465FCF0BBDBCF443AABCCE533D42B4B5A10966AC09A49655E8C42DAAB8FCD6102FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFFC30"
+)
+GROUP_ORDER_PSIG = "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141"
+
+
+class SignVerifyGroupBuilder:
+    """Builds one (t, n) test group for sign_verify_vectors.json. Shared inputs and
+    subsets live on self. Each add_* method appends its category to self.group."""
+
+    def __init__(self, cfg):
+        self.inputs = SharedGroupInputs(cfg)
+        self.t = self.inputs.t
+        self.n = self.inputs.n
+        self.thresh_pk = self.inputs.thresh_pk
+
+        self.min_s = get_subset(cfg, "min")
+        self.full = get_subset(cfg, "full")
+        self.alt = get_subset(cfg, "alt")
+        self.min2 = get_subset(cfg, "min2")
+        # `wrong` is only consumed by configs where it stays in range and a valid
+        # participant can sit outside the only valid set (t >= 2 and t < n).
+        # Outside that range it would index the out-of-range slot, so don't build it.
+        self.wrong = get_subset(cfg, "wrong") if cfg.t >= 2 and cfg.t < cfg.n else None
+        self.aggnonce_min = self._agg(self.min_s)
+
+        self.group = {}
+        set_group_config(self.group, cfg, self.inputs)
+        self.group["pubshares"] = bytes_list_to_hex(self.inputs.pool_pubshares)
+        self.group["pubnonces"] = bytes_list_to_hex(self.inputs.pool_pubnonces)
+        self.group["secshares"] = bytes_list_to_hex(self.inputs.pool_secshares)
+        self.group["secnonces"] = bytes_list_to_hex(self.inputs.pool_secnonces)
+        self.group["valid_tests"] = []
+        self.group["sign_error_tests"] = []
+        self.group["verify_fail_tests"] = []
+        self.group["verify_error_tests"] = []
+
+    def _agg(self, pubnonce_indices):
+        return nonce_agg([self.inputs.pool_pubnonces[i] for i in pubnonce_indices])
+
+    def _append_valid(
+        self, my_id, ids, pubshare_indices, pubnonce_indices, aggnonce, msg, comment
+    ):
+        pubshares = [self.inputs.pool_pubshares[i] for i in pubshare_indices]
+        pubnonces = [self.inputs.pool_pubnonces[i] for i in pubnonce_indices]
+        secnonce = bytearray(self.inputs.pool_secnonces[my_id])
+        signers = SignersContext(self.n, self.t, ids, pubshares, self.thresh_pk)
+        session = SessionContext(aggnonce, signers, [], [], msg)
+        psig = sign(secnonce, self.inputs.pool_secshares[my_id], my_id, session)
+        assert partial_sig_verify(
+            psig, pubnonces, signers, [], [], msg, ids.index(my_id)
+        )
+        self.group["valid_tests"].append(
+            {
+                "comment": comment,
+                "my_id": my_id,
+                "ids": ids,
+                "pubshare_indices": pubshare_indices,
+                "pubnonce_indices": pubnonce_indices,
+                "secshare_index": my_id,
+                "secnonce_index": my_id,
+                "aggnonce": bytes_to_hex(aggnonce),
+                "msg": bytes_to_hex(msg),
+                "expected": bytes_to_hex(psig),
+            }
+        )
+
+    def _append_sign_error(
+        self,
+        my_id,
+        ids,
+        pubshare_indices,
+        secshare_idx,
+        secnonce_idx,
+        aggnonce,
+        msg,
+        error,
+        comment,
+    ):
+        pubshares = [self.inputs.pool_pubshares[i] for i in pubshare_indices]
+        secshare = self.inputs.pool_secshares[secshare_idx]
+        secnonce = bytearray(self.inputs.pool_secnonces[secnonce_idx])
+        signers = SignersContext(self.n, self.t, ids, pubshares, self.thresh_pk)
+        session = SessionContext(aggnonce, signers, [], [], msg)
+        expected = ValueError if error == "value" else InvalidContributionError
+        err = expect_exception(
+            lambda: sign(secnonce, secshare, my_id, session), expected
+        )
+        self.group["sign_error_tests"].append(
+            {
+                "comment": comment,
+                "my_id": my_id,
+                "ids": ids,
+                "pubshare_indices": pubshare_indices,
+                "secshare_index": secshare_idx,
+                "secnonce_index": secnonce_idx,
+                "aggnonce": bytes_to_hex(aggnonce),
+                "msg": bytes_to_hex(msg),
+                "error": err,
+            }
+        )
+
+    def _append_verify_error(
+        self,
+        ids,
+        pubshare_indices,
+        pubnonce_indices,
+        signer_index,
+        psig,
+        error,
+        comment,
+    ):
+        pubshares = [self.inputs.pool_pubshares[i] for i in pubshare_indices]
+        pubnonces = [self.inputs.pool_pubnonces[i] for i in pubnonce_indices]
+        msg = COMMON_MSGS[0]
+        signers = SignersContext(self.n, self.t, ids, pubshares, self.thresh_pk)
+        expected = ValueError if error == "value" else InvalidContributionError
+        err = expect_exception(
+            lambda: partial_sig_verify(
+                psig, pubnonces, signers, [], [], msg, signer_index
+            ),
+            expected,
+        )
+        self.group["verify_error_tests"].append(
+            {
+                "comment": comment,
+                "psig": bytes_to_hex(psig),
+                "ids": ids,
+                "pubshare_indices": pubshare_indices,
+                "pubnonce_indices": pubnonce_indices,
+                "signer_index": signer_index,
+                "msg": bytes_to_hex(msg),
+                "error": err,
+            }
+        )
+
+    def _append_verify_fail(
+        self, ids, pubshare_indices, pubnonce_indices, signer_index, psig, comment
+    ):
+        pubshares = [self.inputs.pool_pubshares[i] for i in pubshare_indices]
+        pubnonces = [self.inputs.pool_pubnonces[i] for i in pubnonce_indices]
+        msg = COMMON_MSGS[0]
+        signers = SignersContext(self.n, self.t, ids, pubshares, self.thresh_pk)
+        assert not partial_sig_verify(
+            psig, pubnonces, signers, [], [], msg, signer_index
+        )
+        self.group["verify_fail_tests"].append(
+            {
+                "comment": comment,
+                "psig": bytes_to_hex(psig),
+                "ids": ids,
+                "pubshare_indices": pubshare_indices,
+                "pubnonce_indices": pubnonce_indices,
+                "signer_index": signer_index,
+                "msg": bytes_to_hex(msg),
+            }
+        )
+
+    # --- Array A: valid_tests ---
+
+    def add_valid_tests(self):
+        t, n = self.t, self.n
+        # Minimum threshold subset.
+        self._append_valid(
+            0,
+            self.min_s,
+            self.min_s,
+            self.min_s,
+            self.aggnonce_min,
+            COMMON_MSGS[0],
+            "Minimum threshold subset of signers",
+        )
+        # Order-invariance (needs a set of size >= 2 to be meaningful).
+        if t >= 2:
+            rev = list(reversed(self.min_s))
+            self._append_valid(
+                0,
+                rev,
+                rev,
+                rev,
+                self._agg(rev),
+                COMMON_MSGS[0],
+                "Reordering the signer set leaves the partial signature unchanged, because the identifiers are sorted before they are bound into the binding value",
+            )
+        # A different threshold subset (needs t >= 2 and t < n, else the alt set
+        # collapses to the minimum set or is the only valid set).
+        if t >= 2 and t < n:
+            self._append_valid(
+                0,
+                self.alt,
+                self.alt,
+                self.alt,
+                self._agg(self.alt),
+                COMMON_MSGS[0],
+                "A different threshold subset gives a different partial signature, since the Lagrange coefficients depend on the signer set",
+            )
+        # All n signers, signed by a non-first member.
+        self._append_valid(
+            1,
+            self.full,
+            self.full,
+            self.full,
+            self._agg(self.full),
+            COMMON_MSGS[0],
+            "All signers participate, signed by a non-first member in the set",
+        )
+        # Aggregate nonce is the point at infinity. The inverse pubnonce cancels
+        # the first n-1 real pubnonces, so the aggregate over them is infinity.
+        inf_pubnonce_indices = list(range(n - 1)) + [self.inputs.INVERSE_PUBNONCE_IDX]
+        self._append_valid(
+            0,
+            self.full,
+            self.full,
+            inf_pubnonce_indices,
+            self._agg(inf_pubnonce_indices),
+            COMMON_MSGS[0],
+            "Aggregate nonce is the point at infinity, so the final nonce point falls back to the generator G",
+        )
+        # Message variations over the minimum set.
+        self._append_valid(
+            0,
+            self.min_s,
+            self.min_s,
+            self.min_s,
+            self.aggnonce_min,
+            COMMON_MSGS[1],
+            "Empty message",
+        )
+        self._append_valid(
+            0,
+            self.min_s,
+            self.min_s,
+            self.min_s,
+            self.aggnonce_min,
+            COMMON_MSGS[2],
+            "Non-standard message length (38 bytes)",
+        )
+
+    # --- Array B: sign_error_tests ---
+
+    def add_sign_error_tests(self):
+        t, n = self.t, self.n
+        # my_id is a valid participant absent from the set (needs t < n so a valid
+        # participant can sit outside the only valid set).
+        if t < n:
+            self._append_sign_error(
+                t,
+                self.min_s,
+                self.min_s,
+                0,
+                0,
+                self.aggnonce_min,
+                COMMON_MSGS[0],
+                "value",
+                "Signer's identifier is absent from the signer set",
+            )
+        # Duplicate id in the set (fixed [0, 1, 1], valid for every config).
+        self._append_sign_error(
+            0,
+            [0, 1, 1],
+            [0, 1, 1],
+            0,
+            0,
+            self.aggnonce_min,
+            COMMON_MSGS[0],
+            "value",
+            "Signer set contains a duplicate id",
+        )
+        # Signer loads the wrong share so its derived pubshare is absent (needs
+        # t >= 2 for distinct shares and t < n for a participant outside the set).
+        if t >= 2 and t < n:
+            self._append_sign_error(
+                1,
+                self.wrong,
+                self.wrong,
+                0,
+                0,
+                self._agg(self.wrong),
+                COMMON_MSGS[0],
+                "value",
+                "Signer's public share is not in the public share list",
+            )
+        # A listed public share is off-curve (at position 1, so min2 forces size 2).
+        pubshare_indices_11 = [
+            self.min2[0],
+            self.inputs.INVALID_PUBSHARE_IDX,
+        ] + self.min2[2:]
+        self._append_sign_error(
+            0,
+            self.min2,
+            pubshare_indices_11,
+            0,
+            0,
+            self._agg(self.min2),
+            COMMON_MSGS[0],
+            "value",
+            "A public share is not a valid point",
+        )
+        # A signer id equals n, outside the valid range. For t >= 2 the in-range
+        # member my_id=1 signs; at t=1 the lone id is out of range and the check fires
+        # first, so the self fields are inert.
+        if t >= 2:
+            ids_12 = [self.inputs.OUT_OF_RANGE_ID] + list(range(1, t))
+            self._append_sign_error(
+                1,
+                ids_12,
+                list(range(t)),
+                1,
+                1,
+                self.aggnonce_min,
+                COMMON_MSGS[0],
+                "value",
+                "A signer id is outside the valid range [0, n-1]",
+            )
+        else:
+            self._append_sign_error(
+                0,
+                [self.inputs.OUT_OF_RANGE_ID],
+                [0],
+                0,
+                0,
+                self._agg([0]),
+                COMMON_MSGS[0],
+                "value",
+                "A signer id is outside the valid range [0, n-1]",
+            )
+        # Public shares won't interpolate to the correct threshold key, since we're
+        # swapping the last two positions (needs t >= 2 for distinct shares).
+        if t >= 2:
+            self._append_sign_error(
+                0,
+                self.min_s,
+                swap_last_two(self.min_s),
+                0,
+                0,
+                self.aggnonce_min,
+                COMMON_MSGS[0],
+                "value",
+                "Signer set's public shares do not match the threshold public key",
+            )
+        # Invalid aggregate nonce literals.
+        self._append_sign_error(
+            0,
+            self.min_s,
+            self.min_s,
+            0,
+            0,
+            AGGNONCE_WRONG_TAG,
+            COMMON_MSGS[0],
+            "invalid_contrib",
+            "Aggregate nonce is invalid: first half has an unknown tag 0x04",
+        )
+        self._append_sign_error(
+            0,
+            self.min_s,
+            self.min_s,
+            0,
+            0,
+            AGGNONCE_BAD_XCOORD,
+            COMMON_MSGS[0],
+            "invalid_contrib",
+            "Aggregate nonce is invalid: second half is not a point on the curve",
+        )
+        self._append_sign_error(
+            0,
+            self.min_s,
+            self.min_s,
+            0,
+            0,
+            AGGNONCE_EXCEEDS_FIELD,
+            COMMON_MSGS[0],
+            "invalid_contrib",
+            "Aggregate nonce is invalid: second half's x-coordinate exceeds the field size",
+        )
+        # All-zero secret nonce (first scalar out of range).
+        self._append_sign_error(
+            0,
+            self.min_s,
+            self.min_s,
+            0,
+            self.inputs.SECNONCE_ZERO_IDX,
+            self.aggnonce_min,
+            COMMON_MSGS[0],
+            "value",
+            "Secret nonce's first half is out of range (all-zero nonce, which may indicate nonce reuse)",
+        )
+        # Secret nonce with a zero second scalar.
+        self._append_sign_error(
+            0,
+            self.min_s,
+            self.min_s,
+            0,
+            self.inputs.SECNONCE_ZERO_SECOND_IDX,
+            self.aggnonce_min,
+            COMMON_MSGS[0],
+            "value",
+            "Secret nonce's second half is out of range (zero)",
+        )
+        # Fewer signers than the threshold (empty set at t=1).
+        below = list(range(t - 1))
+        self._append_sign_error(
+            0,
+            below,
+            below,
+            0,
+            0,
+            self.aggnonce_min,
+            COMMON_MSGS[0],
+            "value",
+            "Fewer signers than the threshold t",
+        )
+        # Zero secret share.
+        self._append_sign_error(
+            0,
+            self.min_s,
+            self.min_s,
+            self.inputs.SECSHARE_ZERO_IDX,
+            0,
+            self.aggnonce_min,
+            COMMON_MSGS[0],
+            "value",
+            "Secret share is out of range (zero)",
+        )
+
+    # --- Array C: verify_fail_tests ---
+
+    def add_verify_fail_tests(self):
+        # Base partial signature: signer 0 over the size-at-least-2 baseline set.
+        secnonce = bytearray(self.inputs.pool_secnonces[0])
+        signers = SignersContext(
+            self.n,
+            self.t,
+            self.min2,
+            [self.inputs.pool_pubshares[i] for i in self.min2],
+            self.thresh_pk,
+        )
+        session = SessionContext(self._agg(self.min2), signers, [], [], COMMON_MSGS[0])
+        psig = sign(secnonce, self.inputs.pool_secshares[0], 0, session)
+        neg_psig = (-Scalar.from_bytes_checked(psig)).to_bytes()
+
+        self._append_verify_fail(
+            self.min2,
+            self.min2,
+            self.min2,
+            0,
+            neg_psig,
+            "Negated partial signature fails the verification equation",
+        )
+        self._append_verify_fail(
+            self.min2,
+            self.min2,
+            self.min2,
+            1,
+            psig,
+            "A valid partial signature checked against the wrong signer fails the verification equation",
+        )
+        self._append_verify_fail(
+            self.min2,
+            self.min2,
+            self.min2,
+            0,
+            bytes.fromhex(GROUP_ORDER_PSIG),
+            "Partial signature equals the group order, which is out of range",
+        )
+
+    # --- Array D: verify_error_tests ---
+
+    def add_verify_error_tests(self):
+        # Base partial signature: signer 0 over the minimum set.
+        secnonce = bytearray(self.inputs.pool_secnonces[0])
+        signers = SignersContext(
+            self.n,
+            self.t,
+            self.min_s,
+            [self.inputs.pool_pubshares[i] for i in self.min_s],
+            self.thresh_pk,
+        )
+        session = SessionContext(self.aggnonce_min, signers, [], [], COMMON_MSGS[0])
+        psig_min = sign(secnonce, self.inputs.pool_secshares[0], 0, session)
+
+        # Off-curve public nonce at position 0.
+        pubnonce_indices_24 = [self.inputs.INVALID_PUBNONCE_IDX] + self.min_s[1:]
+        self._append_verify_error(
+            self.min_s,
+            self.min_s,
+            pubnonce_indices_24,
+            0,
+            psig_min,
+            "invalid_contrib",
+            "Verification rejects an invalid public nonce, blaming the malicious signer",
+        )
+        # Off-curve public share at position 0.
+        pubshare_indices_25 = [self.inputs.INVALID_PUBSHARE_IDX] + self.min_s[1:]
+        self._append_verify_error(
+            self.min_s,
+            pubshare_indices_25,
+            self.min_s,
+            0,
+            psig_min,
+            "value",
+            "A public share is not a valid point",
+        )
+
+    def build(self):
+        self.add_valid_tests()
+        self.add_sign_error_tests()
+        self.add_verify_fail_tests()
+        self.add_verify_error_tests()
+        return self.group
+
 
 def generate_sign_verify_vectors():
-    n, t, thresh_pk, ids, secshares, pubshares = frost_keygen(SECKEY_2OF3)
-    xonly_thresh_pk = thresh_pk[1:]
-
-    secnonces, pubnonces = generate_all_nonces(
-        COMMON_RAND, secshares, pubshares, xonly_thresh_pk
-    )
-
-    # Build participant-aligned pools: first n values are for participants followed by invalids/specials.
-    # Referencing convention in the emitted cases: literal integers for
-    # participant indices (e.g. pubshare_indices=[0, 1]), named constants for
-    # the appended specials (e.g. INVALID_PUBSHARE_IDX, OUT_OF_RANGE_ID).
-    INVALID_PUBSHARE_IDX = n
-    INVALID_PUBNONCE_IDX = n
-    INVERSE_PUBNONCE_IDX = n + 1
-    SECSHARE_ZERO_IDX = n
-    SECNONCE_ZERO_IDX = n
-    SECNONCE_ZERO_SECOND_IDX = n + 1
-    OUT_OF_RANGE_ID = n
-
-    assert INVALID_PUBSHARE_IDX == 3
-    assert INVERSE_PUBNONCE_IDX == 4
-
-    pool_pubshares = pubshares + [INVALID_PUBSHARE]
-    pool_secshares = secshares + [b"\x00" * 32]
-
-    # compute inverse pubnonce: -(pubnonce[0] + pubnonce[1])
-    tmp = nonce_agg(pubnonces[:2])
-    R1 = GE.from_bytes_compressed_with_infinity(tmp[0:33])
-    R2 = GE.from_bytes_compressed_with_infinity(tmp[33:66])
-    inverse_pubnonce = (-R1).to_bytes_compressed_with_infinity() + (
-        -R2
-    ).to_bytes_compressed_with_infinity()
-    invalid_pubnonce = bytes.fromhex(
-        "0200000000000000000000000000000000000000000000000000000000000000090287BF891D2A6DEAEBADC909352AA9405D1428C15F4B75F04DAE642A95C2548480"
-    )
-    # Append order: invalid at index n (=3), inverse at index n+1 (=4)
-    pool_pubnonces = pubnonces + [invalid_pubnonce, inverse_pubnonce]
-
-    secnonce_all_zero = bytes.fromhex(
-        "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
-    )
-    zero_second_secnonce = secnonces[0][0:32] + b"\x00" * 32
-    assert Scalar.from_bytes_nonzero_checked(zero_second_secnonce[0:32])
-    # Append order: all-zero at index n (=3), zero-second-half at index n+1 (=4)
-    pool_secnonces = secnonces + [secnonce_all_zero, zero_second_secnonce]
-
-    # Precompute inline aggnonces
-    aggnonce_01 = nonce_agg([pubnonces[0], pubnonces[1]])
-    aggnonce_02 = nonce_agg([pubnonces[0], pubnonces[2]])
-    aggnonce_012 = nonce_agg([pubnonces[0], pubnonces[1], pubnonces[2]])
-    # Infinity aggnonce: P0 + P1 + inverse_pubnonce cancels to infinity
-    aggnonce_inf = nonce_agg([pubnonces[0], pubnonces[1], inverse_pubnonce])
-    # Invalid aggnonce literals
-    aggnonce_wrong_tag = bytes.fromhex(
-        "048465FCF0BBDBCF443AABCCE533D42B4B5A10966AC09A49655E8C42DAAB8FCD61037496A3CC86926D452CAFCFD55D25972CA1675D549310DE296BFF42F72EEEA8C9"
-    )
-    aggnonce_bad_xcoord = bytes.fromhex(
-        "028465FCF0BBDBCF443AABCCE533D42B4B5A10966AC09A49655E8C42DAAB8FCD61020000000000000000000000000000000000000000000000000000000000000009"
-    )
-    aggnonce_exceeds_field = bytes.fromhex(
-        "028465FCF0BBDBCF443AABCCE533D42B4B5A10966AC09A49655E8C42DAAB8FCD6102FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFFC30"
-    )
-
-    group = {
-        "tg_id": "2of3",
-        "t": t,
-        "n": n,
-        "thresh_pk": bytes_to_hex(thresh_pk),
-        "pubshares": bytes_list_to_hex(pool_pubshares),
-        "pubnonces": bytes_list_to_hex(pool_pubnonces),
-        "secshares": bytes_list_to_hex(pool_secshares),
-        "secnonces": bytes_list_to_hex(pool_secnonces),
-        "valid_tests": [],
-        "sign_error_tests": [],
-        "verify_fail_tests": [],
-        "verify_error_tests": [],
-    }
-    tc_id = 1
-
-    # --- Valid Test Cases ---
-    valid_cases = [
-        {
-            "my_id": 0,
-            "ids": [0, 1],
-            "pubshare_indices": [0, 1],
-            "pubnonce_indices": [0, 1],
-            "aggnonce": aggnonce_01,
-            "msg": COMMON_MSGS[0],
-            "secshare_index": 0,
-            "secnonce_index": 0,
-            "comment": "Minimum threshold subset of signers",
-        },
-        {
-            "my_id": 0,
-            "ids": [1, 0],
-            "pubshare_indices": [1, 0],
-            "pubnonce_indices": [1, 0],
-            "aggnonce": aggnonce_01,
-            "msg": COMMON_MSGS[0],
-            "secshare_index": 0,
-            "secnonce_index": 0,
-            "comment": "Reordering the signer set leaves the partial signature unchanged, because the identifiers are sorted before they are bound into the binding value",
-        },
-        {
-            "my_id": 0,
-            "ids": [0, 2],
-            "pubshare_indices": [0, 2],
-            "pubnonce_indices": [0, 2],
-            "aggnonce": aggnonce_02,
-            "msg": COMMON_MSGS[0],
-            "secshare_index": 0,
-            "secnonce_index": 0,
-            "comment": "A different threshold subset gives a different partial signature, since the Lagrange coefficients depend on the signer set",
-        },
-        {
-            "my_id": 1,
-            "ids": [0, 1, 2],
-            "pubshare_indices": [0, 1, 2],
-            "pubnonce_indices": [0, 1, 2],
-            "aggnonce": aggnonce_012,
-            "msg": COMMON_MSGS[0],
-            "secshare_index": 1,
-            "secnonce_index": 1,
-            "comment": "All n=3 signers participate, signed by a non-first member in the set",
-        },
-        {
-            "my_id": 0,
-            "ids": [0, 1, 2],
-            "pubshare_indices": [0, 1, 2],
-            "pubnonce_indices": [0, 1, INVERSE_PUBNONCE_IDX],
-            "aggnonce": aggnonce_inf,
-            "msg": COMMON_MSGS[0],
-            "secshare_index": 0,
-            "secnonce_index": 0,
-            "comment": "Aggregate nonce is the point at infinity, so the final nonce point falls back to the generator G",
-        },
-        {
-            "my_id": 0,
-            "ids": [0, 1],
-            "pubshare_indices": [0, 1],
-            "pubnonce_indices": [0, 1],
-            "aggnonce": aggnonce_01,
-            "msg": COMMON_MSGS[1],
-            "secshare_index": 0,
-            "secnonce_index": 0,
-            "comment": "Empty message",
-        },
-        {
-            "my_id": 0,
-            "ids": [0, 1],
-            "pubshare_indices": [0, 1],
-            "pubnonce_indices": [0, 1],
-            "aggnonce": aggnonce_01,
-            "msg": COMMON_MSGS[2],
-            "secshare_index": 0,
-            "secnonce_index": 0,
-            "comment": "Non-standard message length (38 bytes)",
-        },
-    ]
-    for case in valid_cases:
-        curr_ids = case["ids"]
-        curr_pubshares = [pool_pubshares[i] for i in case["pubshare_indices"]]
-        curr_pubnonces = [pool_pubnonces[i] for i in case["pubnonce_indices"]]
-        curr_aggnonce = case["aggnonce"]
-        curr_msg = case["msg"]
-        my_id = case["my_id"]
-        curr_secshare = pool_secshares[case["secshare_index"]]
-        curr_secnonce = bytearray(pool_secnonces[case["secnonce_index"]])
-
-        curr_signers = SignersContext(n, t, curr_ids, curr_pubshares, thresh_pk)
-        session_ctx = SessionContext(curr_aggnonce, curr_signers, [], [], curr_msg)
-        expected_psig = sign(curr_secnonce, curr_secshare, my_id, session_ctx)
-        signer_index = curr_ids.index(my_id)
-        assert partial_sig_verify(
-            expected_psig, curr_pubnonces, curr_signers, [], [], curr_msg, signer_index
-        )
-        group["valid_tests"].append(
-            {
-                "tc_id": tc_id,
-                "comment": case["comment"],
-                "my_id": my_id,
-                "ids": curr_ids,
-                "pubshare_indices": case["pubshare_indices"],
-                "pubnonce_indices": case["pubnonce_indices"],
-                "secshare_index": case["secshare_index"],
-                "secnonce_index": case["secnonce_index"],
-                "aggnonce": bytes_to_hex(curr_aggnonce),
-                "msg": bytes_to_hex(curr_msg),
-                "expected": bytes_to_hex(expected_psig),
-            }
-        )
-        tc_id += 1
-
-    # --- Sign Error Test Cases ---
-    sign_error_cases = [
-        {
-            # my_id=2 is outside ids=[0,1]. The signer presents participant 0's
-            # valid in-set material (secshare_index=0), since the id-membership
-            # check is only reached after the pubshare-membership check passes.
-            "my_id": 2,
-            "ids": [0, 1],
-            "pubshare_indices": [0, 1],
-            "aggnonce": aggnonce_01,
-            "msg": COMMON_MSGS[0],
-            "secshare_index": 0,
-            "secnonce_index": 0,
-            "error": "value",
-            "comment": "my_id is not in the signer set",
-        },
-        {
-            "my_id": 0,
-            "ids": [0, 1, 1],
-            "pubshare_indices": [0, 1, 1],
-            "aggnonce": aggnonce_01,
-            "msg": COMMON_MSGS[0],
-            "secshare_index": 0,
-            "secnonce_index": 0,
-            "error": "value",
-            "comment": "Signer set contains a duplicate id",
-        },
-        {
-            # The signer is set member my_id=1 but loads participant 0's secret
-            # share (secshare_index=0, the single bad field), so the derived public
-            # share is absent from the set {1,2}.
-            "my_id": 1,
-            "ids": [1, 2],
-            "pubshare_indices": [1, 2],
-            "aggnonce": aggnonce_01,
-            "msg": COMMON_MSGS[0],
-            "secshare_index": 0,
-            "secnonce_index": 0,
-            "error": "value",
-            "comment": "Signer's public share is not in the public share list",
-        },
-        {
-            "my_id": 0,
-            "ids": [0, 1],
-            "pubshare_indices": [0, INVALID_PUBSHARE_IDX],
-            "aggnonce": aggnonce_01,
-            "msg": COMMON_MSGS[0],
-            "secshare_index": 0,
-            "secnonce_index": 0,
-            "error": "value",
-            "comment": "A public share is not a valid point",
-        },
-        {
-            # ids=[3, 1] where 3 == n is out of range. The signer is the in-range
-            # member my_id=1, using participant 1's own secret share and nonce.
-            "my_id": 1,
-            "ids": [OUT_OF_RANGE_ID, 1],
-            "pubshare_indices": [0, 1],
-            "aggnonce": aggnonce_01,
-            "msg": COMMON_MSGS[0],
-            "secshare_index": 1,
-            "secnonce_index": 1,
-            "error": "value",
-            "comment": "A signer id is outside the valid range [0, n-1]",
-        },
-        {
-            "my_id": 0,
-            "ids": [0, 1],
-            "pubshare_indices": [0, 2],
-            "aggnonce": aggnonce_01,
-            "msg": COMMON_MSGS[0],
-            "secshare_index": 0,
-            "secnonce_index": 0,
-            "error": "value",
-            "comment": "Signer set's public shares do not match the threshold public key",
-        },
-        {
-            "my_id": 0,
-            "ids": [0, 1],
-            "pubshare_indices": [0, 1],
-            "aggnonce": aggnonce_wrong_tag,
-            "msg": COMMON_MSGS[0],
-            "secshare_index": 0,
-            "secnonce_index": 0,
-            "error": "invalid_contrib",
-            "comment": "Aggregate nonce is invalid: first half has an unknown tag 0x04",
-        },
-        {
-            "my_id": 0,
-            "ids": [0, 1],
-            "pubshare_indices": [0, 1],
-            "aggnonce": aggnonce_bad_xcoord,
-            "msg": COMMON_MSGS[0],
-            "secshare_index": 0,
-            "secnonce_index": 0,
-            "error": "invalid_contrib",
-            "comment": "Aggregate nonce is invalid: second half is not a point on the curve",
-        },
-        {
-            "my_id": 0,
-            "ids": [0, 1],
-            "pubshare_indices": [0, 1],
-            "aggnonce": aggnonce_exceeds_field,
-            "msg": COMMON_MSGS[0],
-            "secshare_index": 0,
-            "secnonce_index": 0,
-            "error": "invalid_contrib",
-            "comment": "Aggregate nonce is invalid: second half's x-coordinate exceeds the field size",
-        },
-        {
-            "my_id": 0,
-            "ids": [0, 1],
-            "pubshare_indices": [0, 1],
-            "aggnonce": aggnonce_01,
-            "msg": COMMON_MSGS[0],
-            "secshare_index": 0,
-            "secnonce_index": SECNONCE_ZERO_IDX,
-            "error": "value",
-            "comment": "Secret nonce's first half is out of range (all-zero nonce, which may indicate nonce reuse)",
-        },
-        {
-            "my_id": 0,
-            "ids": [0, 1],
-            "pubshare_indices": [0, 1],
-            "aggnonce": aggnonce_01,
-            "msg": COMMON_MSGS[0],
-            "secshare_index": 0,
-            "secnonce_index": SECNONCE_ZERO_SECOND_IDX,
-            "error": "value",
-            "comment": "Secret nonce's second half is out of range (zero)",
-        },
-        {
-            # aggnonce_01 doesn't match the single-signer set, but it's never
-            # inspected: SignersContext rejects the sub-threshold set first.
-            "my_id": 0,
-            "ids": [0],
-            "pubshare_indices": [0],
-            "aggnonce": aggnonce_01,
-            "msg": COMMON_MSGS[0],
-            "secshare_index": 0,
-            "secnonce_index": 0,
-            "error": "value",
-            "comment": "Fewer signers than the threshold t",
-        },
-        {
-            "my_id": 0,
-            "ids": [0, 1],
-            "pubshare_indices": [0, 1],
-            "aggnonce": aggnonce_01,
-            "msg": COMMON_MSGS[0],
-            "secshare_index": SECSHARE_ZERO_IDX,
-            "secnonce_index": 0,
-            "error": "value",
-            "comment": "Secret share is out of range (zero)",
-        },
-    ]
-    for case in sign_error_cases:
-        curr_ids = case["ids"]
-        curr_pubshares = [pool_pubshares[i] for i in case["pubshare_indices"]]
-        curr_aggnonce = case["aggnonce"]
-        curr_msg = case["msg"]
-        my_id = case["my_id"]
-        curr_secnonce = bytearray(pool_secnonces[case["secnonce_index"]])
-        curr_secshare = pool_secshares[case["secshare_index"]]
-
-        curr_signers = SignersContext(n, t, curr_ids, curr_pubshares, thresh_pk)
-        session_ctx = SessionContext(curr_aggnonce, curr_signers, [], [], curr_msg)
-        expected_error = (
-            ValueError if case["error"] == "value" else InvalidContributionError
-        )
-        error = expect_exception(
-            lambda: sign(curr_secnonce, curr_secshare, my_id, session_ctx),
-            expected_error,
-        )
-        group["sign_error_tests"].append(
-            {
-                "tc_id": tc_id,
-                "comment": case["comment"],
-                "my_id": my_id,
-                "ids": curr_ids,
-                "pubshare_indices": case["pubshare_indices"],
-                "secshare_index": case["secshare_index"],
-                "secnonce_index": case["secnonce_index"],
-                "aggnonce": bytes_to_hex(curr_aggnonce),
-                "msg": bytes_to_hex(curr_msg),
-                "error": error,
-            }
-        )
-        tc_id += 1
-
-    # --- Verify Fail and Verify Error base: sign as P0 over [0,1], agg(0,1), msg0 ---
-    vf_ids = [0, 1]
-    vf_pubshare_indices = [0, 1]
-    vf_pubnonce_indices = [0, 1]
-    vf_msg = COMMON_MSGS[0]
-    vf_aggnonce = aggnonce_01
-    vf_my_id = 0
-
-    vf_pubshares = [pool_pubshares[i] for i in vf_pubshare_indices]
-    vf_signers = SignersContext(n, t, vf_ids, vf_pubshares, thresh_pk)
-    vf_session = SessionContext(vf_aggnonce, vf_signers, [], [], vf_msg)
-    vf_secnonce = bytearray(pool_secnonces[0])
-    psig = sign(vf_secnonce, pool_secshares[0], vf_my_id, vf_session)
-
-    # --- Verify Fail Test Cases ---
-    psig_scalar = Scalar.from_bytes_checked(psig)
-    neg_psig = (-psig_scalar).to_bytes()
-
-    group["verify_fail_tests"].append(
-        {
-            "tc_id": tc_id,
-            "comment": "Negated partial signature fails the verification equation",
-            "psig": bytes_to_hex(neg_psig),
-            "ids": vf_ids,
-            "pubshare_indices": vf_pubshare_indices,
-            "pubnonce_indices": vf_pubnonce_indices,
-            "signer_index": 0,
-            "msg": bytes_to_hex(vf_msg),
-        }
-    )
-    tc_id += 1
-
-    group["verify_fail_tests"].append(
-        {
-            "tc_id": tc_id,
-            "comment": "A valid partial signature checked against the wrong signer fails the verification equation",
-            "psig": bytes_to_hex(psig),
-            "ids": vf_ids,
-            "pubshare_indices": vf_pubshare_indices,
-            "pubnonce_indices": vf_pubnonce_indices,
-            "signer_index": 1,
-            "msg": bytes_to_hex(vf_msg),
-        }
-    )
-    tc_id += 1
-
-    group["verify_fail_tests"].append(
-        {
-            "tc_id": tc_id,
-            "comment": "Partial signature equals the group order, which is out of range",
-            "psig": "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141",
-            "ids": vf_ids,
-            "pubshare_indices": vf_pubshare_indices,
-            "pubnonce_indices": vf_pubnonce_indices,
-            "signer_index": 0,
-            "msg": bytes_to_hex(vf_msg),
-        }
-    )
-    tc_id += 1
-
-    # --- Verify Error Test Cases ---
-    verify_error_cases = [
-        {
-            "ids": [0, 1],
-            "pubshare_indices": [0, 1],
-            "pubnonce_indices": [INVALID_PUBNONCE_IDX, 1],
-            "msg": COMMON_MSGS[0],
-            "signer_index": 0,
-            "error": "invalid_contrib",
-            "comment": "Verification rejects an invalid public nonce, blaming the malicious signer",
-        },
-        {
-            "ids": [0, 1],
-            "pubshare_indices": [INVALID_PUBSHARE_IDX, 1],
-            "pubnonce_indices": [0, 1],
-            "msg": COMMON_MSGS[0],
-            "signer_index": 0,
-            "error": "value",
-            "comment": "A public share is not a valid point",
-        },
-    ]
-    for case in verify_error_cases:
-        curr_ids = case["ids"]
-        curr_pubshares = [pool_pubshares[i] for i in case["pubshare_indices"]]
-        curr_pubnonces = [pool_pubnonces[i] for i in case["pubnonce_indices"]]
-        curr_msg = case["msg"]
-        signer_index = case["signer_index"]
-        curr_signers = SignersContext(n, t, curr_ids, curr_pubshares, thresh_pk)
-        expected_error = (
-            ValueError if case["error"] == "value" else InvalidContributionError
-        )
-        error = expect_exception(
-            # reuse the valid psig generated for verify_fail cases
-            lambda: partial_sig_verify(
-                psig, curr_pubnonces, curr_signers, [], [], curr_msg, signer_index
-            ),
-            expected_error,
-        )
-        group["verify_error_tests"].append(
-            {
-                "tc_id": tc_id,
-                "comment": case["comment"],
-                "psig": bytes_to_hex(psig),
-                "ids": curr_ids,
-                "pubshare_indices": case["pubshare_indices"],
-                "pubnonce_indices": case["pubnonce_indices"],
-                "signer_index": signer_index,
-                "msg": bytes_to_hex(curr_msg),
-                "error": error,
-            }
-        )
-        tc_id += 1
-
-    vectors = {"test_groups": [group]}
-    write_test_vectors("sign_verify_vectors.json", vectors)
+    groups = [SignVerifyGroupBuilder(cfg).build() for cfg in CONFIGS]
+    assign_tc_ids(groups)
+    write_test_vectors("sign_verify_vectors.json", {"test_groups": groups})
