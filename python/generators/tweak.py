@@ -1,213 +1,306 @@
-from frost_ref import SessionContext, SignersContext, nonce_agg, sign
-from secp256k1lab.secp256k1 import G, GE
+from frost_ref import (
+    SessionContext,
+    SignersContext,
+    nonce_agg,
+    partial_sig_verify,
+    sign,
+)
 
 from generators.common import (
     COMMON_MSGS,
-    COMMON_RAND,
-    COMMON_TWEAKS,
-    INVALID_PUBSHARE,
-    OUT_OF_RANGE_TWEAK,
-    SECKEY_2OF3,
+    CONFIGS,
+    SharedGroupInputs,
+    assign_tc_ids,
     bytes_list_to_hex,
     bytes_to_hex,
     expect_exception,
-    frost_keygen,
-    generate_all_nonces,
-    reconstruct_thresh_sk,
+    get_subset,
+    set_group_config,
     write_test_vectors,
 )
 
-# an invalid 33-byte tweak value
+# an invalid 33-byte tweak value, kept local to this generator rather than in common.py
 INVALID_33_BYTE_TWEAK = bytes.fromhex(
     "E8F791FF9225A2AF0102AFFF4A9A723D9612A682A25EBE79802B263CDFCD83BBFF"
 )
 
 
-def generate_tweak_vectors():
-    n, t, thresh_pk, ids, secshares, pubshares = frost_keygen(SECKEY_2OF3)
-    xonly_thresh_pk = thresh_pk[1:]
+class TweakGroupBuilder:
+    """Builds one (t, n) test group for tweak_vectors.json. Shared inputs and
+    subsets live on self. Each add_* method appends its category to self.group."""
 
-    pubshares_with_invalid = pubshares + [INVALID_PUBSHARE]
+    def __init__(self, cfg):
+        self.inputs = SharedGroupInputs(cfg)
+        self.t = self.inputs.t
+        self.n = self.inputs.n
+        self.thresh_pk = self.inputs.thresh_pk
 
-    secnonces, pubnonces = generate_all_nonces(
-        COMMON_RAND, secshares, pubshares, xonly_thresh_pk
-    )
+        self.min_s = get_subset(cfg, "min")
+        self.full = get_subset(cfg, "full")
 
-    # Precompute inline aggnonces
-    aggnonce_01 = nonce_agg([pubnonces[0], pubnonces[1]])
-    aggnonce_012 = nonce_agg([pubnonces[0], pubnonces[1], pubnonces[2]])
+        # Build the tweaks pool: self.inputs.tweaks_pool has 6 entries (indices 0-5).
+        # Append INVALID_33_BYTE_TWEAK at index 6.
+        self.tweaks_pool = list(self.inputs.tweaks_pool) + [INVALID_33_BYTE_TWEAK]
+        self.INVALID_33_BYTE_TWEAK_IDX = len(self.inputs.tweaks_pool)
 
-    # Compute a plain tweak that drives Q + twk*G to the point at infinity: twk = -thresh_sk.
-    infinity_tweak_scalar = -reconstruct_thresh_sk([0, 1], secshares[:2])
-    assert (GE.from_bytes_compressed(thresh_pk) + infinity_tweak_scalar * G).infinity
+        self.group = {}
+        set_group_config(self.group, cfg, self.inputs)
+        # Serialize the real arrays, not the *_pool versions: tweak error cases
+        # only fault the tweak value, so we only the tweaks pool which contain
+        # invalid entries. Invalid pubshares, secshares, and nonces are tested in
+        # sign_vectors.json, not here. So, we don't need their *_pool versions.
+        self.group["pubshares"] = bytes_list_to_hex(self.inputs.pubshares)
+        self.group["pubnonces"] = bytes_list_to_hex(self.inputs.pubnonces)
+        self.group["secshares"] = bytes_list_to_hex(self.inputs.secshares)
+        self.group["secnonces"] = bytes_list_to_hex(self.inputs.secnonces)
+        self.group["tweaks"] = bytes_list_to_hex(self.tweaks_pool)
+        self.group["valid_tests"] = []
+        self.group["error_tests"] = []
 
-    # 7 entries: indices 0-3 valid (COMMON_TWEAKS), index 4 out-of-range,
-    # index 5 drives the tweaked threshold public key to infinity,
-    # index 6 is not a 32-byte array
-    OUT_OF_RANGE_TWEAK_IDX = len(COMMON_TWEAKS)
-    INFINITY_TWEAK_IDX = len(COMMON_TWEAKS) + 1
-    INVALID_33_BYTE_TWEAK_IDX = len(COMMON_TWEAKS) + 2
-    tweaks_pool = COMMON_TWEAKS + [
-        OUT_OF_RANGE_TWEAK,
-        infinity_tweak_scalar.to_bytes(),
-        INVALID_33_BYTE_TWEAK,
-    ]
+    def _agg(self, pubnonce_indices):
+        return nonce_agg([self.inputs.pubnonces[i] for i in pubnonce_indices])
 
-    group = {
-        "tg_id": "2of3",
-        "t": t,
-        "n": n,
-        "thresh_pk": bytes_to_hex(thresh_pk),
-        "pubshares": bytes_list_to_hex(pubshares_with_invalid),
-        "pubnonces": bytes_list_to_hex(pubnonces),
-        "secshares": bytes_list_to_hex(secshares),
-        "secnonces": bytes_list_to_hex(secnonces),
-        "tweaks": bytes_list_to_hex(tweaks_pool),
-        "valid_tests": [],
-        "error_tests": [],
-    }
-    tc_id = 1
-
-    # --- Valid Test Cases ---
-    valid_cases = [
-        {
-            "tweaks_indices": [],
-            "is_xonly": [],
-            "aggnonce": bytes_to_hex(aggnonce_01),
-            "comment": "No tweaks applied",
-        },
-        {
-            "tweaks_indices": [0],
-            "is_xonly": [True],
-            "aggnonce": bytes_to_hex(aggnonce_01),
-            "comment": "Single x-only tweak (used for BIP341 Taproot)",
-        },
-        {
-            "tweaks_indices": [0],
-            "is_xonly": [False],
-            "aggnonce": bytes_to_hex(aggnonce_01),
-            "comment": "Single plain tweak (used for BIP32 derivation)",
-        },
-        {
-            "tweaks_indices": [0, 1],
-            "is_xonly": [False, True],
-            "aggnonce": bytes_to_hex(aggnonce_01),
-            "comment": "A plain tweak followed by an x-only tweak",
-        },
-        {
-            "tweaks_indices": [0, 1, 2, 3],
-            "is_xonly": [True, False, True, False],
-            "aggnonce": bytes_to_hex(aggnonce_01),
-            "comment": "Four tweaks alternating x-only and plain",
-        },
-        {
-            "tweaks_indices": [0, 1, 2, 3],
-            "is_xonly": [False, False, True, True],
-            "aggnonce": bytes_to_hex(aggnonce_01),
-            "comment": "Four tweaks: two plain followed by two x-only",
-        },
-        {
-            "tweaks_indices": [0, 1, 2, 3],
-            "is_xonly": [False, False, True, True],
-            "indices": [0, 1, 2],
-            "signer_idx": 1,
-            "aggnonce": bytes_to_hex(aggnonce_012),
-            "comment": "Same tweaks as the previous case but with all 3 signers and signed by a non-first member of the signer set",
-        },
-    ]
-    for case in valid_cases:
-        indices = case.get("indices", [0, 1])
-        curr_ids = [ids[i] for i in indices]
-        curr_pubshares = [pubshares_with_invalid[i] for i in indices]
-        curr_aggnonce = bytes.fromhex(case["aggnonce"])
-        curr_tweaks = [tweaks_pool[i] for i in case["tweaks_indices"]]
-        curr_tweak_modes = case["is_xonly"]
-        signer_idx = case.get("signer_idx", 0)
-        my_id = ids[signer_idx]
-
-        curr_signers = SignersContext(n, t, curr_ids, curr_pubshares, thresh_pk)
-        session_ctx = SessionContext(
-            curr_aggnonce, curr_signers, curr_tweaks, curr_tweak_modes, COMMON_MSGS[0]
+    def _append_valid(
+        self,
+        my_id,
+        ids,
+        pubshare_indices,
+        pubnonce_indices,
+        aggnonce,
+        msg,
+        tweak_indices,
+        is_xonly,
+        comment,
+    ):
+        pubshares = [self.inputs.pubshares[i] for i in pubshare_indices]
+        tweaks = [self.tweaks_pool[i] for i in tweak_indices]
+        secnonce = bytearray(self.inputs.secnonces[my_id])
+        signers = SignersContext(self.n, self.t, ids, pubshares, self.thresh_pk)
+        session = SessionContext(aggnonce, signers, tweaks, is_xonly, msg)
+        psig = sign(secnonce, self.inputs.secshares[my_id], my_id, session)
+        assert partial_sig_verify(
+            psig,
+            [self.inputs.pubnonces[i] for i in pubnonce_indices],
+            signers,
+            tweaks,
+            is_xonly,
+            msg,
+            ids.index(my_id),
         )
-        psig = sign(
-            bytearray(secnonces[signer_idx]), secshares[signer_idx], my_id, session_ctx
-        )
-
-        group["valid_tests"].append(
+        self.group["valid_tests"].append(
             {
-                "tc_id": tc_id,
-                "comment": case["comment"],
+                "comment": comment,
                 "my_id": my_id,
-                "ids": curr_ids,
-                "pubshare_indices": indices,
-                "pubnonce_indices": indices,
-                "secshare_index": signer_idx,
-                "secnonce_index": signer_idx,
-                "aggnonce": case["aggnonce"],
-                "msg": bytes_to_hex(COMMON_MSGS[0]),
-                "tweak_indices": case["tweaks_indices"],
-                "is_xonly": curr_tweak_modes,
+                "ids": ids,
+                "pubshare_indices": pubshare_indices,
+                "pubnonce_indices": pubnonce_indices,
+                "secshare_index": my_id,
+                "secnonce_index": my_id,
+                "aggnonce": bytes_to_hex(aggnonce),
+                "msg": bytes_to_hex(msg),
+                "tweak_indices": tweak_indices,
+                "is_xonly": is_xonly,
                 "expected": bytes_to_hex(psig),
             }
         )
-        tc_id += 1
 
-    # --- Error Test Cases ---
-    error_cases = [
-        {
-            "tweaks_indices": [OUT_OF_RANGE_TWEAK_IDX],
-            "is_xonly": [False],
-            "comment": "Tweak exceeds the group order",
-        },
-        {
-            "tweaks_indices": [INFINITY_TWEAK_IDX],
-            "is_xonly": [False],
-            "comment": "Plain tweak drives the tweaked threshold public key to the point at infinity",
-        },
-        {
-            "tweaks_indices": [0],
-            "is_xonly": [],
-            "comment": "Number of tweaks does not match the number of tweak modes",
-        },
-        {
-            "tweaks_indices": [INVALID_33_BYTE_TWEAK_IDX],
-            "is_xonly": [False],
-            "comment": "Tweak is not a 32-byte array",
-        },
-    ]
-    for case in error_cases:
-        indices = [0, 1]
-        curr_ids = [ids[i] for i in indices]
-        curr_pubshares = [pubshares_with_invalid[i] for i in indices]
-        curr_tweaks = [tweaks_pool[i] for i in case["tweaks_indices"]]
-        curr_tweak_modes = case["is_xonly"]
-        my_id = curr_ids[0]
-
-        curr_signers = SignersContext(n, t, curr_ids, curr_pubshares, thresh_pk)
-        session_ctx = SessionContext(
-            aggnonce_01, curr_signers, curr_tweaks, curr_tweak_modes, COMMON_MSGS[0]
-        )
+    def _append_error(
+        self,
+        my_id,
+        ids,
+        pubshare_indices,
+        secshare_index,
+        secnonce_index,
+        aggnonce,
+        msg,
+        tweak_indices,
+        is_xonly,
+        comment,
+    ):
+        pubshares = [self.inputs.pubshares[i] for i in pubshare_indices]
+        tweaks = [self.tweaks_pool[i] for i in tweak_indices]
+        secnonce = bytearray(self.inputs.secnonces[secnonce_index])
+        secshare = self.inputs.secshares[secshare_index]
+        signers = SignersContext(self.n, self.t, ids, pubshares, self.thresh_pk)
+        session = SessionContext(aggnonce, signers, tweaks, is_xonly, msg)
         error = expect_exception(
-            lambda: sign(bytearray(secnonces[0]), secshares[0], my_id, session_ctx),
-            ValueError,
+            lambda: sign(secnonce, secshare, my_id, session), ValueError
         )
-        group["error_tests"].append(
+        self.group["error_tests"].append(
             {
-                "tc_id": tc_id,
-                "comment": case["comment"],
+                "comment": comment,
                 "my_id": my_id,
-                "ids": curr_ids,
-                "pubshare_indices": indices,
-                "secshare_index": 0,
-                "secnonce_index": 0,
-                "aggnonce": bytes_to_hex(aggnonce_01),
-                "msg": bytes_to_hex(COMMON_MSGS[0]),
-                "tweak_indices": case["tweaks_indices"],
-                "is_xonly": curr_tweak_modes,
+                "ids": ids,
+                "pubshare_indices": pubshare_indices,
+                "secshare_index": secshare_index,
+                "secnonce_index": secnonce_index,
+                "aggnonce": bytes_to_hex(aggnonce),
+                "msg": bytes_to_hex(msg),
+                "tweak_indices": tweak_indices,
+                "is_xonly": is_xonly,
                 "error": error,
             }
         )
-        tc_id += 1
 
-    vectors = {"test_groups": [group]}
-    write_test_vectors("tweak_vectors.json", vectors)
+    # --- Array A: valid_tests ---
+
+    def add_valid_tests(self):
+        msg = COMMON_MSGS[0]
+        aggnonce_min = self._agg(self.min_s)
+        aggnonce_full = self._agg(self.full)
+
+        # No tweaks applied
+        self._append_valid(
+            0,
+            self.min_s,
+            self.min_s,
+            self.min_s,
+            aggnonce_min,
+            msg,
+            [],
+            [],
+            "No tweaks applied",
+        )
+        # Single x-only tweak
+        self._append_valid(
+            0,
+            self.min_s,
+            self.min_s,
+            self.min_s,
+            aggnonce_min,
+            msg,
+            [0],
+            [True],
+            "Single x-only tweak (used for BIP341 Taproot)",
+        )
+        # Single plain tweak
+        self._append_valid(
+            0,
+            self.min_s,
+            self.min_s,
+            self.min_s,
+            aggnonce_min,
+            msg,
+            [0],
+            [False],
+            "Single plain tweak (used for BIP32 derivation)",
+        )
+        # Plain then x-only tweak
+        self._append_valid(
+            0,
+            self.min_s,
+            self.min_s,
+            self.min_s,
+            aggnonce_min,
+            msg,
+            [0, 1],
+            [False, True],
+            "A plain tweak followed by an x-only tweak",
+        )
+        # Four tweaks alternating x-only and plain
+        self._append_valid(
+            0,
+            self.min_s,
+            self.min_s,
+            self.min_s,
+            aggnonce_min,
+            msg,
+            [0, 1, 2, 3],
+            [True, False, True, False],
+            "Four tweaks alternating x-only and plain",
+        )
+        # Four tweaks: two plain then two x-only
+        self._append_valid(
+            0,
+            self.min_s,
+            self.min_s,
+            self.min_s,
+            aggnonce_min,
+            msg,
+            [0, 1, 2, 3],
+            [False, False, True, True],
+            "Four tweaks: two plain followed by two x-only",
+        )
+        # Same tweaks as the previous case but all n signers, signed by non-first member
+        self._append_valid(
+            1,
+            self.full,
+            self.full,
+            self.full,
+            aggnonce_full,
+            msg,
+            [0, 1, 2, 3],
+            [False, False, True, True],
+            "Same tweaks as the previous case but with all signers participating, signed by a non-first member of the signer set",
+        )
+
+    # --- Array B: error_tests ---
+
+    def add_error_tests(self):
+        msg = COMMON_MSGS[0]
+        aggnonce_min = self._agg(self.min_s)
+        my_id = 0
+
+        # Tweak exceeds the group order
+        self._append_error(
+            my_id,
+            self.min_s,
+            self.min_s,
+            0,
+            0,
+            aggnonce_min,
+            msg,
+            [self.inputs.OUT_OF_RANGE_TWEAK_IDX],
+            [False],
+            "Tweak exceeds the group order",
+        )
+        # Infinity tweak
+        self._append_error(
+            my_id,
+            self.min_s,
+            self.min_s,
+            0,
+            0,
+            aggnonce_min,
+            msg,
+            [self.inputs.INFINITY_TWEAK_IDX],
+            [False],
+            "Plain tweak drives the tweaked threshold public key to the point at infinity",
+        )
+        # Length mismatch between tweaks and is_xonly
+        self._append_error(
+            my_id,
+            self.min_s,
+            self.min_s,
+            0,
+            0,
+            aggnonce_min,
+            msg,
+            [0],
+            [],
+            "Number of tweaks does not match the number of tweak modes",
+        )
+        # Invalid 33-byte tweak
+        self._append_error(
+            my_id,
+            self.min_s,
+            self.min_s,
+            0,
+            0,
+            aggnonce_min,
+            msg,
+            [self.INVALID_33_BYTE_TWEAK_IDX],
+            [False],
+            "Tweak is not a 32-byte array",
+        )
+
+    def build(self):
+        self.add_valid_tests()
+        self.add_error_tests()
+        return self.group
+
+
+def generate_tweak_vectors():
+    groups = [TweakGroupBuilder(cfg).build() for cfg in CONFIGS]
+    assign_tc_ids(groups)
+    write_test_vectors("tweak_vectors.json", {"test_groups": groups})
