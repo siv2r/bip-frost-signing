@@ -10,176 +10,197 @@ from frost_ref import (
 
 from generators.common import (
     COMMON_MSGS,
-    COMMON_RAND,
     COMMON_TWEAKS,
-    SECKEY_2OF3,
+    CONFIGS,
+    SharedGroupInputs,
+    assign_tc_ids,
     bytes_list_to_hex,
     bytes_to_hex,
     expect_exception,
-    frost_keygen,
-    generate_all_nonces,
+    get_subset,
+    set_group_config,
     write_test_vectors,
 )
 
+# Fault literals that are case payloads rather than pool material (config-independent,
+# never indexed from a pool), so they stay local to this generator.
+GROUP_ORDER_PSIG = "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141"
 
-def generate_sig_agg_vectors():
-    n, t, thresh_pk, ids, secshares, pubshares = frost_keygen(SECKEY_2OF3)
-    xonly_thresh_pk = thresh_pk[1:]
 
-    secnonces, pubnonces = generate_all_nonces(
-        COMMON_RAND, secshares, pubshares, xonly_thresh_pk
-    )
+class SigAggGroupBuilder:
+    """Builds one (t, n) test group for sig_agg_vectors.json. Shared inputs and
+    subsets live on self. Each add_* method appends its category to self.group."""
 
-    msg = COMMON_MSGS[0]
+    def __init__(self, cfg):
+        self.inputs = SharedGroupInputs(cfg)
+        self.t = self.inputs.t
+        self.n = self.inputs.n
+        self.thresh_pk = self.inputs.thresh_pk
 
-    group = {
-        "tg_id": "2of3",
-        "t": t,
-        "n": n,
-        "thresh_pk": bytes_to_hex(thresh_pk),
-        "pubshares": bytes_list_to_hex(pubshares),
-        "tweaks": bytes_list_to_hex(COMMON_TWEAKS),
-        "valid_tests": [],
-        "error_tests": [],
-    }
-    tc_id = 1
+        self.min_s = get_subset(cfg, "min")
+        self.full = get_subset(cfg, "full")
 
-    # --- Valid Test Cases ---
-    valid_cases = [
-        {
-            "indices": [0, 1],
-            "comment": "Minimum threshold subset of signers, no tweaks",
-        },
-        {
-            "indices": [1, 0],
-            "comment": "Reordering the signer set leaves the aggregate signature unchanged, because the partial signatures are summed and the identifiers are sorted before they are bound into the binding value",
-        },
-        {
-            "indices": [0, 1],
-            "tweaks": [0, 1, 2],
-            "is_xonly": [True, False, False],
-            "comment": "Aggregation with three tweaks applied (one x-only, two plain)",
-        },
-        {
-            "indices": [0, 1, 2],
-            "comment": "All n=3 signers participate, no tweaks",
-        },
-    ]
-    for case in valid_cases:
-        curr_ids = [ids[i] for i in case["indices"]]
-        curr_pubshares = [pubshares[i] for i in case["indices"]]
-        curr_pubnonces = [pubnonces[i] for i in case["indices"]]
-        curr_aggnonce = nonce_agg(curr_pubnonces)
-        curr_msg = msg
-        tweak_indices = case.get("tweaks", [])
-        curr_tweaks = [COMMON_TWEAKS[i] for i in tweak_indices]
-        curr_tweak_modes = case.get("is_xonly", [])
+        self.group = {}
+        set_group_config(self.group, cfg, self.inputs)
+        # sig_agg has no appended fault slots in any pool (both error faults are
+        # injected inline), so the group serializes and reads the plain n-length
+        # pubshares and the 4 common tweaks, not the SharedGroupInputs pool_* arrays.
+        self.group["pubshares"] = bytes_list_to_hex(self.inputs.pubshares)
+        self.group["tweaks"] = bytes_list_to_hex(COMMON_TWEAKS)
+        self.group["valid_tests"] = []
+        self.group["error_tests"] = []
+
+    def _agg(self, set_indices):
+        return nonce_agg([self.inputs.pubnonces[i] for i in set_indices])
+
+    def _append_valid(self, set_indices, tweak_indices, is_xonly, msg, comment):
+        pubshares = [self.inputs.pubshares[i] for i in set_indices]
+        pubnonces = [self.inputs.pubnonces[i] for i in set_indices]
+        ids = list(set_indices)
+        aggnonce = nonce_agg(pubnonces)
+        tweaks = [COMMON_TWEAKS[i] for i in tweak_indices]
+        signers = SignersContext(self.n, self.t, ids, pubshares, self.thresh_pk)
+        session = SessionContext(aggnonce, signers, tweaks, is_xonly, msg)
         psigs = []
-        curr_signers = SignersContext(n, t, curr_ids, curr_pubshares, thresh_pk)
-        session_ctx = SessionContext(
-            curr_aggnonce,
-            curr_signers,
-            curr_tweaks,
-            curr_tweak_modes,
-            curr_msg,
-        )
-        for signer_index, i in enumerate(case["indices"]):
-            my_id = ids[i]
-            sig = sign(bytearray(secnonces[i]), secshares[i], my_id, session_ctx)
-            psigs.append(sig)
-            assert partial_sig_verify(
-                sig,
-                curr_pubnonces,
-                curr_signers,
-                curr_tweaks,
-                curr_tweak_modes,
-                curr_msg,
-                signer_index,
+        for signer_index, my_id in enumerate(set_indices):
+            psig = sign(
+                bytearray(self.inputs.secnonces[my_id]),
+                self.inputs.secshares[my_id],
+                my_id,
+                session,
             )
-        bip340_sig = partial_sig_agg(psigs, session_ctx)
-        group["valid_tests"].append(
+            psigs.append(psig)
+            assert partial_sig_verify(
+                psig, pubnonces, signers, tweaks, is_xonly, msg, signer_index
+            )
+        expected = partial_sig_agg(psigs, session)
+        self.group["valid_tests"].append(
             {
-                "tc_id": tc_id,
-                "comment": case["comment"],
-                "ids": curr_ids,
-                "pubshare_indices": case["indices"],
-                "aggnonce": bytes_to_hex(curr_aggnonce),
+                "comment": comment,
+                "ids": ids,
+                "pubshare_indices": list(set_indices),
+                "aggnonce": bytes_to_hex(aggnonce),
                 "tweak_indices": tweak_indices,
-                "is_xonly": curr_tweak_modes,
+                "is_xonly": is_xonly,
                 "psigs": bytes_list_to_hex(psigs),
-                "msg": bytes_to_hex(curr_msg),
-                "expected": bytes_to_hex(bip340_sig),
+                "msg": bytes_to_hex(msg),
+                "expected": bytes_to_hex(expected),
             }
         )
-        tc_id += 1
 
-    # --- Error Test Cases ---
-    error_cases = [
-        {
-            "indices": [0, 1],
-            "fault": "psig_out_of_range",
-            "error": "invalid_contrib",
-            "comment": "Partial signature equals the group order, which is out of range",
-        },
-        {
-            "indices": [0, 1],
-            "fault": "psig_count_mismatch",
-            "error": "value",
-            "comment": "Number of partial signatures does not match the number of signers",
-        },
-    ]
-    for case in error_cases:
-        curr_ids = [ids[i] for i in case["indices"]]
-        curr_pubshares = [pubshares[i] for i in case["indices"]]
-        curr_pubnonces = [pubnonces[i] for i in case["indices"]]
-        curr_aggnonce = nonce_agg(curr_pubnonces)
-        curr_msg = msg
+    def _append_error(self, set_indices, fault, error, comment):
+        pubshares = [self.inputs.pubshares[i] for i in set_indices]
+        pubnonces = [self.inputs.pubnonces[i] for i in set_indices]
+        ids = list(set_indices)
+        aggnonce = nonce_agg(pubnonces)
+        msg = COMMON_MSGS[0]
+        signers = SignersContext(self.n, self.t, ids, pubshares, self.thresh_pk)
+        session = SessionContext(aggnonce, signers, [], [], msg)
         psigs = []
-        curr_signers = SignersContext(n, t, curr_ids, curr_pubshares, thresh_pk)
-        session_ctx = SessionContext(curr_aggnonce, curr_signers, [], [], curr_msg)
-        for signer_index, i in enumerate(case["indices"]):
-            my_id = ids[i]
-            sig = sign(bytearray(secnonces[i]), secshares[i], my_id, session_ctx)
-            psigs.append(sig)
+        for signer_index, my_id in enumerate(set_indices):
+            psig = sign(
+                bytearray(self.inputs.secnonces[my_id]),
+                self.inputs.secshares[my_id],
+                my_id,
+                session,
+            )
+            psigs.append(psig)
             assert partial_sig_verify(
-                sig,
-                curr_pubnonces,
-                curr_signers,
-                [],
-                [],
-                curr_msg,
-                signer_index,
+                psig, pubnonces, signers, [], [], msg, signer_index
             )
 
-        if case["fault"] == "psig_out_of_range":
-            invalid_psig = bytes.fromhex(
-                "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141"
-            )
-            psigs[1] = invalid_psig
-        elif case["fault"] == "psig_count_mismatch":
+        if fault == "psig_out_of_range":
+            psigs[-1] = bytes.fromhex(GROUP_ORDER_PSIG)
+        elif fault == "psig_count_mismatch":
             psigs = psigs[:-1]
 
         expected_exception = (
-            ValueError if case["error"] == "value" else InvalidContributionError
+            ValueError if error == "value" else InvalidContributionError
         )
-        error = expect_exception(
-            lambda: partial_sig_agg(psigs, session_ctx), expected_exception
+        err = expect_exception(
+            lambda: partial_sig_agg(psigs, session), expected_exception
         )
-        group["error_tests"].append(
+        self.group["error_tests"].append(
             {
-                "tc_id": tc_id,
-                "comment": case["comment"],
-                "ids": curr_ids,
-                "pubshare_indices": case["indices"],
-                "aggnonce": bytes_to_hex(curr_aggnonce),
+                "comment": comment,
+                "ids": ids,
+                "pubshare_indices": list(set_indices),
+                "aggnonce": bytes_to_hex(aggnonce),
                 "tweak_indices": [],
                 "is_xonly": [],
                 "psigs": bytes_list_to_hex(psigs),
-                "msg": bytes_to_hex(curr_msg),
-                "error": error,
+                "msg": bytes_to_hex(msg),
+                "error": err,
             }
         )
-        tc_id += 1
 
-    vectors = {"test_groups": [group]}
-    write_test_vectors("sig_agg_vectors.json", vectors)
+    # --- Array A: valid_tests ---
+
+    def add_valid_tests(self):
+        t, n = self.t, self.n
+        # Minimum threshold subset.
+        self._append_valid(
+            self.min_s,
+            [],
+            [],
+            COMMON_MSGS[0],
+            "Minimum threshold subset of signers, no tweaks",
+        )
+        # Order-invariance (needs a set of size >= 2 to be meaningful).
+        if t >= 2:
+            rev = list(reversed(self.min_s))
+            self._append_valid(
+                rev,
+                [],
+                [],
+                COMMON_MSGS[0],
+                "Reordering the signer set leaves the aggregate signature unchanged, because the partial signatures are summed and the identifiers are sorted before they are bound into the binding value",
+            )
+        # Three tweaks applied (one x-only, two plain).
+        self._append_valid(
+            self.min_s,
+            [0, 1, 2],
+            [True, False, False],
+            COMMON_MSGS[0],
+            "Aggregation with three tweaks applied (one x-only, two plain)",
+        )
+        # All n signers participate (dropped when t == n, as the all-n set
+        # equals the minimum set and partial_sig_agg has no my_id field, so the
+        # aggregate signature would be byte-identical to the minimum-subset case).
+        if t < n:
+            self._append_valid(
+                self.full,
+                [],
+                [],
+                COMMON_MSGS[0],
+                "All signers participate, no tweaks",
+            )
+
+    # --- Array B: error_tests ---
+
+    def add_error_tests(self):
+        # Partial signature equals the group order (out-of-range scalar).
+        self._append_error(
+            self.min_s,
+            "psig_out_of_range",
+            "invalid_contrib",
+            "Partial signature equals the group order, which is out of range",
+        )
+        # Number of partial signatures does not match the number of signers.
+        self._append_error(
+            self.min_s,
+            "psig_count_mismatch",
+            "value",
+            "Number of partial signatures does not match the number of signers",
+        )
+
+    def build(self):
+        self.add_valid_tests()
+        self.add_error_tests()
+        return self.group
+
+
+def generate_sig_agg_vectors():
+    groups = [SigAggGroupBuilder(cfg).build() for cfg in CONFIGS]
+    assign_tc_ids(groups)
+    write_test_vectors("sig_agg_vectors.json", {"test_groups": groups})
