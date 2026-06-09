@@ -1,3 +1,5 @@
+from typing import List, Optional
+
 from frost_ref import (
     InvalidContributionError,
     SignersContext,
@@ -9,357 +11,461 @@ from frost_ref.signing import nonce_gen_internal
 from generators.common import (
     COMMON_MSGS,
     COMMON_TWEAKS,
-    INVALID_PUBSHARE,
+    CONFIGS,
     OUT_OF_RANGE_TWEAK,
-    SECKEY_2OF3,
+    SharedGroupInputs,
+    assign_tc_ids,
     bytes_list_to_hex,
     bytes_to_hex,
     expect_exception,
-    frost_keygen,
+    get_subset,
+    set_group_config,
+    swap_last_two,
     write_test_vectors,
 )
 
+# Aux-randomness pool: all-zeros, None (omitted), all-ones.
+RANDS = [
+    bytes.fromhex("0000000000000000000000000000000000000000000000000000000000000000"),
+    None,
+    bytes.fromhex("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF"),
+]
 
-def generate_det_sign_vectors():
-    n, t, thresh_pk, ids, secshares, pubshares = frost_keygen(SECKEY_2OF3)
-    xonly_thresh_pk = thresh_pk[1:]
 
-    # Special indices for test cases
-    INVALID_PUBSHARE_IDX = n
-    INVALID_TWEAK_IDX = 1
-    RAND_NONE_IDX = 1
-    RAND_MAX_IDX = 2
+class DetSignGroupBuilder:
+    """Builds one (t, n) test group for det_sign_vectors.json. Each add_* method appends its category to self.group."""
 
-    assert len(COMMON_MSGS[2]) == 38
+    def __init__(self, cfg):
+        self.inputs = SharedGroupInputs(cfg)
+        self.t = self.inputs.t
+        self.n = self.inputs.n
+        self.thresh_pk = self.inputs.thresh_pk
 
-    pubshares.append(INVALID_PUBSHARE)
+        self.min_s = get_subset(cfg, "min")
+        self.full = get_subset(cfg, "full")
+        self.alt = get_subset(cfg, "alt")
+        self.min2 = get_subset(cfg, "min2")
+        self.wrong = get_subset(cfg, "wrong") if cfg.t >= 2 and cfg.t < cfg.n else None
 
-    group = {
-        "tg_id": "2of3",
-        "t": t,
-        "n": n,
-        "thresh_pk": bytes_to_hex(thresh_pk),
-        "pubshares": bytes_list_to_hex(pubshares),
-        "secshares": bytes_list_to_hex(secshares),
-        "valid_tests": [],
-        "error_tests": [],
-    }
-    tc_id = 1
+        self.group = {}
+        set_group_config(self.group, cfg, self.inputs)
+        self.group["pubshares"] = bytes_list_to_hex(self.inputs.pool_pubshares)
+        self.group["secshares"] = bytes_list_to_hex(self.inputs.pool_secshares)
+        self.group["valid_tests"] = []
+        self.group["error_tests"] = []
 
-    rands = [
-        bytes.fromhex(
-            "0000000000000000000000000000000000000000000000000000000000000000"
-        ),
-        None,
-        bytes.fromhex(
-            "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF"
-        ),
-    ]
-
-    tweaks = [
-        [COMMON_TWEAKS[0]],
-        [OUT_OF_RANGE_TWEAK],
-    ]
-
-    # --- Valid Test Cases ---
-    valid_cases = [
-        {
-            "indices": [0, 1],
-            "my_id": 0,
-            "msg": 0,
-            "rand": 0,
-            "comment": "Minimum threshold subset of signers",
-        },
-        {
-            "indices": [1, 0],
-            "my_id": 0,
-            "msg": 0,
-            "rand": 0,
-            "comment": "Reordering the signer set leaves the deterministic output unchanged, because the identifiers are sorted before they are bound into the nonce derivation and the binding value",
-        },
-        {
-            "indices": [0, 2],
-            "my_id": 0,
-            "msg": 0,
-            "rand": 0,
-            "comment": "A different threshold subset gives a different deterministic nonce, since the signer set is bound into the nonce derivation",
-        },
-        {
-            "indices": [0, 1],
-            "my_id": 0,
-            "msg": 0,
-            "rand": RAND_NONE_IDX,
-            "comment": "Auxiliary randomness omitted (null), which is not equivalent to all-zeros randomness",
-        },
-        {
-            "indices": [0, 1],
-            "my_id": 0,
-            "msg": 0,
-            "rand": RAND_MAX_IDX,
-            "comment": "Auxiliary randomness is all ones, distinct from the all-zeros and omitted cases",
-        },
-        {
-            "indices": [0, 1, 2],
-            "my_id": 1,
-            "msg": 0,
-            "rand": 0,
-            "comment": "All n=3 signers participate, signed by a non-first member of the signer set",
-        },
-        {
-            "indices": [0, 1],
-            "my_id": 0,
-            "msg": 1,
-            "rand": 0,
-            "comment": "Empty message",
-        },
-        {
-            "indices": [0, 1],
-            "my_id": 0,
-            "msg": 2,
-            "rand": 0,
-            "comment": "Non-standard message length (38 bytes)",
-        },
-        {
-            "indices": [0, 1],
-            "my_id": 0,
-            "msg": 0,
-            "rand": 0,
-            "tweaks": 0,
-            "is_xonly": [True],
-            "comment": "Single x-only tweak applied",
-        },
-    ]
-    for case in valid_cases:
-        curr_ids = [ids[i] for i in case["indices"]]
-        curr_pubshares = [pubshares[i] for i in case["indices"]]
-        curr_msg = COMMON_MSGS[case["msg"]]
-        curr_rand = rands[case["rand"]]
-        my_id = case["my_id"]
-        tweaks_idx = case.get("tweaks", None)
-        curr_tweaks = [] if tweaks_idx is None else tweaks[tweaks_idx]
-        curr_tweak_modes = case.get("is_xonly", [])
-        secshare_index = ids.index(my_id)
-
-        # generate `aggothernonce` (every signer's nonce except this signer's own)
+    def _derive_aggothernonce(
+        self,
+        ids_set: List[int],
+        my_id: int,
+        msg: bytes,
+        rand: Optional[bytes],
+    ) -> Optional[bytes]:
+        """Return None when the signer is the sole participant. Otherwise aggregate
+        the other signers' public nonces."""
+        if len(ids_set) == 1:
+            return None
+        tmp = b"" if rand is None else rand
         other_pubnonces = []
-        for i in case["indices"]:
-            if ids[i] == my_id:
+        for pid in ids_set:
+            if pid == my_id:
                 continue
-            tmp = b"" if curr_rand is None else curr_rand
             _, pub = nonce_gen_internal(
-                tmp, secshares[i], pubshares[i], xonly_thresh_pk, curr_msg, None
+                tmp,
+                self.inputs.pool_secshares[pid],
+                self.inputs.pool_pubshares[pid],
+                self.inputs.xonly_thresh_pk,
+                msg,
+                None,
             )
             other_pubnonces.append(pub)
-        curr_aggothernonce = nonce_agg(other_pubnonces)
+        return nonce_agg(other_pubnonces)
 
-        curr_signers = SignersContext(n, t, curr_ids, curr_pubshares, thresh_pk)
-        expected = deterministic_sign(
-            secshares[secshare_index],
-            my_id,
-            curr_aggothernonce,
-            curr_signers,
-            curr_tweaks,
-            curr_tweak_modes,
-            curr_msg,
-            curr_rand,
+    def _append_valid(
+        self,
+        my_id: int,
+        ids: List[int],
+        pubshare_indices: List[int],
+        rand: Optional[bytes],
+        msg: bytes,
+        tweaks: List[bytes],
+        is_xonly: List[bool],
+        comment: str,
+    ) -> None:
+        curr_aggothernonce = self._derive_aggothernonce(ids, my_id, msg, rand)
+        pubshares = [self.inputs.pool_pubshares[i] for i in pubshare_indices]
+        signers = SignersContext(self.n, self.t, ids, pubshares, self.thresh_pk)
+        secshare = self.inputs.pool_secshares[my_id]
+        result = deterministic_sign(
+            secshare, my_id, curr_aggothernonce, signers, tweaks, is_xonly, msg, rand
         )
-
-        group["valid_tests"].append(
+        self.group["valid_tests"].append(
             {
-                "tc_id": tc_id,
-                "comment": case["comment"],
+                "comment": comment,
                 "my_id": my_id,
-                "ids": curr_ids,
-                "pubshare_indices": case["indices"],
-                "secshare_index": secshare_index,
-                "aggothernonce": bytes_to_hex(curr_aggothernonce),
-                "rand": bytes_to_hex(curr_rand) if curr_rand is not None else curr_rand,
-                "msg": bytes_to_hex(curr_msg),
-                "tweaks": bytes_list_to_hex(curr_tweaks),
-                "is_xonly": curr_tweak_modes,
-                "expected": bytes_list_to_hex(expected),
+                "ids": ids,
+                "pubshare_indices": pubshare_indices,
+                "secshare_index": my_id,
+                "aggothernonce": bytes_to_hex(curr_aggothernonce)
+                if curr_aggothernonce is not None
+                else None,
+                "rand": bytes_to_hex(rand) if rand is not None else None,
+                "msg": bytes_to_hex(msg),
+                "tweaks": bytes_list_to_hex(tweaks),
+                "is_xonly": is_xonly,
+                "expected": bytes_list_to_hex(list(result)),
             }
         )
-        tc_id += 1
 
-    # --- Error Test Cases ---
-    error_cases = [
-        {
-            # my_id=2 is outside ids=[0,1]. The signer presents participant 0's
-            # valid in-set material (secshare_index=0), since the id-membership
-            # check is only reached after the pubshare-membership check passes.
-            "ids": [0, 1],
-            "pubshares": [0, 1],
-            "my_id": 2,
-            "secshare_index": 0,
-            "msg": 0,
-            "rand": 0,
-            "error": "value",
-            "comment": "my_id is not in the signer set",
-        },
-        {
-            "ids": [0, 1, 1],
-            "pubshares": [0, 1, 1],
-            "my_id": 0,
-            "secshare_index": 0,
-            "msg": 0,
-            "rand": 0,
-            "error": "value",
-            "comment": "Signer set contains a duplicate id",
-        },
-        {
-            # The signer is set member my_id=1 but loads participant 0's secret
-            # share (secshare_index=0, the single bad field), so the derived public
-            # share is absent from the set {1,2}.
-            "ids": [1, 2],
-            "pubshares": [1, 2],
-            "my_id": 1,
-            "secshare_index": 0,
-            "msg": 0,
-            "rand": 0,
-            "error": "value",
-            "comment": "Signer's public share is not in the public share list",
-        },
-        {
-            "ids": [0, 1],
-            "pubshares": [0, INVALID_PUBSHARE_IDX],
-            "my_id": 0,
-            "secshare_index": 0,
-            "msg": 0,
-            "rand": 0,
-            "error": "value",
-            "comment": "A public share is not a valid point",
-        },
-        {
-            # Context-validation error independent of the secret; align signer to my_id=2.
-            "ids": [2, 1],
-            "pubshares": [0, 1],
-            "my_id": 2,
-            "secshare_index": 2,
-            "msg": 0,
-            "rand": 0,
-            "error": "value",
-            "comment": "Signer set's public shares do not match the threshold public key",
-        },
-        {
-            "ids": [0, 1],
-            "pubshares": [0, 1],
-            "my_id": 0,
-            "secshare_index": 0,
-            "msg": 0,
-            "rand": 0,
-            "aggothernonce": "048465FCF0BBDBCF443AABCCE533D42B4B5A10966AC09A49655E8C42DAAB8FCD61037496A3CC86926D452CAFCFD55D25972CA1675D549310DE296BFF42F72EEEA8C9",
-            "error": "invalid_contrib",
-            "comment": "Aggregate of the other signers' nonces is invalid: first half has an unknown tag 0x04",
-        },
-        {
-            "ids": [0, 1],
-            "pubshares": [0, 1],
-            "my_id": 0,
-            "secshare_index": 0,
-            "msg": 0,
-            "rand": 0,
-            "aggothernonce": "0000000000000000000000000000000000000000000000000000000000000000000287BF891D2A6DEAEBADC909352AA9405D1428C15F4B75F04DAE642A95C2548480",
-            "error": "invalid_contrib",
-            "comment": "Aggregate of the other signers' nonces is invalid: first half is all zeros",
-        },
-        {
-            "ids": [0, 1],
-            "pubshares": [0, 1],
-            "my_id": 0,
-            "secshare_index": 0,
-            "msg": 0,
-            "rand": 0,
-            "aggothernonce": "0353BC2314D46C813AF81317AF1BDF99816B6444E416BB8D3DC04ACB2F5388D1AC020000000000000000000000000000000000000000000000000000000000000009",
-            "error": "invalid_contrib",
-            "comment": "Aggregate of the other signers' nonces is invalid: second half is not a point on the curve",
-        },
-        {
-            "ids": [0, 1],
-            "pubshares": [0, 1],
-            "my_id": 0,
-            "secshare_index": 0,
-            "msg": 0,
-            "rand": 0,
-            "aggothernonce": "0353BC2314D46C813AF81317AF1BDF99816B6444E416BB8D3DC04ACB2F5388D1AC02FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFFC30",
-            "error": "invalid_contrib",
-            "comment": "Aggregate of the other signers' nonces is invalid: second half's x-coordinate exceeds the field size",
-        },
-        {
-            "ids": [0, 1],
-            "pubshares": [0, 1],
-            "my_id": 0,
-            "secshare_index": 0,
-            "msg": 0,
-            "rand": 0,
-            "tweaks": INVALID_TWEAK_IDX,
-            "is_xonly": [False],
-            "error": "value",
-            "comment": "Tweak exceeds the group order",
-        },
-    ]
-    for case in error_cases:
-        curr_ids = [ids[i] for i in case["ids"]]
-        curr_pubshares = [pubshares[i] for i in case["pubshares"]]
-        curr_msg = COMMON_MSGS[case["msg"]]
-        curr_rand = rands[case["rand"]]
-        my_id = case["my_id"]
-        secshare_index = case["secshare_index"]
-        tweaks_idx = case.get("tweaks", None)
-        curr_tweaks = [] if tweaks_idx is None else tweaks[tweaks_idx]
-        curr_tweak_modes = case.get("is_xonly", [])
-
-        # generate `aggothernonce` (every signer's nonce except this signer's own)
-        is_aggothernonce = case.get("aggothernonce", None)
-        if is_aggothernonce is None:
-            other_pubnonces = []
-            for i in case["ids"]:
-                if ids[i] == my_id:
-                    continue
-                tmp = b"" if curr_rand is None else curr_rand
-                _, pub = nonce_gen_internal(
-                    tmp, secshares[i], pubshares[i], xonly_thresh_pk, curr_msg, None
-                )
-                other_pubnonces.append(pub)
-            curr_aggothernonce = nonce_agg(other_pubnonces)
+    def _append_error(
+        self,
+        my_id: int,
+        ids: List[int],
+        pubshare_indices: List[int],
+        secshare_index: int,
+        rand: Optional[bytes],
+        msg: bytes,
+        tweaks: List[bytes],
+        is_xonly: List[bool],
+        error: str,
+        comment: str,
+        aggothernonce: Optional[bytes] = None,
+    ) -> None:
+        # A caller may supply a crafted aggothernonce to exercise an error path.
+        curr_aggothernonce: Optional[bytes]
+        if aggothernonce is not None:
+            curr_aggothernonce = aggothernonce
         else:
-            curr_aggothernonce = bytes.fromhex(is_aggothernonce)
-
-        expected_exception = (
-            ValueError if case["error"] == "value" else InvalidContributionError
-        )
-        curr_signers = SignersContext(n, t, curr_ids, curr_pubshares, thresh_pk)
-        error = expect_exception(
+            curr_aggothernonce = self._derive_aggothernonce(ids, my_id, msg, rand)
+        pubshares = [self.inputs.pool_pubshares[i] for i in pubshare_indices]
+        signers = SignersContext(self.n, self.t, ids, pubshares, self.thresh_pk)
+        secshare = self.inputs.pool_secshares[secshare_index]
+        expected_exc = ValueError if error == "value" else InvalidContributionError
+        err = expect_exception(
             lambda: deterministic_sign(
-                secshares[secshare_index],
+                secshare,
                 my_id,
                 curr_aggothernonce,
-                curr_signers,
-                curr_tweaks,
-                curr_tweak_modes,
-                curr_msg,
-                curr_rand,
+                signers,
+                tweaks,
+                is_xonly,
+                msg,
+                rand,
             ),
-            expected_exception,
+            expected_exc,
         )
-
-        group["error_tests"].append(
+        self.group["error_tests"].append(
             {
-                "tc_id": tc_id,
-                "comment": case["comment"],
+                "comment": comment,
                 "my_id": my_id,
-                "ids": curr_ids,
-                "pubshare_indices": case["pubshares"],
+                "ids": ids,
+                "pubshare_indices": pubshare_indices,
                 "secshare_index": secshare_index,
-                "aggothernonce": bytes_to_hex(curr_aggothernonce),
-                "rand": bytes_to_hex(curr_rand) if curr_rand is not None else curr_rand,
-                "msg": bytes_to_hex(curr_msg),
-                "tweaks": bytes_list_to_hex(curr_tweaks),
-                "is_xonly": curr_tweak_modes,
-                "error": error,
+                "aggothernonce": bytes_to_hex(curr_aggothernonce)
+                if curr_aggothernonce is not None
+                else None,
+                "rand": bytes_to_hex(rand) if rand is not None else None,
+                "msg": bytes_to_hex(msg),
+                "tweaks": bytes_list_to_hex(tweaks),
+                "is_xonly": is_xonly,
+                "error": err,
             }
         )
-        tc_id += 1
 
-    vectors = {"test_groups": [group]}
-    write_test_vectors("det_sign_vectors.json", vectors)
+    # --- Array A: valid_tests ---
+
+    def add_valid_tests(self) -> None:
+        t, n = self.t, self.n
+
+        # minimum threshold subset.
+        self._append_valid(
+            0,
+            self.min_s,
+            self.min_s,
+            RANDS[0],
+            COMMON_MSGS[0],
+            [],
+            [],
+            "Minimum threshold subset of signers",
+        )
+        # reordering. Uses reversed(min2), which is a real reorder in every config.
+        rev_min2 = list(reversed(self.min2))
+        self._append_valid(
+            0,
+            rev_min2,
+            rev_min2,
+            RANDS[0],
+            COMMON_MSGS[0],
+            [],
+            [],
+            "Reordering the signer set leaves the deterministic output unchanged, because the identifiers are sorted before they are bound into the nonce derivation and the binding value",
+        )
+        # a different threshold subset (only when one exists).
+        if t < n:
+            if t == 1:
+                # 1of3: use id 1 as the sole signer (det_sign-local exception).
+                self._append_valid(
+                    1,
+                    [1],
+                    [1],
+                    RANDS[0],
+                    COMMON_MSGS[0],
+                    [],
+                    [],
+                    "A different threshold subset gives a different deterministic nonce, since the signer set is bound into the nonce derivation",
+                )
+            else:
+                self._append_valid(
+                    0,
+                    self.alt,
+                    self.alt,
+                    RANDS[0],
+                    COMMON_MSGS[0],
+                    [],
+                    [],
+                    "A different threshold subset gives a different deterministic nonce, since the signer set is bound into the nonce derivation",
+                )
+        # null randomness.
+        self._append_valid(
+            0,
+            self.min_s,
+            self.min_s,
+            RANDS[1],
+            COMMON_MSGS[0],
+            [],
+            [],
+            "Auxiliary randomness omitted (null), which is not equivalent to all-zeros randomness",
+        )
+        # all-ones randomness.
+        self._append_valid(
+            0,
+            self.min_s,
+            self.min_s,
+            RANDS[2],
+            COMMON_MSGS[0],
+            [],
+            [],
+            "Auxiliary randomness is all ones, distinct from the all-zeros and omitted cases",
+        )
+        # all signers, non-first member signs.
+        self._append_valid(
+            1,
+            self.full,
+            self.full,
+            RANDS[0],
+            COMMON_MSGS[0],
+            [],
+            [],
+            "All signers participate, signed by a non-first member of the signer set",
+        )
+        # empty message.
+        self._append_valid(
+            0,
+            self.min_s,
+            self.min_s,
+            RANDS[0],
+            COMMON_MSGS[1],
+            [],
+            [],
+            "Empty message",
+        )
+        # non-standard message length.
+        self._append_valid(
+            0,
+            self.min_s,
+            self.min_s,
+            RANDS[0],
+            COMMON_MSGS[2],
+            [],
+            [],
+            "Non-standard message length (38 bytes)",
+        )
+        # single x-only tweak.
+        self._append_valid(
+            0,
+            self.min_s,
+            self.min_s,
+            RANDS[0],
+            COMMON_MSGS[0],
+            [COMMON_TWEAKS[0]],
+            [True],
+            "Single x-only tweak applied",
+        )
+
+    # --- Array B: error_tests ---
+
+    def add_error_tests(self) -> None:
+        t, n = self.t, self.n
+
+        # my_id is absent from the signer set (only when t < n).
+        if t < n:
+            self._append_error(
+                t,
+                self.min_s,
+                self.min_s,
+                0,
+                RANDS[0],
+                COMMON_MSGS[0],
+                [],
+                [],
+                "value",
+                "my_id is not in the signer set",
+            )
+        # duplicate id in the signer set.
+        self._append_error(
+            0,
+            [0, 1, 1],
+            [0, 1, 1],
+            0,
+            RANDS[0],
+            COMMON_MSGS[0],
+            [],
+            [],
+            "value",
+            "Signer set contains a duplicate id",
+        )
+        # signer loads share 0 but the set excludes id 0 (needs t >= 2 and t < n).
+        if t >= 2 and t < n:
+            assert self.wrong is not None
+            self._append_error(
+                1,
+                self.wrong,
+                self.wrong,
+                0,
+                RANDS[0],
+                COMMON_MSGS[0],
+                [],
+                [],
+                "value",
+                "Signer's public share is not in the public share list",
+            )
+        # off-curve pubshare at position 1 (min2 forces size >= 2).
+        ps13 = [self.min2[0], self.inputs.INVALID_PUBSHARE_IDX] + self.min2[2:]
+        self._append_error(
+            0,
+            self.min2,
+            ps13,
+            0,
+            RANDS[0],
+            COMMON_MSGS[0],
+            [],
+            [],
+            "value",
+            "A public share is not a valid point",
+        )
+        # pubshares don't match the threshold public key (needs t >= 2).
+        if t >= 2:
+            self._append_error(
+                0,
+                self.min_s,
+                swap_last_two(self.min_s),
+                0,
+                RANDS[0],
+                COMMON_MSGS[0],
+                [],
+                [],
+                "value",
+                "Signer set's public shares do not match the threshold public key",
+            )
+        # inline bad aggothernonce literals (bypass the helper).
+        bad_agg15 = bytes.fromhex(
+            "048465FCF0BBDBCF443AABCCE533D42B4B5A10966AC09A49655E8C42DAAB8FCD61037496A3CC86926D452CAFCFD55D25972CA1675D549310DE296BFF42F72EEEA8C9"
+        )
+        self._append_error(
+            0,
+            self.min2,
+            self.min2,
+            0,
+            RANDS[0],
+            COMMON_MSGS[0],
+            [],
+            [],
+            "invalid_contrib",
+            "Aggregate of the other signers' nonces is invalid: first half has an unknown tag 0x04",
+            aggothernonce=bad_agg15,
+        )
+        bad_agg16 = bytes.fromhex(
+            "0000000000000000000000000000000000000000000000000000000000000000000287BF891D2A6DEAEBADC909352AA9405D1428C15F4B75F04DAE642A95C2548480"
+        )
+        self._append_error(
+            0,
+            self.min2,
+            self.min2,
+            0,
+            RANDS[0],
+            COMMON_MSGS[0],
+            [],
+            [],
+            "invalid_contrib",
+            "Aggregate of the other signers' nonces is invalid: first half is all zeros",
+            aggothernonce=bad_agg16,
+        )
+        bad_agg17 = bytes.fromhex(
+            "0353BC2314D46C813AF81317AF1BDF99816B6444E416BB8D3DC04ACB2F5388D1AC020000000000000000000000000000000000000000000000000000000000000009"
+        )
+        self._append_error(
+            0,
+            self.min2,
+            self.min2,
+            0,
+            RANDS[0],
+            COMMON_MSGS[0],
+            [],
+            [],
+            "invalid_contrib",
+            "Aggregate of the other signers' nonces is invalid: second half is not a point on the curve",
+            aggothernonce=bad_agg17,
+        )
+        bad_agg18 = bytes.fromhex(
+            "0353BC2314D46C813AF81317AF1BDF99816B6444E416BB8D3DC04ACB2F5388D1AC02FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFFC30"
+        )
+        self._append_error(
+            0,
+            self.min2,
+            self.min2,
+            0,
+            RANDS[0],
+            COMMON_MSGS[0],
+            [],
+            [],
+            "invalid_contrib",
+            "Aggregate of the other signers' nonces is invalid: second half's x-coordinate exceeds the field size",
+            aggothernonce=bad_agg18,
+        )
+        # tweak exceeds the group order.
+        self._append_error(
+            0,
+            self.min_s,
+            self.min_s,
+            0,
+            RANDS[0],
+            COMMON_MSGS[0],
+            [OUT_OF_RANGE_TWEAK],
+            [False],
+            "value",
+            "Tweak exceeds the group order",
+        )
+        # signing with a zero secret share
+        self._append_error(
+            0,
+            self.min_s,
+            self.min_s,
+            self.inputs.SECSHARE_ZERO_IDX,
+            RANDS[0],
+            COMMON_MSGS[0],
+            [],
+            [],
+            "value",
+            "Secret share is out of range (zero)",
+        )
+
+    def build(self) -> dict:
+        self.add_valid_tests()
+        self.add_error_tests()
+        return self.group
+
+
+def generate_det_sign_vectors() -> None:
+    groups = [DetSignGroupBuilder(cfg).build() for cfg in CONFIGS]
+    assign_tc_ids(groups)
+    write_test_vectors("det_sign_vectors.json", {"test_groups": groups})
