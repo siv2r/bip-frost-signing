@@ -1,3 +1,5 @@
+from typing import List
+
 from frost_ref import (
     SessionContext,
     SignersContext,
@@ -37,6 +39,7 @@ class TweakGroupBuilder:
 
         self.min_s = get_subset(cfg, "min")
         self.full = get_subset(cfg, "full")
+        self.aggnonce_min = self._agg(self.min_s)
 
         # Build the tweaks pool: self.inputs.tweaks_pool has 6 entries (indices 0-5).
         # Append INVALID_33_BYTE_TWEAK at index 6.
@@ -45,10 +48,11 @@ class TweakGroupBuilder:
 
         self.group = {}
         set_group_config(self.group, cfg, self.inputs)
-        # Serialize the real arrays, not the *_pool versions: tweak error cases
-        # only fault the tweak value, so we only the tweaks pool which contain
-        # invalid entries. Invalid pubshares, secshares, and nonces are tested in
-        # sign_vectors.json, not here. So, we don't need their *_pool versions.
+        # Tweak error cases fault only the tweak value, so the group serializes the
+        # real (non-pool) pubshares, pubnonces, secshares, and secnonces. The tweaks
+        # array is the extended pool with the invalid 33-byte entry appended. Invalid
+        # pubshare, nonce, and secret-share faults are covered in
+        # sign_verify_vectors.json, not here.
         self.group["pubshares"] = bytes_list_to_hex(self.inputs.pubshares)
         self.group["pubnonces"] = bytes_list_to_hex(self.inputs.pubnonces)
         self.group["secshares"] = bytes_list_to_hex(self.inputs.secshares)
@@ -57,21 +61,21 @@ class TweakGroupBuilder:
         self.group["valid_tests"] = []
         self.group["error_tests"] = []
 
-    def _agg(self, pubnonce_indices):
+    def _agg(self, pubnonce_indices: List[int]) -> bytes:
         return nonce_agg([self.inputs.pubnonces[i] for i in pubnonce_indices])
 
     def _append_valid(
         self,
-        my_id,
-        ids,
-        pubshare_indices,
-        pubnonce_indices,
-        aggnonce,
-        msg,
-        tweak_indices,
-        is_xonly,
-        comment,
-    ):
+        my_id: int,
+        ids: List[int],
+        pubshare_indices: List[int],
+        pubnonce_indices: List[int],
+        aggnonce: bytes,
+        msg: bytes,
+        tweak_indices: List[int],
+        is_xonly: List[bool],
+        comment: str,
+    ) -> None:
         pubshares = [self.inputs.pubshares[i] for i in pubshare_indices]
         tweaks = [self.tweaks_pool[i] for i in tweak_indices]
         secnonce = bytearray(self.inputs.secnonces[my_id])
@@ -106,24 +110,24 @@ class TweakGroupBuilder:
 
     def _append_error(
         self,
-        my_id,
-        ids,
-        pubshare_indices,
-        secshare_index,
-        secnonce_index,
-        aggnonce,
-        msg,
-        tweak_indices,
-        is_xonly,
-        comment,
-    ):
+        my_id: int,
+        ids: List[int],
+        pubshare_indices: List[int],
+        secshare_index: int,
+        secnonce_index: int,
+        aggnonce: bytes,
+        msg: bytes,
+        tweak_indices: List[int],
+        is_xonly: List[bool],
+        comment: str,
+    ) -> None:
         pubshares = [self.inputs.pubshares[i] for i in pubshare_indices]
         tweaks = [self.tweaks_pool[i] for i in tweak_indices]
         secnonce = bytearray(self.inputs.secnonces[secnonce_index])
         secshare = self.inputs.secshares[secshare_index]
         signers = SignersContext(self.n, self.t, ids, pubshares, self.thresh_pk)
         session = SessionContext(aggnonce, signers, tweaks, is_xonly, msg)
-        error = expect_exception(
+        err = expect_exception(
             lambda: sign(secnonce, secshare, my_id, session), ValueError
         )
         self.group["error_tests"].append(
@@ -138,15 +142,14 @@ class TweakGroupBuilder:
                 "msg": bytes_to_hex(msg),
                 "tweak_indices": tweak_indices,
                 "is_xonly": is_xonly,
-                "error": error,
+                "error": err,
             }
         )
 
     # --- Array A: valid_tests ---
 
-    def add_valid_tests(self):
+    def add_valid_tests(self) -> None:
         msg = COMMON_MSGS[0]
-        aggnonce_min = self._agg(self.min_s)
         aggnonce_full = self._agg(self.full)
 
         # No tweaks applied
@@ -155,7 +158,7 @@ class TweakGroupBuilder:
             self.min_s,
             self.min_s,
             self.min_s,
-            aggnonce_min,
+            self.aggnonce_min,
             msg,
             [],
             [],
@@ -167,7 +170,7 @@ class TweakGroupBuilder:
             self.min_s,
             self.min_s,
             self.min_s,
-            aggnonce_min,
+            self.aggnonce_min,
             msg,
             [0],
             [True],
@@ -179,7 +182,7 @@ class TweakGroupBuilder:
             self.min_s,
             self.min_s,
             self.min_s,
-            aggnonce_min,
+            self.aggnonce_min,
             msg,
             [0],
             [False],
@@ -191,7 +194,7 @@ class TweakGroupBuilder:
             self.min_s,
             self.min_s,
             self.min_s,
-            aggnonce_min,
+            self.aggnonce_min,
             msg,
             [0, 1],
             [False, True],
@@ -203,7 +206,7 @@ class TweakGroupBuilder:
             self.min_s,
             self.min_s,
             self.min_s,
-            aggnonce_min,
+            self.aggnonce_min,
             msg,
             [0, 1, 2, 3],
             [True, False, True, False],
@@ -215,7 +218,7 @@ class TweakGroupBuilder:
             self.min_s,
             self.min_s,
             self.min_s,
-            aggnonce_min,
+            self.aggnonce_min,
             msg,
             [0, 1, 2, 3],
             [False, False, True, True],
@@ -236,9 +239,8 @@ class TweakGroupBuilder:
 
     # --- Array B: error_tests ---
 
-    def add_error_tests(self):
+    def add_error_tests(self) -> None:
         msg = COMMON_MSGS[0]
-        aggnonce_min = self._agg(self.min_s)
         my_id = 0
 
         # Tweak exceeds the group order
@@ -248,7 +250,7 @@ class TweakGroupBuilder:
             self.min_s,
             0,
             0,
-            aggnonce_min,
+            self.aggnonce_min,
             msg,
             [self.inputs.OUT_OF_RANGE_TWEAK_IDX],
             [False],
@@ -261,7 +263,7 @@ class TweakGroupBuilder:
             self.min_s,
             0,
             0,
-            aggnonce_min,
+            self.aggnonce_min,
             msg,
             [self.inputs.INFINITY_TWEAK_IDX],
             [False],
@@ -274,7 +276,7 @@ class TweakGroupBuilder:
             self.min_s,
             0,
             0,
-            aggnonce_min,
+            self.aggnonce_min,
             msg,
             [0],
             [],
@@ -287,20 +289,20 @@ class TweakGroupBuilder:
             self.min_s,
             0,
             0,
-            aggnonce_min,
+            self.aggnonce_min,
             msg,
             [self.INVALID_33_BYTE_TWEAK_IDX],
             [False],
             "Tweak is not a 32-byte array",
         )
 
-    def build(self):
+    def build(self) -> dict:
         self.add_valid_tests()
         self.add_error_tests()
         return self.group
 
 
-def generate_tweak_vectors():
+def generate_tweak_vectors() -> None:
     groups = [TweakGroupBuilder(cfg).build() for cfg in CONFIGS]
     assign_tc_ids(groups)
     write_test_vectors("tweak_vectors.json", {"test_groups": groups})

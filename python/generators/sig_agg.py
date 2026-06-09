@@ -1,3 +1,5 @@
+from typing import List
+
 from frost_ref import (
     InvalidContributionError,
     SessionContext,
@@ -50,10 +52,14 @@ class SigAggGroupBuilder:
         self.group["valid_tests"] = []
         self.group["error_tests"] = []
 
-    def _agg(self, set_indices):
-        return nonce_agg([self.inputs.pubnonces[i] for i in set_indices])
-
-    def _append_valid(self, set_indices, tweak_indices, is_xonly, msg, comment):
+    def _append_valid(
+        self,
+        set_indices: List[int],
+        tweak_indices: List[int],
+        is_xonly: List[bool],
+        msg: bytes,
+        comment: str,
+    ) -> None:
         pubshares = [self.inputs.pubshares[i] for i in set_indices]
         pubnonces = [self.inputs.pubnonces[i] for i in set_indices]
         ids = list(set_indices)
@@ -88,7 +94,9 @@ class SigAggGroupBuilder:
             }
         )
 
-    def _append_error(self, set_indices, fault, error, comment):
+    def _append_error(
+        self, set_indices: List[int], fault: str, error: str, comment: str
+    ) -> None:
         pubshares = [self.inputs.pubshares[i] for i in set_indices]
         pubnonces = [self.inputs.pubnonces[i] for i in set_indices]
         ids = list(set_indices)
@@ -114,12 +122,8 @@ class SigAggGroupBuilder:
         elif fault == "psig_count_mismatch":
             psigs = psigs[:-1]
 
-        expected_exception = (
-            ValueError if error == "value" else InvalidContributionError
-        )
-        err = expect_exception(
-            lambda: partial_sig_agg(psigs, session), expected_exception
-        )
+        expected_exc = ValueError if error == "value" else InvalidContributionError
+        err = expect_exception(lambda: partial_sig_agg(psigs, session), expected_exc)
         self.group["error_tests"].append(
             {
                 "comment": comment,
@@ -136,7 +140,7 @@ class SigAggGroupBuilder:
 
     # --- Array A: valid_tests ---
 
-    def add_valid_tests(self):
+    def add_valid_tests(self) -> None:
         t, n = self.t, self.n
         # Minimum threshold subset.
         self._append_valid(
@@ -178,7 +182,7 @@ class SigAggGroupBuilder:
 
     # --- Array B: error_tests ---
 
-    def add_error_tests(self):
+    def add_error_tests(self) -> None:
         # Partial signature equals the group order (out-of-range scalar).
         self._append_error(
             self.min_s,
@@ -194,13 +198,13 @@ class SigAggGroupBuilder:
             "Number of partial signatures does not match the number of signers",
         )
 
-    def build(self):
+    def build(self) -> dict:
         self.add_valid_tests()
         self.add_error_tests()
         return self.group
 
 
-def generate_sig_agg_vectors():
+def generate_sig_agg_vectors() -> None:
     groups = [SigAggGroupBuilder(cfg).build() for cfg in CONFIGS]
     assign_tc_ids(groups)
     write_test_vectors("sig_agg_vectors.json", {"test_groups": groups})

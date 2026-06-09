@@ -31,9 +31,25 @@ RANDS = [
     bytes.fromhex("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF"),
 ]
 
+# Fault literals that are case payloads rather than pool material (config-independent,
+# never indexed from a pool), so they stay local to this generator.
+AGGOTHERNONCE_WRONG_TAG = bytes.fromhex(
+    "048465FCF0BBDBCF443AABCCE533D42B4B5A10966AC09A49655E8C42DAAB8FCD61037496A3CC86926D452CAFCFD55D25972CA1675D549310DE296BFF42F72EEEA8C9"
+)
+AGGOTHERNONCE_FIRST_HALF_ZERO = bytes.fromhex(
+    "0000000000000000000000000000000000000000000000000000000000000000000287BF891D2A6DEAEBADC909352AA9405D1428C15F4B75F04DAE642A95C2548480"
+)
+AGGOTHERNONCE_BAD_POINT = bytes.fromhex(
+    "0353BC2314D46C813AF81317AF1BDF99816B6444E416BB8D3DC04ACB2F5388D1AC020000000000000000000000000000000000000000000000000000000000000009"
+)
+AGGOTHERNONCE_EXCEEDS_FIELD = bytes.fromhex(
+    "0353BC2314D46C813AF81317AF1BDF99816B6444E416BB8D3DC04ACB2F5388D1AC02FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFFC30"
+)
+
 
 class DetSignGroupBuilder:
-    """Builds one (t, n) test group for det_sign_vectors.json. Each add_* method appends its category to self.group."""
+    """Builds one (t, n) test group for det_sign_vectors.json. Shared inputs and
+    subsets live on self. Each add_* method appends its category to self.group."""
 
     def __init__(self, cfg):
         self.inputs = SharedGroupInputs(cfg)
@@ -176,7 +192,6 @@ class DetSignGroupBuilder:
 
     def add_valid_tests(self) -> None:
         t, n = self.t, self.n
-
         # minimum threshold subset.
         self._append_valid(
             0,
@@ -296,7 +311,6 @@ class DetSignGroupBuilder:
 
     def add_error_tests(self) -> None:
         t, n = self.t, self.n
-
         # my_id is absent from the signer set (only when t < n).
         if t < n:
             self._append_error(
@@ -309,7 +323,7 @@ class DetSignGroupBuilder:
                 [],
                 [],
                 "value",
-                "my_id is not in the signer set",
+                "Signer's identifier is absent from the signer set",
             )
         # duplicate id in the signer set.
         self._append_error(
@@ -340,11 +354,14 @@ class DetSignGroupBuilder:
                 "Signer's public share is not in the public share list",
             )
         # off-curve pubshare at position 1 (min2 forces size >= 2).
-        ps13 = [self.min2[0], self.inputs.INVALID_PUBSHARE_IDX] + self.min2[2:]
+        pubshare_indices_offcurve = [
+            self.min2[0],
+            self.inputs.INVALID_PUBSHARE_IDX,
+        ] + self.min2[2:]
         self._append_error(
             0,
             self.min2,
-            ps13,
+            pubshare_indices_offcurve,
             0,
             RANDS[0],
             COMMON_MSGS[0],
@@ -353,6 +370,36 @@ class DetSignGroupBuilder:
             "value",
             "A public share is not a valid point",
         )
+        # A signer id equals n, outside the valid range. For t >= 2 an in-range
+        # member signs. At t=1 the lone id is out of range and the check fires
+        # first, so the self fields are inert.
+        if t >= 2:
+            ids_out_of_range = [self.inputs.OUT_OF_RANGE_ID] + list(range(1, t))
+            self._append_error(
+                1,
+                ids_out_of_range,
+                list(range(t)),
+                1,
+                RANDS[0],
+                COMMON_MSGS[0],
+                [],
+                [],
+                "value",
+                "A signer id is outside the valid range [0, n-1]",
+            )
+        elif t == 1:
+            self._append_error(
+                0,
+                [self.inputs.OUT_OF_RANGE_ID],
+                [0],
+                0,
+                RANDS[0],
+                COMMON_MSGS[0],
+                [],
+                [],
+                "value",
+                "A signer id is outside the valid range [0, n-1]",
+            )
         # pubshares don't match the threshold public key (needs t >= 2).
         if t >= 2:
             self._append_error(
@@ -367,10 +414,7 @@ class DetSignGroupBuilder:
                 "value",
                 "Signer set's public shares do not match the threshold public key",
             )
-        # inline bad aggothernonce literals (bypass the helper).
-        bad_agg15 = bytes.fromhex(
-            "048465FCF0BBDBCF443AABCCE533D42B4B5A10966AC09A49655E8C42DAAB8FCD61037496A3CC86926D452CAFCFD55D25972CA1675D549310DE296BFF42F72EEEA8C9"
-        )
+        # Bad aggothernonce literals passed directly to bypass the helper.
         self._append_error(
             0,
             self.min2,
@@ -382,10 +426,7 @@ class DetSignGroupBuilder:
             [],
             "invalid_contrib",
             "Aggregate of the other signers' nonces is invalid: first half has an unknown tag 0x04",
-            aggothernonce=bad_agg15,
-        )
-        bad_agg16 = bytes.fromhex(
-            "0000000000000000000000000000000000000000000000000000000000000000000287BF891D2A6DEAEBADC909352AA9405D1428C15F4B75F04DAE642A95C2548480"
+            aggothernonce=AGGOTHERNONCE_WRONG_TAG,
         )
         self._append_error(
             0,
@@ -398,10 +439,7 @@ class DetSignGroupBuilder:
             [],
             "invalid_contrib",
             "Aggregate of the other signers' nonces is invalid: first half is all zeros",
-            aggothernonce=bad_agg16,
-        )
-        bad_agg17 = bytes.fromhex(
-            "0353BC2314D46C813AF81317AF1BDF99816B6444E416BB8D3DC04ACB2F5388D1AC020000000000000000000000000000000000000000000000000000000000000009"
+            aggothernonce=AGGOTHERNONCE_FIRST_HALF_ZERO,
         )
         self._append_error(
             0,
@@ -414,10 +452,7 @@ class DetSignGroupBuilder:
             [],
             "invalid_contrib",
             "Aggregate of the other signers' nonces is invalid: second half is not a point on the curve",
-            aggothernonce=bad_agg17,
-        )
-        bad_agg18 = bytes.fromhex(
-            "0353BC2314D46C813AF81317AF1BDF99816B6444E416BB8D3DC04ACB2F5388D1AC02FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFFC30"
+            aggothernonce=AGGOTHERNONCE_BAD_POINT,
         )
         self._append_error(
             0,
@@ -430,7 +465,7 @@ class DetSignGroupBuilder:
             [],
             "invalid_contrib",
             "Aggregate of the other signers' nonces is invalid: second half's x-coordinate exceeds the field size",
-            aggothernonce=bad_agg18,
+            aggothernonce=AGGOTHERNONCE_EXCEEDS_FIELD,
         )
         # tweak exceeds the group order.
         self._append_error(
@@ -444,6 +479,20 @@ class DetSignGroupBuilder:
             [False],
             "value",
             "Tweak exceeds the group order",
+        )
+        # Fewer signers than the threshold (empty set at t=1).
+        below = list(range(t - 1))
+        self._append_error(
+            0,
+            below,
+            below,
+            0,
+            RANDS[0],
+            COMMON_MSGS[0],
+            [],
+            [],
+            "value",
+            "Fewer signers than the threshold t",
         )
         # signing with a zero secret share
         self._append_error(

@@ -73,7 +73,7 @@
                 },
                 {
                     "tc_id": 4,
-                    "comment": "All signers participate, signed by a non-first member in the set",
+                    "comment": "All signers participate, signed by a non-first member of the signer set",
                     "my_id": 1,
                     "ids": [0, 1, 2],
                     "pubshare_indices": [0, 1, 2],
@@ -435,7 +435,7 @@
                 },
                 {
                     "tc_id": 27,
-                    "comment": "All signers participate, signed by a non-first member in the set",
+                    "comment": "All signers participate, signed by a non-first member of the signer set",
                     "my_id": 1,
                     "ids": [0, 1, 2],
                     "pubshare_indices": [0, 1, 2],
@@ -780,7 +780,7 @@
                 },
                 {
                     "tc_id": 49,
-                    "comment": "All signers participate, signed by a non-first member in the set",
+                    "comment": "All signers participate, signed by a non-first member of the signer set",
                     "my_id": 1,
                     "ids": [0, 1, 2],
                     "pubshare_indices": [0, 1, 2],
@@ -1146,7 +1146,7 @@
                 },
                 {
                     "tc_id": 72,
-                    "comment": "All signers participate, signed by a non-first member in the set",
+                    "comment": "All signers participate, signed by a non-first member of the signer set",
                     "my_id": 1,
                     "ids": [0, 1, 2, 3, 4],
                     "pubshare_indices": [0, 1, 2, 3, 4],
