@@ -804,6 +804,7 @@ This document proposes a standard for the FROST threshold signature scheme that 
 
 ## Changelog
 
+- *0.6.0* (2026-06-09): Expand test vectors to cover multiple (t, n) configurations (1-of-3, 2-of-3, 3-of-3, and 3-of-5) instead of the single 2-of-3 setup.
 - *0.5.2* (2026-06-03): Make *aggothernonce* an optional argument in *DeterministicSign*, allowing a sole signer in a *1-of-n* setup to sign without aggregating other signers' nonces.
 - *0.5.1* (2026-06-02): Add a footnote explaining why the signer identifiers are sorted when deriving the nonce coefficient *b*, which prevents a secret share recovery attack in *DeterministicSign*.
 - *0.5.0* (2026-05-21): Introduces the following changes:

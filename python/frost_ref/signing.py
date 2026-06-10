@@ -16,7 +16,7 @@ from secp256k1lab.util import tagged_hash, xor_bytes
 
 PlainPk = NewType("PlainPk", bytes)
 XonlyPk = NewType("XonlyPk", bytes)
-ContribKind = Literal["aggothernonce", "aggnonce", "psig", "pubnonce", "pubshare"]
+ContribKind = Literal["aggothernonce", "aggnonce", "psig", "pubnonce"]
 
 # Tagged hash domain-separation tags. The challenge tag is inherited from
 # BIP340 for signature compatibility; the rest are specific to this BIP.
@@ -49,10 +49,14 @@ class InvalidContributionError(Exception):
         self.contrib = contrib
 
 
+def has_duplicates(lst: List[int]) -> bool:
+    return len(set(lst)) != len(lst)
+
+
 def derive_interpolating_value(ids: List[int], my_id: int) -> Scalar:
     assert my_id in ids
     assert 0 <= my_id < 2**32
-    assert len(set(ids)) == len(ids)
+    assert not has_duplicates(ids)
     num = Scalar(1)
     deno = Scalar(1)
     for curr_id in ids:
@@ -99,9 +103,13 @@ def validate_signers_ctx(signers_ctx: SignersContext) -> None:
         try:
             P = GE.from_bytes_compressed(pubshare)
         except ValueError:
+            # A malformed pubshare is invalid pre-protocol input, not a protocol
+            # contribution: the signers context is agreed upon before signing
+            # begins, so we signal it with ValueError rather than blaming a
+            # signer via InvalidContributionError.
             raise ValueError(f"Invalid pubshare at index {idx}.")
         pubshare_points.append(P)
-    if len(set(ids)) != len(ids):
+    if has_duplicates(ids):
         raise ValueError("The participant identifier list contains duplicate elements.")
     if derive_thresh_pubkey(ids, pubshare_points) != thresh_pk:
         raise ValueError("The provided key material is incorrect.")

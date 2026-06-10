@@ -18,9 +18,9 @@ the files.
 ## How test cases are laid out
 
 Most files don't repeat shared inputs inside every test case. Instead each file
-groups its cases under a `test_groups` array, and every group carries the key
-setup and the inputs it shares (`pubshares`, `pubnonces`, `secshares`,
-`secnonces`, `tweaks`). A case points into those shared inputs by index: a
+groups its cases under a `test_groups` array, one group per `(t, n)`
+configuration, and every group carries the key setup and the inputs it shares
+(`pubshares`, `pubnonces`, `secshares`, `secnonces`, `tweaks`). A case points into those shared inputs by index: a
 field named `<thing>_index` picks one entry, and `<thing>_indices` picks an
 ordered set. So to run a case, read its group's shared inputs, look up the
 case's indices in them, and call the function with the values you get back.
@@ -38,8 +38,8 @@ indices up, to trigger the failure it's testing.
 
 A few things stay out of that scheme:
 
-- `n`, `t`, and `thresh_pk` are group-level scalars you read directly (the
-  shared key setup), not part of the index scheme.
+- `tg_id`, `n`, `t`, and `thresh_pk` are group-level scalars you read directly
+  (the `(t, n)` label and the shared key setup), not part of the index scheme.
 - Per-session values stay inline in the case, with no shared input: the
   message (`msg`), the aggregate nonce (`aggnonce`, or `aggothernonce` in
   `det_sign`), and the signer's own id (`my_id`).
@@ -55,22 +55,27 @@ single-signer and uses no shared key, so every case inlines its own inputs.
 `nonce_agg` has no key material at all, so it keeps just a top-level
 `pubnonces` shared input that its cases index into.
 
-## The fixed key setup
+## The key setups
 
-Every file except `nonce_gen` and `nonce_agg` reuses one FROST setup from
-`frost_keygen_fixed()`: `n = 3`, `t = 2`, a shared `thresh_pk`, and
-identifiers `[0, 1, 2]`. Reusing the same `thresh_pk` everywhere lets you read
-the files as one consistent group. A fourth, bogus public share and a fourth
-identifier `3` also show up, but only error cases use them to trigger "invalid
-public share" and out-of-range-id failures, so don't treat them as valid
-signers.
+Every file except `nonce_gen` and `nonce_agg` carries four test groups, one
+per `(t, n)` configuration: `2-of-3`, `1-of-3`, `3-of-3`, and `3-of-5`. A
+group's `tg_id` names its configuration (for example `"3of5"`), and each group
+is generated independently, so it has its own `t`, `n`, `thresh_pk`, and `n`
+real signers with identifiers `0 .. n - 1`. The examples elsewhere in this
+document use the `2-of-3` group.
 
-Valid cases exercise different threshold-sized subsets of the three signers,
-so the `ids` list varies from case to case (for example `[0, 1]`, `[1, 0]`,
-`[0, 2]`, or the full `[0, 1, 2]`).
+In every group, one bogus public share and an out-of-range identifier (the
+value `n`) are appended after the real signers, but only error cases use them
+to trigger "invalid public share" and out-of-range-id failures, so don't treat
+them as valid signers.
 
-The `secshares` and `secnonces` shared inputs still carry the real secret
-material for all three signers at indices 0, 1, and 2, signer-aligned like the
+Valid cases exercise different threshold-sized subsets of the group's `n`
+signers, so the `ids` list varies from case to case: a single signer in the
+`1-of-3` group, three of five in `3-of-5`, and subsets like `[0, 1]`, `[1, 0]`,
+`[0, 2]`, or the full `[0, 1, 2]` in the `n = 3` groups.
+
+The `secshares` and `secnonces` shared inputs carry the real secret material
+for the group's `n` signers at indices `0 .. n - 1`, signer-aligned like the
 public ones. After those, a few deliberately bad entries are appended that
 only the error cases select: a zero secret share, an all-zero secret nonce,
 and a secret nonce whose second half is zero. Each case's `secshare_index` and

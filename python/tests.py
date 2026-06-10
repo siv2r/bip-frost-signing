@@ -343,7 +343,11 @@ def test_det_sign_vectors():
                 PlainPk(pubshares[i]) for i in test_case["pubshare_indices"]
             ]
             secshare = secshares[test_case["secshare_index"]]
-            aggothernonce = bytes.fromhex(test_case["aggothernonce"])
+            aggothernonce = (
+                bytes.fromhex(test_case["aggothernonce"])
+                if test_case["aggothernonce"] is not None
+                else None
+            )
             tweaks = fromhex_all(test_case["tweaks"])
             is_xonly = test_case["is_xonly"]
             msg = bytes.fromhex(test_case["msg"])
@@ -370,8 +374,12 @@ def test_det_sign_vectors():
             assert pubnonce == expected[0]
             assert psig == expected[1]
 
-            pubnonces = [aggothernonce, pubnonce]
-            aggnonce_tmp = nonce_agg(pubnonces)
+            # For a sole signer, aggothernonce is None and the aggnonce equals
+            # the signer's own pubnonce; skip the multi-party aggregation path.
+            if aggothernonce is not None:
+                aggnonce_tmp = nonce_agg([pubnonce, aggothernonce])
+            else:
+                aggnonce_tmp = pubnonce
             session_ctx = SessionContext(
                 aggnonce_tmp, signers_tmp, tweaks, is_xonly, msg
             )
@@ -386,7 +394,11 @@ def test_det_sign_vectors():
                 PlainPk(pubshares[i]) for i in test_case["pubshare_indices"]
             ]
             secshare = secshares[test_case["secshare_index"]]
-            aggothernonce = bytes.fromhex(test_case["aggothernonce"])
+            aggothernonce = (
+                bytes.fromhex(test_case["aggothernonce"])
+                if test_case["aggothernonce"] is not None
+                else None
+            )
             tweaks = fromhex_all(test_case["tweaks"])
             is_xonly = test_case["is_xonly"]
             msg = bytes.fromhex(test_case["msg"])
