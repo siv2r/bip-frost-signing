@@ -12,6 +12,7 @@ from generators.common import (
     COMMON_MSGS,
     COMMON_TWEAKS,
     CONFIGS,
+    AGGNONCE_WRONG_TAG,
     OUT_OF_RANGE_TWEAK,
     SharedGroupInputs,
     assign_tc_ids,
@@ -19,6 +20,7 @@ from generators.common import (
     bytes_to_hex,
     expect_exception,
     get_subset,
+    has_excl0_subset,
     set_group_config,
     swap_last_two,
     write_test_vectors,
@@ -33,9 +35,6 @@ RANDS = [
 
 # Fault literals that are case payloads rather than pool material (config-independent,
 # never indexed from a pool), so they stay local to this generator.
-AGGOTHERNONCE_WRONG_TAG = bytes.fromhex(
-    "048465FCF0BBDBCF443AABCCE533D42B4B5A10966AC09A49655E8C42DAAB8FCD61037496A3CC86926D452CAFCFD55D25972CA1675D549310DE296BFF42F72EEEA8C9"
-)
 AGGOTHERNONCE_FIRST_HALF_ZERO = bytes.fromhex(
     "0000000000000000000000000000000000000000000000000000000000000000000287BF891D2A6DEAEBADC909352AA9405D1428C15F4B75F04DAE642A95C2548480"
 )
@@ -49,7 +48,10 @@ AGGOTHERNONCE_EXCEEDS_FIELD = bytes.fromhex(
 
 class DetSignGroupBuilder:
     """Builds one (t, n) test group for det_sign_vectors.json. Shared inputs and
-    subsets live on self. Each add_* method appends its category to self.group."""
+    subsets live on self. Each add_* method appends its category to self.group.
+
+    Index convention: valid cases use secshare_index == my_id (a signer signs with
+    its own share at pool position my_id)."""
 
     def __init__(self, cfg):
         self.inputs = SharedGroupInputs(cfg)
@@ -57,11 +59,11 @@ class DetSignGroupBuilder:
         self.n = self.inputs.n
         self.thresh_pk = self.inputs.thresh_pk
 
+        self.cfg = cfg
         self.min_s = get_subset(cfg, "min")
         self.full = get_subset(cfg, "full")
         self.alt = get_subset(cfg, "alt")
         self.min2 = get_subset(cfg, "min2")
-        self.wrong = get_subset(cfg, "wrong") if cfg.t >= 2 and cfg.t < cfg.n else None
 
         self.group = {}
         set_group_config(self.group, cfg, self.inputs)
@@ -77,9 +79,9 @@ class DetSignGroupBuilder:
         msg: bytes,
         rand: Optional[bytes],
     ) -> Optional[bytes]:
-        """Return None when the signer is the sole participant. Otherwise aggregate
-        the other signers' public nonces."""
-        if len(ids_set) == 1:
+        """Return None when the signer is the sole participant (the set is exactly
+        [my_id]). Otherwise aggregate the other signers' public nonces."""
+        if ids_set == [my_id]:
             return None
         tmp = b"" if rand is None else rand
         other_pubnonces = []
@@ -203,43 +205,32 @@ class DetSignGroupBuilder:
             [],
             "Minimum threshold subset of signers",
         )
-        # reordering. Uses reversed(min2), which is a real reorder in every config.
-        rev_min2 = list(reversed(self.min2))
-        self._append_valid(
-            0,
-            rev_min2,
-            rev_min2,
-            RANDS[0],
-            COMMON_MSGS[0],
-            [],
-            [],
-            "Reordering the signer set leaves the deterministic output unchanged, because the identifiers are sorted before they are bound into the nonce derivation and the binding value",
-        )
-        # a different threshold subset (only when one exists).
-        if t < n:
-            if t == 1:
-                # 1of3: use id 1 as the sole signer (det_sign-local exception).
-                self._append_valid(
-                    1,
-                    [1],
-                    [1],
-                    RANDS[0],
-                    COMMON_MSGS[0],
-                    [],
-                    [],
-                    "A different threshold subset gives a different deterministic nonce, since the signer set is bound into the nonce derivation",
-                )
-            else:
-                self._append_valid(
-                    0,
-                    self.alt,
-                    self.alt,
-                    RANDS[0],
-                    COMMON_MSGS[0],
-                    [],
-                    [],
-                    "A different threshold subset gives a different deterministic nonce, since the signer set is bound into the nonce derivation",
-                )
+        # reordering (needs a set of size >= 2 to be meaningful, matching sign_verify).
+        if t >= 2:
+            rev = list(reversed(self.min_s))
+            self._append_valid(
+                0,
+                rev,
+                rev,
+                RANDS[0],
+                COMMON_MSGS[0],
+                [],
+                [],
+                "Reordering the signer set leaves the deterministic output unchanged, because the identifiers are sorted before they are bound into the nonce derivation and the binding value",
+            )
+        # a different threshold subset (needs t >= 2; at t=1 alt collapses to the
+        # minimum set, matching sign_verify).
+        if t >= 2 and t < n:
+            self._append_valid(
+                0,
+                self.alt,
+                self.alt,
+                RANDS[0],
+                COMMON_MSGS[0],
+                [],
+                [],
+                "A different threshold subset gives a different deterministic nonce, since the signer set is bound into the nonce derivation",
+            )
         # null randomness.
         self._append_valid(
             0,
@@ -339,12 +330,12 @@ class DetSignGroupBuilder:
             "Signer set contains a duplicate id",
         )
         # signer loads share 0 but the set excludes id 0 (needs t >= 2 and t < n).
-        if t >= 2 and t < n:
-            assert self.wrong is not None
+        if has_excl0_subset(t, n):
+            excl0 = get_subset(self.cfg, "excl0")
             self._append_error(
                 1,
-                self.wrong,
-                self.wrong,
+                excl0,
+                excl0,
                 0,
                 RANDS[0],
                 COMMON_MSGS[0],
@@ -372,7 +363,9 @@ class DetSignGroupBuilder:
         )
         # A signer id equals n, outside the valid range. For t >= 2 an in-range
         # member signs. At t=1 the lone id is out of range and the check fires
-        # first, so the self fields are inert.
+        # first, so the self fields are inert. This assumes signer-id range
+        # validation runs before the pubshare/threshold-key checks; a different
+        # order would surface a different error.
         if t >= 2:
             ids_out_of_range = [self.inputs.OUT_OF_RANGE_ID] + list(range(1, t))
             self._append_error(
@@ -400,7 +393,9 @@ class DetSignGroupBuilder:
                 "value",
                 "A signer id is outside the valid range [0, n-1]",
             )
-        # pubshares don't match the threshold public key (needs t >= 2).
+        # pubshares don't match the threshold public key. Needs t >= 2: at t=1 the lone
+        # pubshare must equal the threshold key, so there is no last-two pair to swap. The
+        # 1of3 config intentionally omits this case, matching sign_verify.
         if t >= 2:
             self._append_error(
                 0,
@@ -426,7 +421,7 @@ class DetSignGroupBuilder:
             [],
             "invalid_contrib",
             "Aggregate of the other signers' nonces is invalid: first half has an unknown tag 0x04",
-            aggothernonce=AGGOTHERNONCE_WRONG_TAG,
+            aggothernonce=AGGNONCE_WRONG_TAG,
         )
         self._append_error(
             0,

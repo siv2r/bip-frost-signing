@@ -441,40 +441,6 @@
                 },
                 {
                     "tc_id": 24,
-                    "comment": "Reordering the signer set leaves the deterministic output unchanged, because the identifiers are sorted before they are bound into the nonce derivation and the binding value",
-                    "my_id": 0,
-                    "ids": [1, 0],
-                    "pubshare_indices": [1, 0],
-                    "secshare_index": 0,
-                    "aggothernonce": "03BF06149B3E614403EA899F37446B294117785D15D238E1E36989F294120200A20329620EA331F70450B94A7F6B175CF7C5A65CD967D367332AFD4C6FE514882467",
-                    "rand": "0000000000000000000000000000000000000000000000000000000000000000",
-                    "msg": "F95466D086770E689964664219266FE5ED215C92AE20BAB5C9D79ADDDDF3C0CF",
-                    "tweaks": [],
-                    "is_xonly": [],
-                    "expected": [
-                        "03A55B71964F153C99D39943FE37EDFFF9BC3EC6AE7F4E69F5741DE5949C832B8103CA011355A4B233079418F0FC5EFC46FFBAC3300C03381214AC60E87C0DDEF5F8",
-                        "503DF17B008B051197BBFE15CF301134A6017E57E4E76C3A0C06D61226DA1A8F"
-                    ]
-                },
-                {
-                    "tc_id": 25,
-                    "comment": "A different threshold subset gives a different deterministic nonce, since the signer set is bound into the nonce derivation",
-                    "my_id": 1,
-                    "ids": [1],
-                    "pubshare_indices": [1],
-                    "secshare_index": 1,
-                    "aggothernonce": null,
-                    "rand": "0000000000000000000000000000000000000000000000000000000000000000",
-                    "msg": "F95466D086770E689964664219266FE5ED215C92AE20BAB5C9D79ADDDDF3C0CF",
-                    "tweaks": [],
-                    "is_xonly": [],
-                    "expected": [
-                        "03B5E55DDBE3A791BA40A5881EB4A2D2BA9B879EC39216BB60FDF394A9B8839CBB0343606BD07944F95CA73C0C890E1EE2884C65AA8185C9953692EAA47AD34B4227",
-                        "C5F9B723C432DB9C496A0DA3F5FB48C341EA5AFE6573E43B5DE33F0E27D1767B"
-                    ]
-                },
-                {
-                    "tc_id": 26,
                     "comment": "Auxiliary randomness omitted (null), which is not equivalent to all-zeros randomness",
                     "my_id": 0,
                     "ids": [0],
@@ -491,7 +457,7 @@
                     ]
                 },
                 {
-                    "tc_id": 27,
+                    "tc_id": 25,
                     "comment": "Auxiliary randomness is all ones, distinct from the all-zeros and omitted cases",
                     "my_id": 0,
                     "ids": [0],
@@ -508,7 +474,7 @@
                     ]
                 },
                 {
-                    "tc_id": 28,
+                    "tc_id": 26,
                     "comment": "All signers participate, signed by a non-first member of the signer set",
                     "my_id": 1,
                     "ids": [0, 1, 2],
@@ -525,7 +491,7 @@
                     ]
                 },
                 {
-                    "tc_id": 29,
+                    "tc_id": 27,
                     "comment": "Empty message",
                     "my_id": 0,
                     "ids": [0],
@@ -542,7 +508,7 @@
                     ]
                 },
                 {
-                    "tc_id": 30,
+                    "tc_id": 28,
                     "comment": "Non-standard message length (38 bytes)",
                     "my_id": 0,
                     "ids": [0],
@@ -559,7 +525,7 @@
                     ]
                 },
                 {
-                    "tc_id": 31,
+                    "tc_id": 29,
                     "comment": "Single x-only tweak applied",
                     "my_id": 0,
                     "ids": [0],
@@ -580,13 +546,13 @@
             ],
             "error_tests": [
                 {
-                    "tc_id": 32,
+                    "tc_id": 30,
                     "comment": "Signer's identifier is absent from the signer set",
                     "my_id": 1,
                     "ids": [0],
                     "pubshare_indices": [0],
                     "secshare_index": 0,
-                    "aggothernonce": null,
+                    "aggothernonce": "03BF06149B3E614403EA899F37446B294117785D15D238E1E36989F294120200A20329620EA331F70450B94A7F6B175CF7C5A65CD967D367332AFD4C6FE514882467",
                     "rand": "0000000000000000000000000000000000000000000000000000000000000000",
                     "msg": "F95466D086770E689964664219266FE5ED215C92AE20BAB5C9D79ADDDDF3C0CF",
                     "tweaks": [],
@@ -597,7 +563,7 @@
                     }
                 },
                 {
-                    "tc_id": 33,
+                    "tc_id": 31,
                     "comment": "Signer set contains a duplicate id",
                     "my_id": 0,
                     "ids": [0, 1, 1],
@@ -614,7 +580,7 @@
                     }
                 },
                 {
-                    "tc_id": 34,
+                    "tc_id": 32,
                     "comment": "A public share is not a valid point",
                     "my_id": 0,
                     "ids": [0, 1],
@@ -631,13 +597,13 @@
                     }
                 },
                 {
-                    "tc_id": 35,
+                    "tc_id": 33,
                     "comment": "A signer id is outside the valid range [0, n-1]",
                     "my_id": 0,
                     "ids": [3],
                     "pubshare_indices": [0],
                     "secshare_index": 0,
-                    "aggothernonce": null,
+                    "aggothernonce": "03B19C94C4B6537008FFF018971B311BF30B1BAB5F8983A5B262D0CD37CBD309200329A028ADEF6AB30E667123E82DFB1BB055F380D0CDD5CDBF4ADCB1067398F558",
                     "rand": "0000000000000000000000000000000000000000000000000000000000000000",
                     "msg": "F95466D086770E689964664219266FE5ED215C92AE20BAB5C9D79ADDDDF3C0CF",
                     "tweaks": [],
@@ -648,7 +614,7 @@
                     }
                 },
                 {
-                    "tc_id": 36,
+                    "tc_id": 34,
                     "comment": "Aggregate of the other signers' nonces is invalid: first half has an unknown tag 0x04",
                     "my_id": 0,
                     "ids": [0, 1],
@@ -666,7 +632,7 @@
                     }
                 },
                 {
-                    "tc_id": 37,
+                    "tc_id": 35,
                     "comment": "Aggregate of the other signers' nonces is invalid: first half is all zeros",
                     "my_id": 0,
                     "ids": [0, 1],
@@ -684,7 +650,7 @@
                     }
                 },
                 {
-                    "tc_id": 38,
+                    "tc_id": 36,
                     "comment": "Aggregate of the other signers' nonces is invalid: second half is not a point on the curve",
                     "my_id": 0,
                     "ids": [0, 1],
@@ -702,7 +668,7 @@
                     }
                 },
                 {
-                    "tc_id": 39,
+                    "tc_id": 37,
                     "comment": "Aggregate of the other signers' nonces is invalid: second half's x-coordinate exceeds the field size",
                     "my_id": 0,
                     "ids": [0, 1],
@@ -720,7 +686,7 @@
                     }
                 },
                 {
-                    "tc_id": 40,
+                    "tc_id": 38,
                     "comment": "Tweak exceeds the group order",
                     "my_id": 0,
                     "ids": [0],
@@ -739,7 +705,7 @@
                     }
                 },
                 {
-                    "tc_id": 41,
+                    "tc_id": 39,
                     "comment": "Fewer signers than the threshold t",
                     "my_id": 0,
                     "ids": [],
@@ -756,7 +722,7 @@
                     }
                 },
                 {
-                    "tc_id": 42,
+                    "tc_id": 40,
                     "comment": "Secret share is out of range (zero)",
                     "my_id": 0,
                     "ids": [0],
@@ -793,7 +759,7 @@
             ],
             "valid_tests": [
                 {
-                    "tc_id": 43,
+                    "tc_id": 41,
                     "comment": "Minimum threshold subset of signers",
                     "my_id": 0,
                     "ids": [0, 1, 2],
@@ -810,7 +776,7 @@
                     ]
                 },
                 {
-                    "tc_id": 44,
+                    "tc_id": 42,
                     "comment": "Reordering the signer set leaves the deterministic output unchanged, because the identifiers are sorted before they are bound into the nonce derivation and the binding value",
                     "my_id": 0,
                     "ids": [2, 1, 0],
@@ -827,7 +793,7 @@
                     ]
                 },
                 {
-                    "tc_id": 45,
+                    "tc_id": 43,
                     "comment": "Auxiliary randomness omitted (null), which is not equivalent to all-zeros randomness",
                     "my_id": 0,
                     "ids": [0, 1, 2],
@@ -844,7 +810,7 @@
                     ]
                 },
                 {
-                    "tc_id": 46,
+                    "tc_id": 44,
                     "comment": "Auxiliary randomness is all ones, distinct from the all-zeros and omitted cases",
                     "my_id": 0,
                     "ids": [0, 1, 2],
@@ -861,7 +827,7 @@
                     ]
                 },
                 {
-                    "tc_id": 47,
+                    "tc_id": 45,
                     "comment": "All signers participate, signed by a non-first member of the signer set",
                     "my_id": 1,
                     "ids": [0, 1, 2],
@@ -878,7 +844,7 @@
                     ]
                 },
                 {
-                    "tc_id": 48,
+                    "tc_id": 46,
                     "comment": "Empty message",
                     "my_id": 0,
                     "ids": [0, 1, 2],
@@ -895,7 +861,7 @@
                     ]
                 },
                 {
-                    "tc_id": 49,
+                    "tc_id": 47,
                     "comment": "Non-standard message length (38 bytes)",
                     "my_id": 0,
                     "ids": [0, 1, 2],
@@ -912,7 +878,7 @@
                     ]
                 },
                 {
-                    "tc_id": 50,
+                    "tc_id": 48,
                     "comment": "Single x-only tweak applied",
                     "my_id": 0,
                     "ids": [0, 1, 2],
@@ -933,7 +899,7 @@
             ],
             "error_tests": [
                 {
-                    "tc_id": 51,
+                    "tc_id": 49,
                     "comment": "Signer set contains a duplicate id",
                     "my_id": 0,
                     "ids": [0, 1, 1],
@@ -950,7 +916,7 @@
                     }
                 },
                 {
-                    "tc_id": 52,
+                    "tc_id": 50,
                     "comment": "A public share is not a valid point",
                     "my_id": 0,
                     "ids": [0, 1, 2],
@@ -967,7 +933,7 @@
                     }
                 },
                 {
-                    "tc_id": 53,
+                    "tc_id": 51,
                     "comment": "A signer id is outside the valid range [0, n-1]",
                     "my_id": 1,
                     "ids": [3, 1, 2],
@@ -984,7 +950,7 @@
                     }
                 },
                 {
-                    "tc_id": 54,
+                    "tc_id": 52,
                     "comment": "Signer set's public shares do not match the threshold public key",
                     "my_id": 0,
                     "ids": [0, 1, 2],
@@ -1001,7 +967,7 @@
                     }
                 },
                 {
-                    "tc_id": 55,
+                    "tc_id": 53,
                     "comment": "Aggregate of the other signers' nonces is invalid: first half has an unknown tag 0x04",
                     "my_id": 0,
                     "ids": [0, 1, 2],
@@ -1019,7 +985,7 @@
                     }
                 },
                 {
-                    "tc_id": 56,
+                    "tc_id": 54,
                     "comment": "Aggregate of the other signers' nonces is invalid: first half is all zeros",
                     "my_id": 0,
                     "ids": [0, 1, 2],
@@ -1037,7 +1003,7 @@
                     }
                 },
                 {
-                    "tc_id": 57,
+                    "tc_id": 55,
                     "comment": "Aggregate of the other signers' nonces is invalid: second half is not a point on the curve",
                     "my_id": 0,
                     "ids": [0, 1, 2],
@@ -1055,7 +1021,7 @@
                     }
                 },
                 {
-                    "tc_id": 58,
+                    "tc_id": 56,
                     "comment": "Aggregate of the other signers' nonces is invalid: second half's x-coordinate exceeds the field size",
                     "my_id": 0,
                     "ids": [0, 1, 2],
@@ -1073,7 +1039,7 @@
                     }
                 },
                 {
-                    "tc_id": 59,
+                    "tc_id": 57,
                     "comment": "Tweak exceeds the group order",
                     "my_id": 0,
                     "ids": [0, 1, 2],
@@ -1092,7 +1058,7 @@
                     }
                 },
                 {
-                    "tc_id": 60,
+                    "tc_id": 58,
                     "comment": "Fewer signers than the threshold t",
                     "my_id": 0,
                     "ids": [0, 1],
@@ -1109,7 +1075,7 @@
                     }
                 },
                 {
-                    "tc_id": 61,
+                    "tc_id": 59,
                     "comment": "Secret share is out of range (zero)",
                     "my_id": 0,
                     "ids": [0, 1, 2],
@@ -1150,7 +1116,7 @@
             ],
             "valid_tests": [
                 {
-                    "tc_id": 62,
+                    "tc_id": 60,
                     "comment": "Minimum threshold subset of signers",
                     "my_id": 0,
                     "ids": [0, 1, 2],
@@ -1167,7 +1133,7 @@
                     ]
                 },
                 {
-                    "tc_id": 63,
+                    "tc_id": 61,
                     "comment": "Reordering the signer set leaves the deterministic output unchanged, because the identifiers are sorted before they are bound into the nonce derivation and the binding value",
                     "my_id": 0,
                     "ids": [2, 1, 0],
@@ -1184,7 +1150,7 @@
                     ]
                 },
                 {
-                    "tc_id": 64,
+                    "tc_id": 62,
                     "comment": "A different threshold subset gives a different deterministic nonce, since the signer set is bound into the nonce derivation",
                     "my_id": 0,
                     "ids": [0, 3, 4],
@@ -1201,7 +1167,7 @@
                     ]
                 },
                 {
-                    "tc_id": 65,
+                    "tc_id": 63,
                     "comment": "Auxiliary randomness omitted (null), which is not equivalent to all-zeros randomness",
                     "my_id": 0,
                     "ids": [0, 1, 2],
@@ -1218,7 +1184,7 @@
                     ]
                 },
                 {
-                    "tc_id": 66,
+                    "tc_id": 64,
                     "comment": "Auxiliary randomness is all ones, distinct from the all-zeros and omitted cases",
                     "my_id": 0,
                     "ids": [0, 1, 2],
@@ -1235,7 +1201,7 @@
                     ]
                 },
                 {
-                    "tc_id": 67,
+                    "tc_id": 65,
                     "comment": "All signers participate, signed by a non-first member of the signer set",
                     "my_id": 1,
                     "ids": [0, 1, 2, 3, 4],
@@ -1252,7 +1218,7 @@
                     ]
                 },
                 {
-                    "tc_id": 68,
+                    "tc_id": 66,
                     "comment": "Empty message",
                     "my_id": 0,
                     "ids": [0, 1, 2],
@@ -1269,7 +1235,7 @@
                     ]
                 },
                 {
-                    "tc_id": 69,
+                    "tc_id": 67,
                     "comment": "Non-standard message length (38 bytes)",
                     "my_id": 0,
                     "ids": [0, 1, 2],
@@ -1286,7 +1252,7 @@
                     ]
                 },
                 {
-                    "tc_id": 70,
+                    "tc_id": 68,
                     "comment": "Single x-only tweak applied",
                     "my_id": 0,
                     "ids": [0, 1, 2],
@@ -1307,7 +1273,7 @@
             ],
             "error_tests": [
                 {
-                    "tc_id": 71,
+                    "tc_id": 69,
                     "comment": "Signer's identifier is absent from the signer set",
                     "my_id": 3,
                     "ids": [0, 1, 2],
@@ -1324,7 +1290,7 @@
                     }
                 },
                 {
-                    "tc_id": 72,
+                    "tc_id": 70,
                     "comment": "Signer set contains a duplicate id",
                     "my_id": 0,
                     "ids": [0, 1, 1],
@@ -1341,7 +1307,7 @@
                     }
                 },
                 {
-                    "tc_id": 73,
+                    "tc_id": 71,
                     "comment": "Signer's public share is not in the public share list",
                     "my_id": 1,
                     "ids": [1, 2, 3],
@@ -1358,7 +1324,7 @@
                     }
                 },
                 {
-                    "tc_id": 74,
+                    "tc_id": 72,
                     "comment": "A public share is not a valid point",
                     "my_id": 0,
                     "ids": [0, 1, 2],
@@ -1375,7 +1341,7 @@
                     }
                 },
                 {
-                    "tc_id": 75,
+                    "tc_id": 73,
                     "comment": "A signer id is outside the valid range [0, n-1]",
                     "my_id": 1,
                     "ids": [5, 1, 2],
@@ -1392,7 +1358,7 @@
                     }
                 },
                 {
-                    "tc_id": 76,
+                    "tc_id": 74,
                     "comment": "Signer set's public shares do not match the threshold public key",
                     "my_id": 0,
                     "ids": [0, 1, 2],
@@ -1409,7 +1375,7 @@
                     }
                 },
                 {
-                    "tc_id": 77,
+                    "tc_id": 75,
                     "comment": "Aggregate of the other signers' nonces is invalid: first half has an unknown tag 0x04",
                     "my_id": 0,
                     "ids": [0, 1, 2],
@@ -1427,7 +1393,7 @@
                     }
                 },
                 {
-                    "tc_id": 78,
+                    "tc_id": 76,
                     "comment": "Aggregate of the other signers' nonces is invalid: first half is all zeros",
                     "my_id": 0,
                     "ids": [0, 1, 2],
@@ -1445,7 +1411,7 @@
                     }
                 },
                 {
-                    "tc_id": 79,
+                    "tc_id": 77,
                     "comment": "Aggregate of the other signers' nonces is invalid: second half is not a point on the curve",
                     "my_id": 0,
                     "ids": [0, 1, 2],
@@ -1463,7 +1429,7 @@
                     }
                 },
                 {
-                    "tc_id": 80,
+                    "tc_id": 78,
                     "comment": "Aggregate of the other signers' nonces is invalid: second half's x-coordinate exceeds the field size",
                     "my_id": 0,
                     "ids": [0, 1, 2],
@@ -1481,7 +1447,7 @@
                     }
                 },
                 {
-                    "tc_id": 81,
+                    "tc_id": 79,
                     "comment": "Tweak exceeds the group order",
                     "my_id": 0,
                     "ids": [0, 1, 2],
@@ -1500,7 +1466,7 @@
                     }
                 },
                 {
-                    "tc_id": 82,
+                    "tc_id": 80,
                     "comment": "Fewer signers than the threshold t",
                     "my_id": 0,
                     "ids": [0, 1],
@@ -1517,7 +1483,7 @@
                     }
                 },
                 {
-                    "tc_id": 83,
+                    "tc_id": 81,
                     "comment": "Secret share is out of range (zero)",
                     "my_id": 0,
                     "ids": [0, 1, 2],

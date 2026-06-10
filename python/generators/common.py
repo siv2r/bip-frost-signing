@@ -12,7 +12,7 @@ from frost_ref.signing import (
     nonce_agg,
     nonce_gen_internal,
 )
-from secp256k1lab.secp256k1 import GE, Scalar
+from secp256k1lab.secp256k1 import G, GE, Scalar
 from secp256k1lab.keys import pubkey_gen_plain
 from trusted_dealer import trusted_dealer_keygen
 
@@ -86,10 +86,10 @@ COMMON_TWEAKS = hex_list_to_bytes(
     ]
 )
 
-OUT_OF_RANGE_TWEAK = bytes.fromhex(
-    "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141"
-)
-
+# secp256k1 group order n: the single out-of-range boundary shared by the tweak and
+# partial-signature generators
+GROUP_ORDER = GE.ORDER.to_bytes(32, "big")
+OUT_OF_RANGE_TWEAK = GROUP_ORDER
 INVALID_PUBSHARE = bytes.fromhex(
     "020000000000000000000000000000000000000000000000000000000000000007"
 )
@@ -98,6 +98,10 @@ INVALID_PUBSHARE = bytes.fromhex(
 # curve) and whose second half is a valid point
 INVALID_PUBNONCE = bytes.fromhex(
     "0200000000000000000000000000000000000000000000000000000000000000090287BF891D2A6DEAEBADC909352AA9405D1428C15F4B75F04DAE642A95C2548480"
+)
+
+AGGNONCE_WRONG_TAG = bytes.fromhex(
+    "048465FCF0BBDBCF443AABCCE533D42B4B5A10966AC09A49655E8C42DAAB8FCD61037496A3CC86926D452CAFCFD55D25972CA1675D549310DE296BFF42F72EEEA8C9"
 )
 
 
@@ -142,15 +146,19 @@ def reconstruct_thresh_sk(ids, secshares):
     return result
 
 
+# Chosen so the threshold pubkey is odd-y (prefix 03)
 SECKEY_1OF3 = bytes.fromhex(
     "06D47E05E97481428654563E5AE69C20C49642773B7334220E63110259A30C32"
 )
+# Chosen so the threshold pubkey is even-y (prefix 02)
 SECKEY_2OF3 = bytes.fromhex(
     "4C08C37F5B9A88FAE396A06E286BA41B654457BF5E35B4A693096ED9AB1491F5"
 )
+# Chosen so the threshold pubkey is even-y (prefix 02)
 SECKEY_3OF3 = bytes.fromhex(
     "70E90852E9541FE47552B738A14C2B9B5B38C0979D640BA8C7A5A5EEE1BDA405"
 )
+# Chosen so the threshold pubkey is odd-y (prefix 03)
 SECKEY_3OF5 = bytes.fromhex(
     "C97F278DAC5FC3214F4C2DD7551C84D4854DCA143887F54692735C61A16E902A"
 )
@@ -204,7 +212,9 @@ class SharedGroupInputs:
         self.pool_secshares = secshares + [b"\x00" * 32]
 
         # pubnonces pool: off-curve nonce at slot n, then the inverse nonce at slot
-        # n+1 (negation of the aggregate of the first n-1 real pubnonces)
+        # n+1 (negation of the aggregate of the first n-1 real pubnonces). It only
+        # sums to infinity when paired with indices [0..n-2] plus INVERSE_PUBNONCE_IDX.
+        # Any other size n-1 subset yields a non-infinity aggregate.
         tmp = nonce_agg(self.pubnonces[: n - 1])
         R1 = GE.from_bytes_compressed_with_infinity(tmp[0:33])
         R2 = GE.from_bytes_compressed_with_infinity(tmp[33:66])
@@ -221,9 +231,11 @@ class SharedGroupInputs:
         # tweaks pool: 4 common tweaks, out-of-range tweak, then the per-config
         # infinity tweak (negation of the reconstructed threshold secret over the
         # minimum set; degenerates to -secshares[0] at t=1).
-        infinity_tweak = (
-            -reconstruct_thresh_sk(list(range(t)), secshares[:t])
-        ).to_bytes()
+        infinity_tweak_scalar = -reconstruct_thresh_sk(list(range(t)), secshares[:t])
+        assert (
+            GE.from_bytes_compressed(self.thresh_pk) + infinity_tweak_scalar * G
+        ).infinity
+        infinity_tweak = infinity_tweak_scalar.to_bytes()
         self.tweaks_pool = list(COMMON_TWEAKS) + [OUT_OF_RANGE_TWEAK, infinity_tweak]
 
         # named offsets into the pools, all derived from n
@@ -235,8 +247,15 @@ class SharedGroupInputs:
         self.SECNONCE_ZERO_SECOND_IDX = n + 1
         self.OUT_OF_RANGE_ID = n
         # tweaks-pool offsets, n-independent
-        self.OUT_OF_RANGE_TWEAK_IDX = 4
-        self.INFINITY_TWEAK_IDX = 5
+        self.OUT_OF_RANGE_TWEAK_IDX = len(COMMON_TWEAKS)
+        self.INFINITY_TWEAK_IDX = len(COMMON_TWEAKS) + 1
+
+
+def has_excl0_subset(t, n):
+    # The "excl0" subset (a size-t signer set that excludes participant 0) is
+    # usable only when t >= 2 and t < n. At t=n no size-t set can exclude id 0,
+    # and at t=1 all shares are identical, so excluding id 0 changes nothing.
+    return t >= 2 and t < n
 
 
 def get_subset(cfg, strategy="min"):
@@ -249,7 +268,8 @@ def get_subset(cfg, strategy="min"):
             return [0] + list(range(cfg.n - cfg.t + 1, cfg.n))
         case "min2":  # size-at-least-2 baseline; [0, 1] at t=1
             return list(range(max(cfg.t, 2)))
-        case "wrong":  # t ids from 1, excludes id 0 (caller guards t>=2 and t<n)
+        case "excl0":  # t ids from 1, excludes id 0 (only valid when has_excl0_subset)
+            assert has_excl0_subset(cfg.t, cfg.n)
             return list(range(1, cfg.t + 1))
         case _:
             raise ValueError(f"Unknown subset strategy: {strategy}")
@@ -257,18 +277,16 @@ def get_subset(cfg, strategy="min"):
 
 def swap_last_two(indices):
     result = list(indices)
-    if len(result) >= 2:
-        result[-1], result[-2] = result[-2], result[-1]
+    assert len(result) >= 2
+    result[-1], result[-2] = result[-2], result[-1]
     return result
 
 
 def set_group_config(group, cfg, inputs):
-    thresh_pk = pubkey_gen_plain(cfg.seckey)
-    assert thresh_pk == inputs.thresh_pk
     group["tg_id"] = cfg.tg_id
     group["t"] = cfg.t
     group["n"] = cfg.n
-    group["thresh_pk"] = bytes_to_hex(thresh_pk)
+    group["thresh_pk"] = bytes_to_hex(inputs.thresh_pk)
 
 
 def assign_tc_ids(groups):

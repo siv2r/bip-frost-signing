@@ -29,7 +29,10 @@ INVALID_33_BYTE_TWEAK = bytes.fromhex(
 
 class TweakGroupBuilder:
     """Builds one (t, n) test group for tweak_vectors.json. Shared inputs and
-    subsets live on self. Each add_* method appends its category to self.group."""
+    subsets live on self. Each add_* method appends its category to self.group.
+
+    Index convention: valid cases use secshare_index == secnonce_index == my_id (a
+    signer signs with its own material at pool position my_id)."""
 
     def __init__(self, cfg):
         self.inputs = SharedGroupInputs(cfg)
@@ -42,9 +45,8 @@ class TweakGroupBuilder:
         self.aggnonce_min = self._agg(self.min_s)
 
         # Build the tweaks pool: self.inputs.tweaks_pool has 6 entries (indices 0-5).
-        # Append INVALID_33_BYTE_TWEAK at index 6.
+        # Append INVALID_33_BYTE_TWEAK at the next slot (len of the shared pool).
         self.tweaks_pool = list(self.inputs.tweaks_pool) + [INVALID_33_BYTE_TWEAK]
-        self.INVALID_33_BYTE_TWEAK_IDX = len(self.inputs.tweaks_pool)
 
         self.group = {}
         set_group_config(self.group, cfg, self.inputs)
@@ -291,7 +293,8 @@ class TweakGroupBuilder:
             0,
             self.aggnonce_min,
             msg,
-            [self.INVALID_33_BYTE_TWEAK_IDX],
+            # index of the appended invalid 33-byte tweak (last slot of the pool)
+            [len(self.inputs.tweaks_pool)],
             [False],
             "Tweak is not a 32-byte array",
         )

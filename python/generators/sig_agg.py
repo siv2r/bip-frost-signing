@@ -14,6 +14,7 @@ from generators.common import (
     COMMON_MSGS,
     COMMON_TWEAKS,
     CONFIGS,
+    GROUP_ORDER,
     SharedGroupInputs,
     assign_tc_ids,
     bytes_list_to_hex,
@@ -24,14 +25,13 @@ from generators.common import (
     write_test_vectors,
 )
 
-# Fault literals that are case payloads rather than pool material (config-independent,
-# never indexed from a pool), so they stay local to this generator.
-GROUP_ORDER_PSIG = "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141"
-
 
 class SigAggGroupBuilder:
     """Builds one (t, n) test group for sig_agg_vectors.json. Shared inputs and
-    subsets live on self. Each add_* method appends its category to self.group."""
+    subsets live on self. Each add_* method appends its category to self.group.
+
+    Index convention: set_indices selects the signing subset from the pool (sig_agg
+    has no per-signer my_id material convention and no appended fault slots)."""
 
     def __init__(self, cfg):
         self.inputs = SharedGroupInputs(cfg)
@@ -118,7 +118,7 @@ class SigAggGroupBuilder:
             )
 
         if fault == "psig_out_of_range":
-            psigs[-1] = bytes.fromhex(GROUP_ORDER_PSIG)
+            psigs[-1] = GROUP_ORDER
         elif fault == "psig_count_mismatch":
             psigs = psigs[:-1]
 

@@ -13,12 +13,15 @@ from secp256k1lab.secp256k1 import Scalar
 from generators.common import (
     COMMON_MSGS,
     CONFIGS,
+    GROUP_ORDER,
+    AGGNONCE_WRONG_TAG,
     SharedGroupInputs,
     assign_tc_ids,
     bytes_list_to_hex,
     bytes_to_hex,
     expect_exception,
     get_subset,
+    has_excl0_subset,
     set_group_config,
     swap_last_two,
     write_test_vectors,
@@ -26,21 +29,21 @@ from generators.common import (
 
 # Fault literals that are case payloads rather than pool material (config-independent,
 # never indexed from a pool), so they stay local to this generator.
-AGGNONCE_WRONG_TAG = bytes.fromhex(
-    "048465FCF0BBDBCF443AABCCE533D42B4B5A10966AC09A49655E8C42DAAB8FCD61037496A3CC86926D452CAFCFD55D25972CA1675D549310DE296BFF42F72EEEA8C9"
-)
 AGGNONCE_BAD_XCOORD = bytes.fromhex(
     "028465FCF0BBDBCF443AABCCE533D42B4B5A10966AC09A49655E8C42DAAB8FCD61020000000000000000000000000000000000000000000000000000000000000009"
 )
 AGGNONCE_EXCEEDS_FIELD = bytes.fromhex(
     "028465FCF0BBDBCF443AABCCE533D42B4B5A10966AC09A49655E8C42DAAB8FCD6102FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFFC30"
 )
-GROUP_ORDER_PSIG = "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141"
 
 
 class SignVerifyGroupBuilder:
     """Builds one (t, n) test group for sign_verify_vectors.json. Shared inputs and
-    subsets live on self. Each add_* method appends its category to self.group."""
+    subsets live on self. Each add_* method appends its category to self.group.
+
+    Index convention: valid cases use secshare_index == secnonce_index == my_id (a
+    signer signs with its own material at pool position my_id), and verify-side cases
+    use signer 0's material as the base partial signature."""
 
     def __init__(self, cfg):
         self.inputs = SharedGroupInputs(cfg)
@@ -48,14 +51,11 @@ class SignVerifyGroupBuilder:
         self.n = self.inputs.n
         self.thresh_pk = self.inputs.thresh_pk
 
+        self.cfg = cfg
         self.min_s = get_subset(cfg, "min")
         self.full = get_subset(cfg, "full")
         self.alt = get_subset(cfg, "alt")
         self.min2 = get_subset(cfg, "min2")
-        # `wrong` is only consumed by configs where it stays in range and a valid
-        # participant can sit outside the only valid set (t >= 2 and t < n).
-        # Outside that range it would index the out-of-range slot, so don't build it.
-        self.wrong = get_subset(cfg, "wrong") if cfg.t >= 2 and cfg.t < cfg.n else None
         self.aggnonce_min = self._agg(self.min_s)
 
         self.group = {}
@@ -313,17 +313,18 @@ class SignVerifyGroupBuilder:
             "value",
             "Signer set contains a duplicate id",
         )
-        # Signer loads the wrong share so its derived pubshare is absent (needs
-        # t >= 2 for distinct shares and t < n for a participant outside the set).
-        if t >= 2 and t < n:
-            assert self.wrong is not None
+        # Signer loads share 0 but the set excludes id 0, so its derived pubshare
+        # is absent (needs t >= 2 for distinct shares and t < n for a participant
+        # outside the set).
+        if has_excl0_subset(t, n):
+            excl0 = get_subset(self.cfg, "excl0")
             self._append_sign_error(
                 1,
-                self.wrong,
-                self.wrong,
+                excl0,
+                excl0,
                 0,
                 0,
-                self._agg(self.wrong),
+                self._agg(excl0),
                 COMMON_MSGS[0],
                 "value",
                 "Signer's public share is not in the public share list",
@@ -346,7 +347,9 @@ class SignVerifyGroupBuilder:
         )
         # A signer id equals n, outside the valid range. For t >= 2 an in-range
         # member signs. At t=1 the lone id is out of range and the check fires
-        # first, so the self fields are inert.
+        # first, so the self fields are inert. This assumes signer-id range
+        # validation runs before the pubshare/threshold-key checks; a different
+        # order would surface a different error.
         if t >= 2:
             ids_out_of_range = [self.inputs.OUT_OF_RANGE_ID] + list(range(1, t))
             self._append_sign_error(
@@ -444,7 +447,9 @@ class SignVerifyGroupBuilder:
             "value",
             "Secret nonce's second half is out of range (zero)",
         )
-        # Fewer signers than the threshold (empty set at t=1).
+        # Fewer signers than the threshold (empty set at t=1). The aggnonce, secshare,
+        # and secnonce fields are inert placeholders: SignersContext rejects the
+        # sub-threshold set before sign() reads them.
         below = list(range(t - 1))
         self._append_sign_error(
             0,
@@ -473,7 +478,10 @@ class SignVerifyGroupBuilder:
     # --- Array C: verify_fail_tests ---
 
     def add_verify_fail_tests(self) -> None:
-        # Base partial signature: signer 0 over the size-at-least-2 baseline set.
+        # Base partial signature: signer 0 over min2, the size-at-least-2 baseline set.
+        # min2 (not min_s) because the wrong-signer-index fail case below verifies at
+        # signer_index 1, which needs a 2-signer set. min2 == min_s for t >= 2, so this
+        # only differs at t=1.
         secnonce = bytearray(self.inputs.pool_secnonces[0])
         signers = SignersContext(
             self.n,
@@ -507,7 +515,7 @@ class SignVerifyGroupBuilder:
             self.min2,
             self.min2,
             0,
-            bytes.fromhex(GROUP_ORDER_PSIG),
+            GROUP_ORDER,
             "Partial signature equals the group order, which is out of range",
         )
 
