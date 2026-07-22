@@ -109,20 +109,20 @@ def test_nonce_gen_vectors():
             else:
                 return None
 
-        rand_ = get_value("rand_")
+        rand = get_value("rand")
         secshare = get_value_maybe("secshare")
         pubshare = get_value_maybe("pubshare")
         if pubshare is not None:
             pubshare = PlainPk(pubshare)
-        thresh_pk = get_value_maybe("thresh_pk")
-        if thresh_pk is not None:
-            thresh_pk = XonlyPk(thresh_pk)
+        thresh_pk_xonly = get_value_maybe("thresh_pk_xonly")
+        if thresh_pk_xonly is not None:
+            thresh_pk_xonly = XonlyPk(thresh_pk_xonly)
         msg = get_value_maybe("msg")
         extra_in = get_value_maybe("extra_in")
         expected = test_case["expected"]
 
         assert nonce_gen_internal(
-            rand_, secshare, pubshare, thresh_pk, msg, extra_in
+            rand, secshare, pubshare, thresh_pk_xonly, msg, extra_in
         ) == (bytes.fromhex(expected[0]), bytes.fromhex(expected[1]))
 
 
@@ -353,9 +353,9 @@ def test_det_sign_vectors():
             msg = bytes.fromhex(test_case["msg"])
             my_id = test_case["my_id"]
             signer_index = ids_tmp.index(my_id)
-            rand = (
-                bytes.fromhex(test_case["rand"])
-                if test_case["rand"] is not None
+            aux_rand = (
+                bytes.fromhex(test_case["aux_rand"])
+                if test_case["aux_rand"] is not None
                 else None
             )
             expected = fromhex_all(test_case["expected"])
@@ -369,7 +369,7 @@ def test_det_sign_vectors():
                 tweaks,
                 is_xonly,
                 msg,
-                rand,
+                aux_rand,
             )
             assert pubnonce == expected[0]
             assert psig == expected[1]
@@ -403,9 +403,9 @@ def test_det_sign_vectors():
             is_xonly = test_case["is_xonly"]
             msg = bytes.fromhex(test_case["msg"])
             my_id = test_case["my_id"]
-            rand = (
-                bytes.fromhex(test_case["rand"])
-                if test_case["rand"] is not None
+            aux_rand = (
+                bytes.fromhex(test_case["aux_rand"])
+                if test_case["aux_rand"] is not None
                 else None
             )
 
@@ -420,7 +420,7 @@ def test_det_sign_vectors():
                     tweaks,
                     is_xonly,
                     msg,
-                    rand,
+                    aux_rand,
                 ),
                 except_fn,
             )
@@ -554,7 +554,7 @@ def test_sign_and_verify_random(iterations: int) -> None:
             signer_secnonces.append(secnonce_final)
         else:
             aggothernonce = nonce_agg(signer_pubnonces)
-            rand = secrets.token_bytes(32)
+            aux_rand = secrets.token_bytes(32)
             pubnonce_final, psig_final = deterministic_sign(
                 signer_secshares[-1],
                 signer_ids[-1],
@@ -563,7 +563,7 @@ def test_sign_and_verify_random(iterations: int) -> None:
                 tweaks,
                 tweak_modes,
                 msg,
-                rand,
+                aux_rand,
             )
 
         signer_pubnonces.append(pubnonce_final)
