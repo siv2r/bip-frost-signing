@@ -18,6 +18,19 @@ jobs:
         uses: actions/checkout@v4
       - name: Check spelling
         uses: crate-ci/typos@master
+  nbsp_checks:
+    name: "Non-breaking Space Checks"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # U+00A0 renders identically to a plain space on GitHub but is invisible
+      # in the source and breaks grep, sed, and find-and-replace.
+      - name: Check for U+00A0 in README.md
+        run: |
+          if grep -n "$(printf '\302\240')" README.md; then
+            echo "README.md contains a non-breaking space (U+00A0) on the lines above. Replace it with a plain space."
+            exit 1
+          fi
   ruff_checks:
     runs-on: ubuntu-latest
     steps:
