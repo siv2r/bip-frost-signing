@@ -181,7 +181,7 @@ def test_sign_verify_vectors():
             expected = bytes.fromhex(tc["expected"])
 
             signers_tmp = SignersContext(n, t, ids_tmp, pubshares_tmp, thresh_pk)
-            session_ctx = SessionContext(aggnonce_tmp, signers_tmp, [], [], msg)
+            session_ctx = SessionContext(signers_tmp, aggnonce_tmp, [], [], msg)
             # WARNING: An actual implementation should _not_ copy the secnonce.
             # Reusing the secnonce, as we do here for testing purposes, can leak the
             # secret key.
@@ -202,7 +202,7 @@ def test_sign_verify_vectors():
             secshare_tmp = secshares[tc["secshare_index"]]
 
             signers_tmp = SignersContext(n, t, ids_tmp, pubshares_tmp, thresh_pk)
-            session_ctx = SessionContext(aggnonce_tmp, signers_tmp, [], [], msg)
+            session_ctx = SessionContext(signers_tmp, aggnonce_tmp, [], [], msg)
             assert_raises(
                 exception,
                 lambda: sign(secnonce_tmp, secshare_tmp, my_id, session_ctx),
@@ -286,7 +286,7 @@ def test_tweak_vectors():
 
             signers_tmp = SignersContext(n, t, ids_tmp, pubshares_tmp, thresh_pk)
             session_ctx = SessionContext(
-                aggnonce_tmp, signers_tmp, tweaks_tmp, tweak_modes_tmp, msg
+                signers_tmp, aggnonce_tmp, tweaks_tmp, tweak_modes_tmp, msg
             )
             assert sign(secnonce, secshare, my_id, session_ctx) == expected
             assert partial_sig_verify(
@@ -315,7 +315,7 @@ def test_tweak_vectors():
 
             signers_tmp = SignersContext(n, t, ids_tmp, pubshares_tmp, thresh_pk)
             session_ctx = SessionContext(
-                aggnonce_tmp, signers_tmp, tweaks_tmp, tweak_modes_tmp, msg
+                signers_tmp, aggnonce_tmp, tweaks_tmp, tweak_modes_tmp, msg
             )
             assert_raises(
                 exception,
@@ -381,7 +381,7 @@ def test_det_sign_vectors():
             else:
                 aggnonce_tmp = pubnonce
             session_ctx = SessionContext(
-                aggnonce_tmp, signers_tmp, tweaks, is_xonly, msg
+                signers_tmp, aggnonce_tmp, tweaks, is_xonly, msg
             )
             assert partial_sig_verify_internal(
                 psig, my_id, pubnonce, pubshares_tmp[signer_index], session_ctx
@@ -451,7 +451,7 @@ def test_sig_agg_vectors():
 
             signers_tmp = SignersContext(n, t, ids_tmp, pubshares_tmp, thresh_pk)
             session_ctx = SessionContext(
-                aggnonce_tmp, signers_tmp, tweaks_tmp, tweak_modes_tmp, msg
+                signers_tmp, aggnonce_tmp, tweaks_tmp, tweak_modes_tmp, msg
             )
             bip340sig = partial_sig_agg(psigs_tmp, session_ctx)
             assert bip340sig == expected
@@ -474,7 +474,7 @@ def test_sig_agg_vectors():
 
             signers_tmp = SignersContext(n, t, ids_tmp, pubshares_tmp, thresh_pk)
             session_ctx = SessionContext(
-                aggnonce_tmp, signers_tmp, tweaks_tmp, tweak_modes_tmp, msg
+                signers_tmp, aggnonce_tmp, tweaks_tmp, tweak_modes_tmp, msg
             )
             assert_raises(
                 exception,
@@ -568,7 +568,7 @@ def test_sign_and_verify_random(iterations: int) -> None:
 
         signer_pubnonces.append(pubnonce_final)
         aggnonce = nonce_agg(signer_pubnonces)
-        session_ctx = SessionContext(aggnonce, signers_ctx, tweaks, tweak_modes, msg)
+        session_ctx = SessionContext(signers_ctx, aggnonce, tweaks, tweak_modes, msg)
 
         signer_psigs = []
         for i in range(signer_count):
@@ -630,15 +630,20 @@ def run_test(test_name, test_func):
     try:
         test_func()
         print("Passed!")
+        return True
     except Exception as e:
         print(f"Failed :'(\nError: {e}")
+        return False
 
 
 if __name__ == "__main__":
-    run_test("test_nonce_gen_vectors", test_nonce_gen_vectors)
-    run_test("test_nonce_agg_vectors", test_nonce_agg_vectors)
-    run_test("test_sign_verify_vectors", test_sign_verify_vectors)
-    run_test("test_tweak_vectors", test_tweak_vectors)
-    run_test("test_det_sign_vectors", test_det_sign_vectors)
-    run_test("test_sig_agg_vectors", test_sig_agg_vectors)
-    run_test("test_sign_and_verify_random", lambda: test_sign_and_verify_random(6))
+    results = [
+        run_test("test_nonce_gen_vectors", test_nonce_gen_vectors),
+        run_test("test_nonce_agg_vectors", test_nonce_agg_vectors),
+        run_test("test_sign_verify_vectors", test_sign_verify_vectors),
+        run_test("test_tweak_vectors", test_tweak_vectors),
+        run_test("test_det_sign_vectors", test_det_sign_vectors),
+        run_test("test_sig_agg_vectors", test_sig_agg_vectors),
+        run_test("test_sign_and_verify_random", lambda: test_sign_and_verify_random(6)),
+    ]
+    sys.exit(0 if all(results) else 1)

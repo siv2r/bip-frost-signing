@@ -73,8 +73,8 @@ def derive_thresh_pubkey(ids: List[int], pubshares: List[GE]) -> PlainPk:
     for my_id, X_i in zip(ids, pubshares):
         lam_i = derive_interpolating_value(ids, my_id)
         Q += lam_i * X_i
-    # Q is not the point at infinity except with negligible probability.
-    assert not Q.infinity
+    if Q.infinity:
+        raise ValueError("The threshold pubkey must not be the point at infinity.")
     return PlainPk(Q.to_bytes_compressed())
 
 
@@ -254,8 +254,8 @@ def nonce_agg(pubnonces: List[bytes]) -> bytes:
 
 
 class SessionContext(NamedTuple):
-    aggnonce: bytes
     signers_ctx: SignersContext
+    aggnonce: bytes
     tweaks: List[bytes]
     is_xonly: List[bool]
     msg: bytes
@@ -276,7 +276,7 @@ def thresh_pubkey_and_tweak(
 def get_session_values(
     session_ctx: SessionContext,
 ) -> Tuple[GE, Scalar, Scalar, List[int], List[PlainPk], Scalar, GE, Scalar]:
-    (aggnonce, signers_ctx, tweaks, is_xonly, msg) = session_ctx
+    (signers_ctx, aggnonce, tweaks, is_xonly, msg) = session_ctx
     validate_signers_ctx(signers_ctx)
     _, _, ids, pubshares, thresh_pk = signers_ctx
     Q, gacc, tacc = thresh_pubkey_and_tweak(thresh_pk, tweaks, is_xonly)
@@ -435,7 +435,7 @@ def deterministic_sign(
         except InvalidContributionError:
             # pubnonce is always valid, so any failure is due to aggothernonce.
             raise InvalidContributionError(None, "aggothernonce")
-    session_ctx = SessionContext(aggnonce, signers_ctx, tweaks, is_xonly, msg)
+    session_ctx = SessionContext(signers_ctx, aggnonce, tweaks, is_xonly, msg)
     psig = sign(secnonce, secshare, my_id, session_ctx)
     return (pubnonce, psig)
 
@@ -456,7 +456,7 @@ def partial_sig_verify(
     if len(tweaks) != len(is_xonly):
         raise ValueError("The tweaks and is_xonly arrays must have the same length.")
     aggnonce = nonce_agg(pubnonces)
-    session_ctx = SessionContext(aggnonce, signers_ctx, tweaks, is_xonly, msg)
+    session_ctx = SessionContext(signers_ctx, aggnonce, tweaks, is_xonly, msg)
     return partial_sig_verify_internal(
         psig, ids[i], pubnonces[i], pubshares[i], session_ctx
     )
