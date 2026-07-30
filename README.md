@@ -363,7 +363,7 @@ Internal Algorithm *DeriveInterpolatingValue(id<sub>1..u</sub>, my_id):*
 - *&lambda; = num &middot; deno<sup>-1</sup> &ensp;(mod ord)*
 - Return *&lambda;*
 
-[^lagrange-shift]: The standard Lagrange interpolation coefficient uses the formula *id<sub>i</sub> / (id<sub>i</sub> - my_id)* for each term in the product, where ids are in the range *1..n*. However, since participant identifiers in this protocol are zero-indexed (range *0..n-1*), we shift them by adding 1. This transforms each term to *(id<sub>i</sub>+1) / (id<sub>i</sub> - my_id)*.
+[^lagrange-shift]: The standard Lagrange interpolation coefficient uses the formula *id<sub>i</sub> / (id<sub>i</sub> - my_id)* for each term in the product, where identifiers are in the range *1..n*. However, since participant identifiers in this protocol are zero-indexed (range *0..n-1*), we shift them by adding 1. This transforms each term to *(id<sub>i</sub>+1) / (id<sub>i</sub> - my_id)*.
 
 ### Tweaking the Threshold Public Key
 
@@ -515,9 +515,10 @@ Algorithm *GetSessionValues(session_ctx)*:
 
 Internal Algorithm *SerializeIds(id<sub>1..u</sub>)*:
 
+- Let *sorted_id<sub>1..u</sub> = sorted(id<sub>1..u</sub>)*
 - *res = empty_bytestring*
-- For *id* in *sorted(id<sub>1..u</sub>)*:
-  - *res = res || bytes(4, id)*
+- For *i = 1..u*:
+  - *res = res || bytes(4, sorted_id<sub>i</sub>)*
 - Return *res*
 
 [^canonical-ids-det-sign]: The identifiers are sorted so that *b* commits to the signer *set*, not the order they appear in. This matters for *DeterministicSign*, where a signer reproduces the same secret nonce *(k<sub>1</sub>, k<sub>2</sub>)* whenever its inputs are unchanged. Suppose an implementation sorts the identifiers when deriving this nonce but not when deriving *b*. A malicious coordinator can then replay one signing session under three orderings of the same signer set: the victim returns the same nonce each time, but *b* and the challenge *e* change with the order. The three partial signatures *s = k<sub>1</sub> + b k<sub>2</sub> + e &lambda; d* form a system of three linear equations in *(k<sub>1</sub>, k<sub>2</sub>, d)*, which the coordinator solves to recover the secret share *d*. Sorting prevents this. It is the order analog of the attack in [^det-signer-set].
