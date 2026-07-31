@@ -96,7 +96,7 @@ Each signing session requires two inputs: a participant's long-term *secret shar
 [^signers-ctx-struct]: The Signers Context represents the public data of signers: their identifiers (*id<sub>1..u</sub>*) and public shares (*pubshare<sub>1..u</sub>*).
 Implementations may represent this as simply as two separate lists passed to signing APIs.
 The threshold public key *thresh_pk* can be stored for efficiency or recomputed when needed using *DeriveThreshPubkey*.
-Similarly, the values *n* and *t* are used only for validation, and can be omitted if validation is not performed.
+Similarly, the values *n* and *t* are used only by *ValidateSignersCtx*.
 
 This signing protocol is compatible with any key generation protocol that produces valid FROST keys.
 Valid keys satisfy: (1) each *secret share* is a Shamir share of the *threshold secret key*, and (2) each *public share* equals the scalar multiplication *secshare \* G*.[^chilldkg-keys]

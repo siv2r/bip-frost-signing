@@ -42,7 +42,9 @@ A few things stay out of that scheme:
   (the `(t, n)` label and the shared key setup), not part of the index scheme.
 - Per-session values stay inline in the case, with no shared input: the
   message (`msg`), the aggregate nonce (`aggnonce`, or `aggothernonce` in
-  `det_sign`), and the signer's own id (`my_id`).
+  `det_sign`), and the signer's own id (`my_id`). In `det_sign`,
+  `aggothernonce` is `null` when the session has a single signer, so
+  there are no other nonces to aggregate.
 - `tweaks` and `is_xonly` are parallel lists: position `k` in `is_xonly` says
   whether tweak `k` is x-only. They mirror the API, which takes the two as
   separate arguments. `tweak_vectors` keeps its tweak values in a shared input
