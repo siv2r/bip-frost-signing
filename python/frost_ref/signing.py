@@ -285,11 +285,7 @@ def get_session_values(
     b = Scalar.from_bytes_wrapping(
         tagged_hash(
             FROST_TAG_NONCECOEF,
-            len(ser_ids).to_bytes(4, "big")
-            + ser_ids
-            + aggnonce
-            + Q.to_bytes_xonly()
-            + msg,
+            len(ids).to_bytes(4, "big") + ser_ids + aggnonce + Q.to_bytes_xonly() + msg,
         )
     )
     assert b != 0
