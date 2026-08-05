@@ -101,7 +101,7 @@ Similarly, the values *n* and *t* are used only by *ValidateSignersCtx*.
 This signing protocol is compatible with any key generation protocol that produces valid FROST keys.
 Valid keys satisfy: (1) each *secret share* is a Shamir share of the *threshold secret key*, and (2) each *public share* equals the scalar multiplication *secshare \* G*.[^chilldkg-keys]
 Before signing, the signers context must pass *ValidateSignersCtx*, which rejects duplicate identifiers and confirms the key material reproduces the threshold public key. The signing algorithms (*Sign*, *PartialSigVerify*, and *PartialSigAgg*) include this check for clarity, so an implementation can instead validate a context once and skip the repeated checks in later calls.
-For comprehensive validation of the entire key material, *ValidateSignersCtx* can be run on all possible *u* signing participants.
+To validate the entire key material run *ValidateThresholdSetup* on a [Threshold Setup](#threshold-setup) containing all *n* pubshares.
 
 [^chilldkg-keys]: ChillDKG satisfies both conditions, so its [DKG output](https://github.com/BlockstreamResearch/bip-frost-dkg#dkg-outputs) can be used directly as key material.
 
@@ -312,6 +312,34 @@ The following helper functions and notation are used for operations on standard 
 
 ### Key Material and Setup
 
+#### Threshold Setup
+
+The Threshold Setup is a data structure holding the public key material that a key generation protocol produces. It consists of the following elements:
+
+- The threshold number *t* of participants required to issue a signature: an integer with *1 ≤ t ≤ n*
+- The threshold public key *thresh_pk*: a 33-byte array, compressed serialized point
+- The list of participant public shares *pubshare<sub>0..n-1</sub>*: *n* entries, each either a 33-byte array (a compressed serialized point) or *empty_bytestring*, where *1 ≤ n < 2<sup>32</sup>*
+
+We write "Let *(t, thresh_pk, pubshare<sub>0..n-1</sub>) = setup*" to assign names to the elements of a Threshold Setup.
+
+Entry *i* of the *pubshare<sub>0..n-1</sub>* list belongs to the participant with identifier *i*. An entry is *empty_bytestring* if the party holding the setup does not know that participant's public share, and at least *t* entries must be non-empty, both for *ValidateThresholdSetup* to run and for the coordinator to select a signer set.
+
+Algorithm *ValidateThresholdSetup(setup)*:
+
+- Inputs:
+  - The *setup*: a [Threshold Setup](#threshold-setup) data structure
+- *(t, thresh_pk, pubshare<sub>0..n-1</sub>) = setup*
+- Fail if not *1 ≤ t ≤ n*
+- Fail if *cpoint(thresh_pk)* fails
+- Let *id<sub>1..w</sub>* be the identifiers *i* with *pubshare<sub>i</sub> ≠ empty_bytestring*, in ascending order
+- For *j = 1 .. w*:
+  - Let *P<sub>j</sub> = cpoint(pubshare<sub>id<sub>j</sub></sub>)*; fail if that fails
+- Fail if *w < t*
+- For *j = t+1 .. w*:
+  - Fail if *DerivePubshareAt(id<sub>1..t</sub>, P<sub>1..t</sub>, id<sub>j</sub>) ≠ P<sub>j</sub>*
+- Fail if *DeriveThreshPubkey(id<sub>1..t</sub>, P<sub>1..t</sub>) ≠ thresh_pk*
+- No return
+
 #### Signers Context
 
 The Signers Context is a data structure consisting of the following elements:
@@ -339,16 +367,24 @@ Algorithm *ValidateSignersCtx(signers_ctx)*:
 - Fail if *DeriveThreshPubkey(id<sub>1..u</sub>, P<sub>1..u</sub>) ≠ thresh_pk*
 - No return
 
-Internal Algorithm *DeriveThreshPubkey(id<sub>1..u</sub>, P<sub>1..u</sub>)*[^derive-thresh-no-validate-inputs]
+Internal Algorithm *DerivePubshareAt(id<sub>1..u</sub>, P<sub>1..u</sub>, x)*[^lagrange-shift]
 
 - *Q = inf_point*
 - For *i = 1..u*:
-  - *&lambda; = DeriveInterpolatingValue(id<sub>1..u</sub>, id<sub>i</sub>)*
-  - *Q = Q + &lambda; &middot; P<sub>i</sub>*
+  - Let *num = Scalar(1)*
+  - Let *deno = Scalar(1)*
+  - For *k = 1..u*:
+    - If *id<sub>k</sub> ≠ id<sub>i</sub>*:
+      - Let *num = num &middot; Scalar(x - id<sub>k</sub>) &ensp;(mod ord)*
+      - Let *deno = deno &middot; Scalar(id<sub>i</sub> - id<sub>k</sub>) &ensp;(mod ord)*
+  - *Q = Q + (num &middot; deno<sup>-1</sup>) &middot; P<sub>i</sub>*
+- Return *Q*, which may be the point at infinity
+
+Internal Algorithm *DeriveThreshPubkey(id<sub>1..u</sub>, P<sub>1..u</sub>)*
+
+- Let *Q = DerivePubshareAt(id<sub>1..u</sub>, P<sub>1..u</sub>, -1)*
 - Fail if *is_infinity(Q)*
 - Return *cbytes(Q)*
-
-[^derive-thresh-no-validate-inputs]: *DeriveThreshPubkey* does not validate its inputs. Its only caller, *ValidateSignersCtx*, deserializes the public shares into points and validates them (and the identifiers) beforehand.
 
 Internal Algorithm *DeriveInterpolatingValue(id<sub>1..u</sub>, my_id):*
 
@@ -363,7 +399,7 @@ Internal Algorithm *DeriveInterpolatingValue(id<sub>1..u</sub>, my_id):*
 - *&lambda; = num &middot; deno<sup>-1</sup> &ensp;(mod ord)*
 - Return *&lambda;*
 
-[^lagrange-shift]: The standard Lagrange interpolation coefficient uses the formula *id<sub>i</sub> / (id<sub>i</sub> - my_id)* for each term in the product, where identifiers are in the range *1..n*. However, since participant identifiers in this protocol are zero-indexed (range *0..n-1*), we shift them by adding 1. This transforms each term to *(id<sub>i</sub>+1) / (id<sub>i</sub> - my_id)*.
+[^lagrange-shift]: Participant identifiers are zero-indexed, but the secret sharing polynomial holds the threshold secret key at x-coordinate *0*, so the participant with identifier *id* is placed at x-coordinate *id + 1*. That shift is the *id<sub>i</sub> + 1* factor in *DeriveInterpolatingValue*. *DerivePubshareAt* works directly in identifier space instead, which leaves the standard Lagrange coefficient unchanged, because the shift cancels in both of its halves: *(x + 1) - (id<sub>k</sub> + 1) = x - id<sub>k</sub>* in the numerator and *(id<sub>i</sub> + 1) - (id<sub>k</sub> + 1) = id<sub>i</sub> - id<sub>k</sub>* in the denominator. The target coordinate is what does not cancel, so evaluating at the threshold secret key's x-coordinate *0* means passing *x = -1*.
 
 ### Tweaking the Threshold Public Key
 

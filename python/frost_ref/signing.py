@@ -67,15 +67,82 @@ def derive_interpolating_value(ids: List[int], my_id: int) -> Scalar:
     return num / deno
 
 
-def derive_thresh_pubkey(ids: List[int], pubshares: List[GE]) -> PlainPk:
+def derive_pubshare_at(ids: List[int], pubshares: List[GE], x: int) -> GE:
     assert len(ids) == len(pubshares)
+    assert not has_duplicates(ids)
     Q = GE()
     for my_id, X_i in zip(ids, pubshares):
-        lam_i = derive_interpolating_value(ids, my_id)
-        Q += lam_i * X_i
+        assert 0 <= my_id < 2**32
+        num = Scalar(1)
+        deno = Scalar(1)
+        for curr_id in ids:
+            if curr_id == my_id:
+                continue
+            num *= Scalar(x - curr_id)
+            deno *= Scalar(my_id - curr_id)
+        Q += (num / deno) * X_i
+    return Q  # can be infinity
+
+
+def derive_thresh_pubkey(ids: List[int], pubshares: List[GE]) -> PlainPk:
+    # derive_pubshare_at evaluates in identifier space. Identifiers are 0-based,
+    # so participant id sits at polynomial x-coordinate id + 1, and the secret,
+    # the constant term at x-coordinate 0, is equal to the identifier -1.
+    Q = derive_pubshare_at(ids, pubshares, -1)
     if Q.infinity:
         raise ValueError("The threshold pubkey must not be the point at infinity.")
     return PlainPk(Q.to_bytes_compressed())
+
+
+class ThresholdSetup(NamedTuple):
+    t: int
+    thresh_pk: PlainPk
+    # List of length n, where the i-th entry belongs to the participant
+    # with id = i. A `None` entry means the participant's public share
+    # is unavailable.
+    pubshares: List[Optional[PlainPk]]
+
+
+def validate_threshold_setup(setup: ThresholdSetup) -> None:
+    t, thresh_pk, pubshares = setup
+    n = len(pubshares)
+
+    if not (1 <= t <= n):
+        raise ValueError("The threshold must be 1 <= t <= n.")
+
+    # 1. Validate the threshold public key
+    # deserializing before interpolating ensures serialization failures
+    # are caught before cryptographic inconsistencies.
+    try:
+        GE.from_bytes_compressed(thresh_pk)
+    except ValueError:
+        raise ValueError("Invalid threshold public key.")
+
+    # 2. Extract and parse present public shares
+    parsed_shares = []
+    for i, pubshare_bytes in enumerate(pubshares):
+        if pubshare_bytes is None:
+            continue
+        try:
+            point = GE.from_bytes_compressed(pubshare_bytes)
+            parsed_shares.append((i, point))
+        except ValueError:
+            raise ValueError(f"Invalid pubshare at index {i}.")
+
+    if len(parsed_shares) < t:
+        raise ValueError(f"At least {t} pubshares must be present.")
+
+    # 3. Establish the base set for polynomial interpolation
+    base_ids = [i for i, _ in parsed_shares[:t]]
+    base_points = [point for _, point in parsed_shares[:t]]
+
+    # 3.1 Ensure all pubshares shares lie on the same polynomial
+    for i, point in parsed_shares[t:]:
+        if derive_pubshare_at(base_ids, base_points, i) != point:
+            raise ValueError("The provided key material is incorrect.")
+    # 3.2 Ensure the derived threshold key matches the provided one
+    if derive_thresh_pubkey(base_ids, base_points) != thresh_pk:
+        raise ValueError("The provided key material is incorrect.")
 
 
 class SignersContext(NamedTuple):
