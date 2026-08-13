@@ -7,7 +7,6 @@ sys.path.append(str(Path(__file__).parent / "../secp256k1lab/src"))
 from .signing import (
     # Functions
     validate_threshold_setup,
-    validate_signers_ctx,
     nonce_gen,
     nonce_agg,
     sign,
@@ -20,7 +19,6 @@ from .signing import (
     PlainPk,
     XonlyPk,
     ThresholdSetup,
-    SignersContext,
     TweakContext,
     SessionContext,
 )
@@ -28,7 +26,6 @@ from .signing import (
 __all__ = [
     # Functions
     "validate_threshold_setup",
-    "validate_signers_ctx",
     "nonce_gen",
     "nonce_agg",
     "sign",
@@ -41,7 +38,6 @@ __all__ = [
     "PlainPk",
     "XonlyPk",
     "ThresholdSetup",
-    "SignersContext",
     "TweakContext",
     "SessionContext",
 ]

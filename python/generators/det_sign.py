@@ -2,7 +2,6 @@ from typing import List, Optional
 
 from frost_ref import (
     InvalidContributionError,
-    SignersContext,
     deterministic_sign,
     nonce_agg,
 )
@@ -79,9 +78,14 @@ class DetSignGroupBuilder:
         msg: bytes,
         aux_rand: Optional[bytes],
     ) -> Optional[bytes]:
-        """Return None when the signer is the sole participant (the set is exactly
-        [my_id]). Otherwise aggregate the other signers' public nonces."""
-        if ids_set == [my_id]:
+        """Return None when the set holds no signer other than my_id, so there is
+        nothing to aggregate. Otherwise aggregate the other signers' public nonces.
+
+        An empty ids_set satisfies this vacuously, which is what the sub-threshold
+        error cases rely on: aggregating nothing yields a 66-byte all-zero string
+        that deterministic_sign would reject as an invalid coordinator
+        contribution, masking the signer-count error the case is testing."""
+        if all(pid == my_id for pid in ids_set):
             return None
         tmp = b"" if aux_rand is None else aux_rand
         other_pubnonces = []
@@ -112,13 +116,13 @@ class DetSignGroupBuilder:
     ) -> None:
         curr_aggothernonce = self._derive_aggothernonce(ids, my_id, msg, aux_rand)
         pubshares = [self.inputs.pool_pubshares[i] for i in pubshare_indices]
-        signers = SignersContext(self.n, self.t, ids, pubshares, self.thresh_pk)
+        signer_set = (self.n, self.t, ids, pubshares, self.thresh_pk)
         secshare = self.inputs.pool_secshares[my_id]
         result = deterministic_sign(
             secshare,
             my_id,
             curr_aggothernonce,
-            signers,
+            *signer_set,
             tweaks,
             is_xonly,
             msg,
@@ -163,7 +167,7 @@ class DetSignGroupBuilder:
         else:
             curr_aggothernonce = self._derive_aggothernonce(ids, my_id, msg, aux_rand)
         pubshares = [self.inputs.pool_pubshares[i] for i in pubshare_indices]
-        signers = SignersContext(self.n, self.t, ids, pubshares, self.thresh_pk)
+        signer_set = (self.n, self.t, ids, pubshares, self.thresh_pk)
         secshare = self.inputs.pool_secshares[secshare_index]
         expected_exc = ValueError if error == "value" else InvalidContributionError
         err = expect_exception(
@@ -171,7 +175,7 @@ class DetSignGroupBuilder:
                 secshare,
                 my_id,
                 curr_aggothernonce,
-                signers,
+                *signer_set,
                 tweaks,
                 is_xonly,
                 msg,

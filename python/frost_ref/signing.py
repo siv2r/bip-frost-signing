@@ -145,43 +145,6 @@ def validate_threshold_setup(setup: ThresholdSetup) -> None:
         raise ValueError("The provided key material is incorrect.")
 
 
-class SignersContext(NamedTuple):
-    n: int
-    t: int
-    ids: List[int]
-    pubshares: List[PlainPk]
-    thresh_pk: PlainPk
-
-
-def validate_signers_ctx(signers_ctx: SignersContext) -> None:
-    n, t, ids, pubshares, thresh_pk = signers_ctx
-    if t < 1 or t > n:
-        raise ValueError("The threshold must be 1 <= t <= n.")
-    if not t <= len(ids) <= n:
-        raise ValueError("The number of signers must be between t and n.")
-    if len(pubshares) != len(ids):
-        raise ValueError("The pubshares and ids arrays must have the same length.")
-    pubshare_points = []
-    for idx, (i, pubshare) in enumerate(zip(ids, pubshares)):
-        if not 0 <= i <= n - 1:
-            raise ValueError(
-                f"The participant identifier at index {idx} is out of range."
-            )
-        try:
-            P = GE.from_bytes_compressed(pubshare)
-        except ValueError:
-            # A malformed pubshare is invalid pre-protocol input, not a protocol
-            # contribution: the signers context is agreed upon before signing
-            # begins, so we signal it with ValueError rather than blaming a
-            # signer via InvalidContributionError.
-            raise ValueError(f"Invalid pubshare at index {idx}.")
-        pubshare_points.append(P)
-    if has_duplicates(ids):
-        raise ValueError("The participant identifier list contains duplicate elements.")
-    if derive_thresh_pubkey(ids, pubshare_points) != thresh_pk:
-        raise ValueError("The provided key material is incorrect.")
-
-
 class TweakContext(NamedTuple):
     Q: GE
     gacc: Scalar
@@ -321,7 +284,11 @@ def nonce_agg(pubnonces: List[bytes]) -> bytes:
 
 
 class SessionContext(NamedTuple):
-    signers_ctx: SignersContext
+    n: int
+    t: int
+    ids: List[int]  # u signer ids
+    pubshares: Optional[List[PlainPk]]  # u signer pubshares, or None if unknown
+    thresh_pk: PlainPk
     aggnonce: bytes
     tweaks: List[bytes]
     is_xonly: List[bool]
@@ -342,12 +309,35 @@ def thresh_pubkey_and_tweak(
 
 def get_session_values(
     session_ctx: SessionContext,
-) -> Tuple[GE, Scalar, Scalar, List[int], List[PlainPk], Scalar, GE, Scalar]:
-    (signers_ctx, aggnonce, tweaks, is_xonly, msg) = session_ctx
-    validate_signers_ctx(signers_ctx)
-    _, _, ids, pubshares, thresh_pk = signers_ctx
+) -> Tuple[GE, Scalar, Scalar, List[int], Optional[List[PlainPk]], Scalar, GE, Scalar]:
+    (n, t, ids, pubshares, thresh_pk, aggnonce, tweaks, is_xonly, msg) = session_ctx
+    if not (1 <= t <= n):
+        raise ValueError("The threshold must be 1 <= t <= n.")
+    if not (t <= len(ids) <= n):
+        raise ValueError("The number of signers must be between t and n.")
+    if pubshares is not None and len(pubshares) != len(ids):
+        raise ValueError("The pubshares and ids lists must have the same length.")
+    # ensure all pubshares and ids are within the valid range
+    pubshare_points = []
+    for idx, i in enumerate(ids):
+        if not 0 <= i <= n - 1:
+            raise ValueError(f"Invalid id at index {idx}")
+        if pubshares is not None:
+            try:
+                pubshare_points.append(GE.from_bytes_compressed(pubshares[idx]))
+            except ValueError:
+                raise ValueError(f"Invalid pubshare at index {idx}.")
+    if has_duplicates(ids):
+        raise ValueError("The ids list contains duplicate elements.")
+    # ensure that the derived threshold public key matches the provided one
+    if (
+        pubshares is not None
+        and derive_thresh_pubkey(ids, pubshare_points) != thresh_pk
+    ):
+        raise ValueError("The provided key material is incorrect.")
+
     Q, gacc, tacc = thresh_pubkey_and_tweak(thresh_pk, tweaks, is_xonly)
-    # sort the ids before serializing because ROAST paper considers them as a set
+    # sort the ids before serializing because Olaf paper considers them as a set
     ser_ids = serialize_ids(ids)
     b = Scalar.from_bytes_wrapping(
         tagged_hash(
@@ -381,9 +371,7 @@ def serialize_ids(ids: List[int]) -> bytes:
 def sign(
     secnonce: bytearray, secshare: bytes, my_id: int, session_ctx: SessionContext
 ) -> bytes:
-    (Q, gacc, _, ids, pubshares, b, R, e) = get_session_values(
-        session_ctx
-    )  # internally validates signers_ctx
+    (Q, gacc, _, ids, pubshares, b, R, e) = get_session_values(session_ctx)
     try:
         k_1_ = Scalar.from_bytes_nonzero_checked(bytes(secnonce[0:32]))
     except ValueError:
@@ -404,14 +392,10 @@ def sign(
     P = d_ * G
     assert not P.infinity
     my_pubshare = P.to_bytes_compressed()
-    if my_pubshare not in pubshares:
-        raise ValueError(
-            "The signer's pubshare must be included in the list of pubshares."
-        )
     if my_id not in ids:
-        raise ValueError(
-            "The signer's id must be present in the participant identifier list."
-        )
+        raise ValueError("The signer's id is missing from the ids list.")
+    if pubshares is not None and pubshares[ids.index(my_id)] != my_pubshare:
+        raise ValueError("The signer's pubshare is missing from the pubshares list.")
     a = derive_interpolating_value(ids, my_id)
     g = Scalar(1) if Q.has_even_y() else Scalar(-1)
     d = g * gacc * d_
@@ -453,7 +437,11 @@ def deterministic_sign(
     secshare: bytes,
     my_id: int,
     aggothernonce: Optional[bytes],
-    signers_ctx: SignersContext,
+    n: int,
+    t: int,
+    ids: List[int],
+    pubshares: Optional[List[PlainPk]],
+    thresh_pk: PlainPk,
     tweaks: List[bytes],
     is_xonly: List[bool],
     msg: bytes,
@@ -463,8 +451,6 @@ def deterministic_sign(
         secshare_ = xor_bytes(secshare, tagged_hash(FROST_TAG_AUX, aux_rand))
     else:
         secshare_ = secshare
-    validate_signers_ctx(signers_ctx)
-    _, _, ids, _, thresh_pk = signers_ctx
     tweaked_thresh_pk_xonly = get_xonly_pk(
         thresh_pubkey_and_tweak(thresh_pk, tweaks, is_xonly)
     )
@@ -505,7 +491,9 @@ def deterministic_sign(
         except InvalidContributionError:
             # pubnonce is always valid, so any failure is due to aggothernonce.
             raise InvalidContributionError(None, "aggothernonce")
-    session_ctx = SessionContext(signers_ctx, aggnonce, tweaks, is_xonly, msg)
+    session_ctx = SessionContext(
+        n, t, ids, pubshares, thresh_pk, aggnonce, tweaks, is_xonly, msg
+    )
     psig = sign(secnonce, secshare, my_id, session_ctx)
     return (pubnonce, psig)
 
@@ -513,20 +501,28 @@ def deterministic_sign(
 def partial_sig_verify(
     psig: bytes,
     pubnonces: List[bytes],
-    signers_ctx: SignersContext,
+    n: int,
+    t: int,
+    ids: List[int],
+    pubshares: List[PlainPk],
+    thresh_pk: PlainPk,
     tweaks: List[bytes],
     is_xonly: List[bool],
     msg: bytes,
     i: int,
 ) -> bool:
-    validate_signers_ctx(signers_ctx)
-    _, _, ids, pubshares, _ = signers_ctx
-    if len(pubnonces) != len(ids):
-        raise ValueError("The pubnonces and ids arrays must have the same length.")
+    if len(pubnonces) != len(ids) or len(pubshares) != len(ids):
+        raise ValueError(
+            "The pubnonces, pubshares and ids lists must have the same length."
+        )
+    if not 0 <= i < len(ids):
+        raise ValueError("The signer index must satisfy 0 <= i <= u - 1.")
     if len(tweaks) != len(is_xonly):
-        raise ValueError("The tweaks and is_xonly arrays must have the same length.")
+        raise ValueError("The tweaks and is_xonly lists must have the same length.")
     aggnonce = nonce_agg(pubnonces)
-    session_ctx = SessionContext(signers_ctx, aggnonce, tweaks, is_xonly, msg)
+    session_ctx = SessionContext(
+        n, t, ids, pubshares, thresh_pk, aggnonce, tweaks, is_xonly, msg
+    )
     return partial_sig_verify_internal(
         psig, ids[i], pubnonces[i], pubshares[i], session_ctx
     )
@@ -539,14 +535,10 @@ def partial_sig_verify_internal(
     pubshare: bytes,
     session_ctx: SessionContext,
 ) -> bool:
-    (Q, gacc, _, ids, pubshares, b, R, e) = get_session_values(session_ctx)
+    (Q, gacc, _, ids, _, b, R, e) = get_session_values(session_ctx)
     try:
         s = Scalar.from_bytes_checked(psig)
     except ValueError:
-        return False
-    if pubshare not in pubshares:
-        return False
-    if my_id not in ids:
         return False
     try:
         R1_partial = GE.from_bytes_compressed(pubnonce[0:33])
@@ -567,8 +559,8 @@ def partial_sig_verify_internal(
 
 def partial_sig_agg(psigs: List[bytes], session_ctx: SessionContext) -> bytes:
     (Q, _, tacc, ids, _, _, R, e) = get_session_values(session_ctx)
-    if len(psigs) != len(ids):  # get_session_values asserts len(pubshares) == len(ids)
-        raise ValueError("The psigs and ids arrays must have the same length.")
+    if len(psigs) != len(ids):
+        raise ValueError("The psigs and ids lists must have the same length.")
     s = Scalar(0)
     for idx, psig in enumerate(psigs):
         try:

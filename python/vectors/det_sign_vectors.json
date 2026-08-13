@@ -190,7 +190,7 @@
                     "is_xonly": [],
                     "error": {
                         "type": "ValueError",
-                        "message": "The signer's id must be present in the participant identifier list."
+                        "message": "The signer's id is missing from the ids list."
                     }
                 },
                 {
@@ -207,7 +207,7 @@
                     "is_xonly": [],
                     "error": {
                         "type": "ValueError",
-                        "message": "The participant identifier list contains duplicate elements."
+                        "message": "The ids list contains duplicate elements."
                     }
                 },
                 {
@@ -224,7 +224,7 @@
                     "is_xonly": [],
                     "error": {
                         "type": "ValueError",
-                        "message": "The signer's pubshare must be included in the list of pubshares."
+                        "message": "The signer's pubshare is missing from the pubshares list."
                     }
                 },
                 {
@@ -258,7 +258,7 @@
                     "is_xonly": [],
                     "error": {
                         "type": "ValueError",
-                        "message": "The participant identifier at index 0 is out of range."
+                        "message": "Invalid id at index 0"
                     }
                 },
                 {
@@ -561,7 +561,7 @@
                     "is_xonly": [],
                     "error": {
                         "type": "ValueError",
-                        "message": "The signer's id must be present in the participant identifier list."
+                        "message": "The signer's id is missing from the ids list."
                     }
                 },
                 {
@@ -578,7 +578,7 @@
                     "is_xonly": [],
                     "error": {
                         "type": "ValueError",
-                        "message": "The participant identifier list contains duplicate elements."
+                        "message": "The ids list contains duplicate elements."
                     }
                 },
                 {
@@ -612,7 +612,7 @@
                     "is_xonly": [],
                     "error": {
                         "type": "ValueError",
-                        "message": "The participant identifier at index 0 is out of range."
+                        "message": "Invalid id at index 0"
                     }
                 },
                 {
@@ -713,7 +713,7 @@
                     "ids": [],
                     "pubshare_indices": [],
                     "secshare_index": 0,
-                    "aggothernonce": "000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+                    "aggothernonce": null,
                     "aux_rand": "0000000000000000000000000000000000000000000000000000000000000000",
                     "msg": "F95466D086770E689964664219266FE5ED215C92AE20BAB5C9D79ADDDDF3C0CF",
                     "tweaks": [],
@@ -915,7 +915,7 @@
                     "is_xonly": [],
                     "error": {
                         "type": "ValueError",
-                        "message": "The participant identifier list contains duplicate elements."
+                        "message": "The ids list contains duplicate elements."
                     }
                 },
                 {
@@ -949,7 +949,7 @@
                     "is_xonly": [],
                     "error": {
                         "type": "ValueError",
-                        "message": "The participant identifier at index 0 is out of range."
+                        "message": "Invalid id at index 0"
                     }
                 },
                 {
@@ -1290,7 +1290,7 @@
                     "is_xonly": [],
                     "error": {
                         "type": "ValueError",
-                        "message": "The signer's id must be present in the participant identifier list."
+                        "message": "The signer's id is missing from the ids list."
                     }
                 },
                 {
@@ -1307,7 +1307,7 @@
                     "is_xonly": [],
                     "error": {
                         "type": "ValueError",
-                        "message": "The participant identifier list contains duplicate elements."
+                        "message": "The ids list contains duplicate elements."
                     }
                 },
                 {
@@ -1324,7 +1324,7 @@
                     "is_xonly": [],
                     "error": {
                         "type": "ValueError",
-                        "message": "The signer's pubshare must be included in the list of pubshares."
+                        "message": "The signer's pubshare is missing from the pubshares list."
                     }
                 },
                 {
@@ -1358,7 +1358,7 @@
                     "is_xonly": [],
                     "error": {
                         "type": "ValueError",
-                        "message": "The participant identifier at index 0 is out of range."
+                        "message": "Invalid id at index 0"
                     }
                 },
                 {

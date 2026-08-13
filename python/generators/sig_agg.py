@@ -3,7 +3,6 @@ from typing import List
 from frost_ref import (
     InvalidContributionError,
     SessionContext,
-    SignersContext,
     nonce_agg,
     partial_sig_agg,
     partial_sig_verify,
@@ -65,8 +64,8 @@ class SigAggGroupBuilder:
         ids = list(set_indices)
         aggnonce = nonce_agg(pubnonces)
         tweaks = [COMMON_TWEAKS[i] for i in tweak_indices]
-        signers = SignersContext(self.n, self.t, ids, pubshares, self.thresh_pk)
-        session = SessionContext(signers, aggnonce, tweaks, is_xonly, msg)
+        signer_set = (self.n, self.t, ids, pubshares, self.thresh_pk)
+        session = SessionContext(*signer_set, aggnonce, tweaks, is_xonly, msg)
         psigs = []
         for signer_index, my_id in enumerate(set_indices):
             psig = sign(
@@ -77,7 +76,7 @@ class SigAggGroupBuilder:
             )
             psigs.append(psig)
             assert partial_sig_verify(
-                psig, pubnonces, signers, tweaks, is_xonly, msg, signer_index
+                psig, pubnonces, *signer_set, tweaks, is_xonly, msg, signer_index
             )
         expected = partial_sig_agg(psigs, session)
         self.group["valid_tests"].append(
@@ -102,8 +101,8 @@ class SigAggGroupBuilder:
         ids = list(set_indices)
         aggnonce = nonce_agg(pubnonces)
         msg = COMMON_MSGS[0]
-        signers = SignersContext(self.n, self.t, ids, pubshares, self.thresh_pk)
-        session = SessionContext(signers, aggnonce, [], [], msg)
+        signer_set = (self.n, self.t, ids, pubshares, self.thresh_pk)
+        session = SessionContext(*signer_set, aggnonce, [], [], msg)
         psigs = []
         for signer_index, my_id in enumerate(set_indices):
             psig = sign(
@@ -114,7 +113,7 @@ class SigAggGroupBuilder:
             )
             psigs.append(psig)
             assert partial_sig_verify(
-                psig, pubnonces, signers, [], [], msg, signer_index
+                psig, pubnonces, *signer_set, [], [], msg, signer_index
             )
 
         if fault == "psig_out_of_range":

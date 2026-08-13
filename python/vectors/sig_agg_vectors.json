@@ -113,7 +113,7 @@
                     "msg": "F95466D086770E689964664219266FE5ED215C92AE20BAB5C9D79ADDDDF3C0CF",
                     "error": {
                         "type": "ValueError",
-                        "message": "The psigs and ids arrays must have the same length."
+                        "message": "The psigs and ids lists must have the same length."
                     }
                 }
             ]
@@ -211,7 +211,7 @@
                     "msg": "F95466D086770E689964664219266FE5ED215C92AE20BAB5C9D79ADDDDF3C0CF",
                     "error": {
                         "type": "ValueError",
-                        "message": "The psigs and ids arrays must have the same length."
+                        "message": "The psigs and ids lists must have the same length."
                     }
                 }
             ]
@@ -318,7 +318,7 @@
                     "msg": "F95466D086770E689964664219266FE5ED215C92AE20BAB5C9D79ADDDDF3C0CF",
                     "error": {
                         "type": "ValueError",
-                        "message": "The psigs and ids arrays must have the same length."
+                        "message": "The psigs and ids lists must have the same length."
                     }
                 }
             ]
@@ -445,7 +445,7 @@
                     "msg": "F95466D086770E689964664219266FE5ED215C92AE20BAB5C9D79ADDDDF3C0CF",
                     "error": {
                         "type": "ValueError",
-                        "message": "The psigs and ids arrays must have the same length."
+                        "message": "The psigs and ids lists must have the same length."
                     }
                 }
             ]
