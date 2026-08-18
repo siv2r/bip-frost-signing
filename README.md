@@ -7,6 +7,7 @@
   Assigned: 2026-01-30
   License: CC0-1.0
   Discussion: 2024-07-31: https://groups.google.com/g/bitcoindev/c/PeMp2HQl-H4/m/AcJtK0aKAwAJ
+  Version: 0.8.0
   Requires: 340
 ```
 

@@ -139,10 +139,14 @@ def validate_threshold_setup(setup: ThresholdSetup) -> None:
     # 3.1 Ensure all pubshares shares lie on the same polynomial
     for i, point in parsed_shares[t:]:
         if derive_pubshare_at(base_ids, base_points, i) != point:
-            raise ValueError("The provided key material is incorrect.")
+            raise ValueError(
+                "The provided key material is incorrect: the public shares do not lie on a single polynomial."
+            )
     # 3.2 Ensure the derived threshold key matches the provided one
     if derive_thresh_pubkey(base_ids, base_points) != thresh_pk:
-        raise ValueError("The provided key material is incorrect.")
+        raise ValueError(
+            "The provided key material is incorrect: the public shares do not match the threshold public key."
+        )
 
 
 class TweakContext(NamedTuple):
@@ -334,7 +338,9 @@ def get_session_values(
         pubshares is not None
         and derive_thresh_pubkey(ids, pubshare_points) != thresh_pk
     ):
-        raise ValueError("The provided key material is incorrect.")
+        raise ValueError(
+            "The provided key material is incorrect: the public shares do not match the threshold public key."
+        )
 
     Q, gacc, tacc = thresh_pubkey_and_tweak(thresh_pk, tweaks, is_xonly)
     # sort the ids before serializing because Olaf paper considers them as a set

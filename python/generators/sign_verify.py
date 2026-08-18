@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Optional
 
 from frost_ref import (
     InvalidContributionError,
@@ -75,21 +75,28 @@ class SignVerifyGroupBuilder:
         self,
         my_id: int,
         ids: List[int],
-        pubshare_indices: List[int],
+        pubshare_indices: Optional[List[int]],
         pubnonce_indices: List[int],
         aggnonce: bytes,
         msg: bytes,
         comment: str,
-    ) -> None:
-        pubshares = [self.inputs.pool_pubshares[i] for i in pubshare_indices]
+    ) -> bytes:
+        # A null pubshare_indices is a session whose public share list is absent.
+        pubshares = (
+            None
+            if pubshare_indices is None
+            else [self.inputs.pool_pubshares[i] for i in pubshare_indices]
+        )
         pubnonces = [self.inputs.pool_pubnonces[i] for i in pubnonce_indices]
         secnonce = bytearray(self.inputs.pool_secnonces[my_id])
         signer_set = (self.n, self.t, ids, pubshares, self.thresh_pk)
         session = SessionContext(*signer_set, aggnonce, [], [], msg)
         psig = sign(secnonce, self.inputs.pool_secshares[my_id], my_id, session)
-        assert partial_sig_verify(
-            psig, pubnonces, *signer_set, [], [], msg, ids.index(my_id)
-        )
+        if pubshares is not None:
+            verify_set = (self.n, self.t, ids, pubshares, self.thresh_pk)
+            assert partial_sig_verify(
+                psig, pubnonces, *verify_set, [], [], msg, ids.index(my_id)
+            )
         self.group["valid_tests"].append(
             {
                 "comment": comment,
@@ -104,6 +111,7 @@ class SignVerifyGroupBuilder:
                 "expected": bytes_to_hex(psig),
             }
         )
+        return psig
 
     def _append_sign_error(
         self,
@@ -207,7 +215,7 @@ class SignVerifyGroupBuilder:
     def add_valid_tests(self) -> None:
         t, n = self.t, self.n
         # Minimum threshold subset.
-        self._append_valid(
+        psig_min = self._append_valid(
             0,
             self.min_s,
             self.min_s,
@@ -216,6 +224,16 @@ class SignVerifyGroupBuilder:
             COMMON_MSGS[0],
             "Minimum threshold subset of signers",
         )
+        psig_no_pubshares = self._append_valid(
+            0,
+            self.min_s,
+            None,
+            self.min_s,
+            self.aggnonce_min,
+            COMMON_MSGS[0],
+            "Signing without the public share list",
+        )
+        assert psig_no_pubshares == psig_min
         # Order-invariance (needs a set of size >= 2 to be meaningful).
         if t >= 2:
             rev = list(reversed(self.min_s))

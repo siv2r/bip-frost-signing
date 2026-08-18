@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import List, Optional, Tuple
 
 from frost_ref import (
     InvalidContributionError,
@@ -107,15 +107,20 @@ class DetSignGroupBuilder:
         self,
         my_id: int,
         ids: List[int],
-        pubshare_indices: List[int],
+        pubshare_indices: Optional[List[int]],
         aux_rand: Optional[bytes],
         msg: bytes,
         tweaks: List[bytes],
         is_xonly: List[bool],
         comment: str,
-    ) -> None:
+    ) -> Tuple[bytes, bytes]:
         curr_aggothernonce = self._derive_aggothernonce(ids, my_id, msg, aux_rand)
-        pubshares = [self.inputs.pool_pubshares[i] for i in pubshare_indices]
+        # A null pubshare_indices is a session whose public share list is absent.
+        pubshares = (
+            None
+            if pubshare_indices is None
+            else [self.inputs.pool_pubshares[i] for i in pubshare_indices]
+        )
         signer_set = (self.n, self.t, ids, pubshares, self.thresh_pk)
         secshare = self.inputs.pool_secshares[my_id]
         result = deterministic_sign(
@@ -145,6 +150,7 @@ class DetSignGroupBuilder:
                 "expected": bytes_list_to_hex(list(result)),
             }
         )
+        return result
 
     def _append_error(
         self,
@@ -206,7 +212,7 @@ class DetSignGroupBuilder:
     def add_valid_tests(self) -> None:
         t, n = self.t, self.n
         # minimum threshold subset.
-        self._append_valid(
+        result_min = self._append_valid(
             0,
             self.min_s,
             self.min_s,
@@ -216,6 +222,17 @@ class DetSignGroupBuilder:
             [],
             "Minimum threshold subset of signers",
         )
+        result_no_pubshares = self._append_valid(
+            0,
+            self.min_s,
+            None,
+            RANDS[0],
+            COMMON_MSGS[0],
+            [],
+            [],
+            "Signing without the public share list",
+        )
+        assert result_no_pubshares == result_min
         # reordering (needs a set of size >= 2 to be meaningful, matching sign_verify).
         if t >= 2:
             rev = list(reversed(self.min_s))
@@ -486,7 +503,9 @@ class DetSignGroupBuilder:
             "value",
             "Tweak exceeds the group order",
         )
-        # Fewer signers than the threshold (empty set at t=1).
+        # Fewer signers than the threshold (empty set at t=1). The helper returns no
+        # aggregate for a set that holds no signer other than my_id, so this case
+        # reaches the signer-count check.
         below = list(range(t - 1))
         self._append_error(
             0,

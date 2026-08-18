@@ -168,7 +168,13 @@ def test_sign_verify_vectors():
 
         for tc in group["valid_tests"]:
             ids_tmp = tc["ids"]
-            pubshares_tmp = [PlainPk(pubshares[i]) for i in tc["pubshare_indices"]]
+            # A null pubshare_indices is a session whose public share list is absent,
+            # which leaves it unable to run partial signature verification.
+            valid_pubshares = (
+                None
+                if tc["pubshare_indices"] is None
+                else [PlainPk(pubshares[i]) for i in tc["pubshare_indices"]]
+            )
             pubnonces_tmp = [pubnonces[i] for i in tc["pubnonce_indices"]]
             aggnonce_tmp = bytes.fromhex(tc["aggnonce"])
             # Make sure that pubnonces and aggnonce in the test vector are consistent
@@ -179,16 +185,18 @@ def test_sign_verify_vectors():
             secshare = secshares[tc["secshare_index"]]
             expected = bytes.fromhex(tc["expected"])
 
-            signer_set = (n, t, ids_tmp, pubshares_tmp, thresh_pk)
+            signer_set = (n, t, ids_tmp, valid_pubshares, thresh_pk)
             session_ctx = SessionContext(*signer_set, aggnonce_tmp, [], [], msg)
             # WARNING: An actual implementation should _not_ copy the secnonce.
             # Reusing the secnonce, as we do here for testing purposes, can leak the
             # secret key.
             secnonce_tmp = bytearray(secnonces[tc["secnonce_index"]])
             assert sign(secnonce_tmp, secshare, my_id, session_ctx) == expected
-            assert partial_sig_verify(
-                expected, pubnonces_tmp, *signer_set, [], [], msg, signer_index
-            )
+            if valid_pubshares is not None:
+                verify_set = (n, t, ids_tmp, valid_pubshares, thresh_pk)
+                assert partial_sig_verify(
+                    expected, pubnonces_tmp, *verify_set, [], [], msg, signer_index
+                )
 
         for tc in group["sign_error_tests"]:
             exception, except_fn = get_error_details(tc)
@@ -338,9 +346,12 @@ def test_det_sign_vectors():
 
         for test_case in group["valid_tests"]:
             ids_tmp = test_case["ids"]
-            pubshares_tmp = [
-                PlainPk(pubshares[i]) for i in test_case["pubshare_indices"]
-            ]
+            # A null pubshare_indices is a session whose public share list is absent.
+            valid_pubshares = (
+                None
+                if test_case["pubshare_indices"] is None
+                else [PlainPk(pubshares[i]) for i in test_case["pubshare_indices"]]
+            )
             secshare = secshares[test_case["secshare_index"]]
             aggothernonce = (
                 bytes.fromhex(test_case["aggothernonce"])
@@ -359,7 +370,7 @@ def test_det_sign_vectors():
             )
             expected = fromhex_all(test_case["expected"])
 
-            signer_set = (n, t, ids_tmp, pubshares_tmp, thresh_pk)
+            signer_set = (n, t, ids_tmp, valid_pubshares, thresh_pk)
             pubnonce, psig = deterministic_sign(
                 secshare,
                 my_id,
@@ -382,8 +393,15 @@ def test_det_sign_vectors():
             session_ctx = SessionContext(
                 *signer_set, aggnonce_tmp, tweaks, is_xonly, msg
             )
+            # A signer always knows its own public share, even in a session whose
+            # public share list is absent, so the self-check runs either way.
+            own_pubshare = (
+                pubshares[my_id]
+                if valid_pubshares is None
+                else valid_pubshares[signer_index]
+            )
             assert partial_sig_verify_internal(
-                psig, my_id, pubnonce, pubshares_tmp[signer_index], session_ctx
+                psig, my_id, pubnonce, own_pubshare, session_ctx
             )
 
         for test_case in group["error_tests"]:
@@ -438,9 +456,12 @@ def test_sig_agg_vectors():
 
         for test_case in group["valid_tests"]:
             ids_tmp = test_case["ids"]
-            pubshares_tmp = [
-                PlainPk(pubshares[i]) for i in test_case["pubshare_indices"]
-            ]
+            # A null pubshare_indices is a session whose public share list is absent.
+            valid_pubshares = (
+                None
+                if test_case["pubshare_indices"] is None
+                else [PlainPk(pubshares[i]) for i in test_case["pubshare_indices"]]
+            )
             aggnonce_tmp = bytes.fromhex(test_case["aggnonce"])
             tweaks_tmp = [tweaks[i] for i in test_case["tweak_indices"]]
             tweak_modes_tmp = test_case["is_xonly"]
@@ -448,7 +469,7 @@ def test_sig_agg_vectors():
             msg = bytes.fromhex(test_case["msg"])
             expected = bytes.fromhex(test_case["expected"])
 
-            signer_set = (n, t, ids_tmp, pubshares_tmp, thresh_pk)
+            signer_set = (n, t, ids_tmp, valid_pubshares, thresh_pk)
             session_ctx = SessionContext(
                 *signer_set, aggnonce_tmp, tweaks_tmp, tweak_modes_tmp, msg
             )
