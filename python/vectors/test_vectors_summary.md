@@ -15,7 +15,7 @@ the files.
 | `det_sign_vectors.json` | `deterministic_sign` | `valid_tests`, `error_tests` |
 | `sig_agg_vectors.json` | `partial_sig_agg` | `valid_tests`, `error_tests` |
 
-`ValidateThresholdSetup` ships no vectors. It checks key material that a key
+`ValidateThresholdInfo` ships no vectors. It checks key material that a key
 generation protocol produced, so vectors for it belong with that protocol rather
 than here. RFC 9591 makes the same call, requiring `vss_verify` while shipping no
 vectors for it.

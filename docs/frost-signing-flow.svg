@@ -27,19 +27,19 @@
   </defs>
 
   <!-- held state captions + ticks -->
-  <text class="cap" x="185" y="34">Threshold Setup</text>
+  <text class="cap" x="185" y="34">Threshold Info</text>
   <line class="tick" x1="185" y1="40" x2="185" y2="49"/>
 
   <text class="cap" x="430" y="20"><tspan>secshare</tspan><tspan class="sub" dy="2.5">0</tspan><tspan dy="-2.5">, id</tspan><tspan class="sub" dy="2.5">0</tspan></text>
-  <text class="cap" x="430" y="34">Threshold Setup</text>
+  <text class="cap" x="430" y="34">Threshold Info</text>
   <line class="tick" x1="430" y1="40" x2="430" y2="49"/>
 
   <text class="cap" x="620" y="20"><tspan>secshare</tspan><tspan class="sub" dy="2.5">1</tspan><tspan dy="-2.5">, id</tspan><tspan class="sub" dy="2.5">1</tspan></text>
-  <text class="cap" x="620" y="34">Threshold Setup</text>
+  <text class="cap" x="620" y="34">Threshold Info</text>
   <line class="tick" x1="620" y1="40" x2="620" y2="49"/>
 
   <text class="cap" x="800" y="20"><tspan>secshare</tspan><tspan class="sub" dy="2.5">n-1</tspan><tspan dy="-2.5">, id</tspan><tspan class="sub" dy="2.5">n-1</tspan></text>
-  <text class="cap" x="800" y="34">Threshold Setup</text>
+  <text class="cap" x="800" y="34">Threshold Info</text>
   <line class="tick" x1="800" y1="40" x2="800" y2="49"/>
 
   <!-- lane heads -->

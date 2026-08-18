@@ -90,11 +90,11 @@ def derive_thresh_pubkey(ids: List[int], pubshares: List[GE]) -> PlainPk:
     # the constant term at x-coordinate 0, is equal to the identifier -1.
     Q = derive_pubshare_at(ids, pubshares, -1)
     if Q.infinity:
-        raise ValueError("The threshold pubkey must not be the point at infinity.")
+        raise ValueError("The threshold public key must not be the point at infinity.")
     return PlainPk(Q.to_bytes_compressed())
 
 
-class ThresholdSetup(NamedTuple):
+class ThresholdInfo(NamedTuple):
     t: int
     thresh_pk: PlainPk
     # List of length n, where the i-th entry belongs to the participant
@@ -103,8 +103,8 @@ class ThresholdSetup(NamedTuple):
     pubshares: List[Optional[PlainPk]]
 
 
-def validate_threshold_setup(setup: ThresholdSetup) -> None:
-    t, thresh_pk, pubshares = setup
+def validate_threshold_info(info: ThresholdInfo) -> None:
+    t, thresh_pk, pubshares = info
     n = len(pubshares)
 
     if not (1 <= t <= n):
@@ -130,7 +130,7 @@ def validate_threshold_setup(setup: ThresholdSetup) -> None:
             raise ValueError(f"Invalid pubshare at index {i}.")
 
     if len(parsed_shares) < t:
-        raise ValueError(f"At least {t} pubshares must be present.")
+        raise ValueError("At least t pubshares must be present.")
 
     # 3. Establish the base set for polynomial interpolation
     base_ids = [i for i, _ in parsed_shares[:t]]

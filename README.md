@@ -7,7 +7,7 @@
   Assigned: 2026-01-30
   License: CC0-1.0
   Discussion: 2024-07-31: https://groups.google.com/g/bitcoindev/c/PeMp2HQl-H4/m/AcJtK0aKAwAJ
-  Version: 0.8.0
+  Version: 0.9.0
   Requires: 340
 ```
 
@@ -76,7 +76,7 @@ Key generation protocols produce *public shares* and *threshold public keys* in 
 There are *u* (where *1 <= t <= u <= n < 2^32*)[^n-bound] signers[^participant-vs-signer] and one coordinator initiating the FROST signing protocol.
 Each participant has a point-to-point communication link to the coordinator (but participants do not have direct communication links to each other).
 
-[^n-bound]: This bound on *n* comes from the identifier encoding. A participant identifier is serialized as a 4-byte big-endian integer and fed into the tagged hash function that binds the nonces to the signer set, so it must fit in 32 bits. No realistic threshold setup approaches 2^32 participants, so the bound doesn't limit practical implementations.
+[^n-bound]: This bound on *n* comes from the identifier encoding. A participant identifier is serialized as a 4-byte big-endian integer and fed into the tagged hash function that binds the nonces to the signer set, so it must fit in 32 bits. No realistic threshold signing group approaches 2^32 participants, so the bound doesn't limit practical implementations.
 
 [^participant-vs-signer]: This document says *participant* for anyone who took part in key generation, all *n* of them, and *signer* for a participant taking part in the current signing session, the *u* of them. Key material issued during key generation keeps the participant label, so *secshare*, *pubshare*, and the identifiers stay participant values even when a signer supplies them to an algorithm.
 
@@ -88,20 +88,20 @@ This document is written from the coordinator's perspective because the key gene
 
 Signing takes two inputs.
 The first is a participant's long-term *secret share*, individual to each participant and never shared with anyone.
-The second is a [Threshold Setup](#threshold-setup), common to all participants and the coordinator, consisting of the threshold *t*, the threshold public key, and the participants' public shares indexed by their identifiers.
+The second is a [Threshold Info](#threshold-info), common to all participants and the coordinator, consisting of the threshold *t*, the threshold public key, and the participants' public shares indexed by their identifiers.
 
 Once the coordinator has selected the signers, their identifiers and public shares, the aggregate nonce, the tweaks, and the message form the [Session Context](#session-context) that the second communication round operates on.
 
 This signing protocol is compatible with any key generation protocol that produces valid FROST keys.
 Valid keys satisfy: (1) each *secret share* is a Shamir share of the *threshold secret key*, and (2) each *public share* equals the scalar multiplication *secshare \* G*.[^chilldkg-keys]
-Before signing, the threshold setup must pass *ValidateThresholdSetup*, which checks that every signer set selectable from its public shares reproduces the threshold public key.
-Running it on a setup containing all *n* public shares therefore validates the entire key material.
+Before signing, the threshold info must pass *ValidateThresholdInfo*, which checks that every signer set selectable from its public shares reproduces the threshold public key.
+Running it on a threshold info containing all *n* public shares therefore validates the entire key material.
 *GetSessionValues* repeats this check for the one signer set the coordinator selected.
 
 [^chilldkg-keys]: ChillDKG satisfies both conditions, so its [DKG output](https://github.com/BlockstreamResearch/bip-frost-dkg#dkg-outputs) can be used directly as key material.
 
 > [!IMPORTANT]
-> Passing *ValidateThresholdSetup* ensures functional compatibility with the signing protocol but does not guarantee the security of the key generation protocol itself.
+> Passing *ValidateThresholdInfo* ensures functional compatibility with the signing protocol but does not guarantee the security of the key generation protocol itself.
 
 The output of the FROST signing protocol is a BIP340 Schnorr signature that verifies under the *X-only threshold public key* as if it were produced by a single signer using the *threshold secret key*.
 
@@ -317,23 +317,23 @@ The following helper functions and notation are used for operations on standard 
 
 ### Key Material and Setup
 
-#### Threshold Setup
+#### Threshold Info
 
-The Threshold Setup is a data structure holding the public key material that a key generation protocol produces. It consists of the following elements:
+The Threshold Info is a data structure holding the public key material that a key generation protocol produces. It consists of the following elements:
 
 - The threshold number *t* of participants required to issue a signature: an integer with *1 ≤ t ≤ n*
 - The threshold public key *thresh_pk*: a 33-byte array, compressed serialized point
 - The list of participant public shares *pubshare<sub>0..n-1</sub>*: *n* entries, each either a 33-byte array (a compressed serialized point) or *empty_bytestring*, where *1 ≤ n < 2<sup>32</sup>*
 
-We write "Let *(t, thresh_pk, pubshare<sub>0..n-1</sub>) = setup*" to assign names to the elements of a Threshold Setup.
+We write "Let *(t, thresh_pk, pubshare<sub>0..n-1</sub>) = info*" to assign names to the elements of a Threshold Info.
 
-Entry *i* of the *pubshare<sub>0..n-1</sub>* list belongs to the participant with identifier *i*. An entry is *empty_bytestring* if the party holding the setup does not know that participant's public share, and at least *t* entries must be non-empty, both for *ValidateThresholdSetup* to run and for the coordinator to select a signer set.
+Entry *i* of the *pubshare<sub>0..n-1</sub>* list belongs to the participant with identifier *i*. An entry is *empty_bytestring* if the party holding the threshold info does not know that participant's public share, and at least *t* entries must be non-empty, both for *ValidateThresholdInfo* to run and for the coordinator to select a signer set.
 
-Algorithm *ValidateThresholdSetup(setup)*:
+Algorithm *ValidateThresholdInfo(info)*:
 
 - Inputs:
-  - The *setup*: a [Threshold Setup](#threshold-setup) data structure
-- *(t, thresh_pk, pubshare<sub>0..n-1</sub>) = setup*
+  - The *info*: a [Threshold Info](#threshold-info) data structure
+- *(t, thresh_pk, pubshare<sub>0..n-1</sub>) = info*
 - Fail if not *1 ≤ t ≤ n*
 - Fail if *cpoint(thresh_pk)* fails
 - Let *id<sub>1..w</sub>* be the identifiers *i* with *pubshare<sub>i</sub> ≠ empty_bytestring*, in ascending order
@@ -855,6 +855,10 @@ This document proposes a standard for the FROST threshold signature scheme that 
 
 ## Changelog
 
+- *0.9.0* (2026-08-18): Introduces the following changes:
+  - Introduce the *Threshold Info* data structure, holding the public key material that a key generation protocol produces, and *ValidateThresholdInfo* to check it.
+  - Remove *SignersContext* and *ValidateSignersCtx*, folding their checks into *GetSessionValues*, their fields into *SessionContext*, and passing those fields directly to *PartialSigVerify* and *DeterministicSign*.
+  - Make the session's public share list optional, leaving *PartialSigVerify* as the only algorithm that requires it, and extend the test vectors to cover a session without it.
 - *0.8.0* (2026-07-30): Prefix the *noncecoef* hash input with the number of signers *u*, so that distinct *(id<sub>1..u</sub>, aggnonce, Q, m)* tuples can no longer map to the same nonce coefficient *b*. The affected test vectors were regenerated.
 - *0.7.0* (2026-07-23): Introduces the following changes:
   - Relax the lower bound on the total number of participants *n* from 2 to 1, and extend the edge-case footnote to cover the *n = 1* setup.

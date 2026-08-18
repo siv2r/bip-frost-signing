@@ -211,7 +211,7 @@
                     "msg": "F95466D086770E689964664219266FE5ED215C92AE20BAB5C9D79ADDDDF3C0CF",
                     "error": {
                         "type": "ValueError",
-                        "message": "The threshold pubkey must not be the point at infinity."
+                        "message": "The threshold public key must not be the point at infinity."
                     }
                 },
                 {
@@ -587,7 +587,7 @@
                     "msg": "F95466D086770E689964664219266FE5ED215C92AE20BAB5C9D79ADDDDF3C0CF",
                     "error": {
                         "type": "ValueError",
-                        "message": "The threshold pubkey must not be the point at infinity."
+                        "message": "The threshold public key must not be the point at infinity."
                     }
                 },
                 {
@@ -946,7 +946,7 @@
                     "msg": "F95466D086770E689964664219266FE5ED215C92AE20BAB5C9D79ADDDDF3C0CF",
                     "error": {
                         "type": "ValueError",
-                        "message": "The threshold pubkey must not be the point at infinity."
+                        "message": "The threshold public key must not be the point at infinity."
                     }
                 },
                 {
@@ -1371,7 +1371,7 @@
                     "msg": "F95466D086770E689964664219266FE5ED215C92AE20BAB5C9D79ADDDDF3C0CF",
                     "error": {
                         "type": "ValueError",
-                        "message": "The threshold pubkey must not be the point at infinity."
+                        "message": "The threshold public key must not be the point at infinity."
                     }
                 },
                 {
