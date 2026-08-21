@@ -1,0 +1,122 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 540" font-family='-apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif'>
+  <style>
+    :root { --ink: #1a1a1a; --dim: #9c9c9c; }
+    @media (prefers-color-scheme: dark) {
+      :root { --ink: #e6e6e6; --dim: #767676; }
+    }
+    text { fill: var(--ink); }
+    .party { font-size: 13px; font-weight: 600; letter-spacing: .4px; text-anchor: middle; }
+    .step { font-size: 12px; font-weight: 500; text-anchor: middle; }
+    .msg { font-size: 12px; text-anchor: middle; }
+    .cap { font-size: 10.5px; fill: var(--dim); text-anchor: middle; }
+    .round { font-size: 11px; font-weight: 600; letter-spacing: 1.6px; fill: var(--dim); }
+    .note { font-size: 11.5px; font-style: italic; }
+    .subnote { font-size: 10.5px; font-style: italic; fill: var(--dim); text-anchor: middle; }
+    .sub { font-size: 70%; }
+    .life { stroke: var(--ink); stroke-opacity: .4; stroke-width: 1; }
+    .fade { stroke: var(--dim); stroke-opacity: .6; stroke-width: 1; stroke-dasharray: 3 4; }
+    .box { fill: none; stroke: var(--ink); stroke-width: 1.2; }
+    .arrow { stroke: var(--ink); stroke-width: 1.3; }
+    .tick { stroke: var(--dim); stroke-width: 1; }
+    .dots { font-size: 13px; fill: var(--dim); letter-spacing: 2px; text-anchor: middle; }
+  </style>
+  <defs>
+    <marker id="ah" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 Z" fill="var(--ink)"/>
+    </marker>
+  </defs>
+
+  <!-- held state captions + ticks -->
+  <text class="cap" x="185" y="34">Threshold Info</text>
+  <line class="tick" x1="185" y1="40" x2="185" y2="49"/>
+
+  <text class="cap" x="430" y="20"><tspan>secshare</tspan><tspan class="sub" dy="2.5">0</tspan><tspan dy="-2.5">, id</tspan><tspan class="sub" dy="2.5">0</tspan></text>
+  <text class="cap" x="430" y="34">Threshold Info</text>
+  <line class="tick" x1="430" y1="40" x2="430" y2="49"/>
+
+  <text class="cap" x="620" y="20"><tspan>secshare</tspan><tspan class="sub" dy="2.5">1</tspan><tspan dy="-2.5">, id</tspan><tspan class="sub" dy="2.5">1</tspan></text>
+  <text class="cap" x="620" y="34">Threshold Info</text>
+  <line class="tick" x1="620" y1="40" x2="620" y2="49"/>
+
+  <text class="cap" x="800" y="20"><tspan>secshare</tspan><tspan class="sub" dy="2.5">n-1</tspan><tspan dy="-2.5">, id</tspan><tspan class="sub" dy="2.5">n-1</tspan></text>
+  <text class="cap" x="800" y="34">Threshold Info</text>
+  <line class="tick" x1="800" y1="40" x2="800" y2="49"/>
+
+  <!-- lane heads -->
+  <rect class="box" x="125" y="52" width="120" height="28" rx="5"/>
+  <text class="party" x="185" y="70">COORDINATOR</text>
+  <rect class="box" x="407" y="52" width="46" height="28" rx="5"/>
+  <text class="party" x="430" y="70"><tspan>P</tspan><tspan class="sub" dy="3">0</tspan></text>
+  <rect class="box" x="597" y="52" width="46" height="28" rx="5"/>
+  <text class="party" x="620" y="70"><tspan>P</tspan><tspan class="sub" dy="3">1</tspan></text>
+  <text class="dots" x="710" y="70">. . .</text>
+  <rect class="box" x="770" y="52" width="60" height="28" rx="5"/>
+  <text class="party" x="800" y="70"><tspan>P</tspan><tspan class="sub" dy="3">n-1</tspan></text>
+
+  <!-- lifelines -->
+  <line class="life" x1="185" y1="80" x2="185" y2="226"/>
+  <line class="life" x1="185" y1="252" x2="185" y2="440"/>
+  <line class="life" x1="185" y1="466" x2="185" y2="522"/>
+  <line class="life" x1="430" y1="80" x2="430" y2="100"/>
+  <line class="life" x1="430" y1="126" x2="430" y2="336"/>
+  <line class="life" x1="430" y1="362" x2="430" y2="522"/>
+  <line class="life" x1="620" y1="80" x2="620" y2="100"/>
+  <line class="life" x1="620" y1="126" x2="620" y2="336"/>
+  <line class="life" x1="620" y1="362" x2="620" y2="522"/>
+  <line class="life" x1="800" y1="80" x2="800" y2="100"/>
+  <line class="life" x1="800" y1="126" x2="800" y2="252"/>
+  <line class="fade" x1="800" y1="252" x2="800" y2="522"/>
+
+  <!-- round markers -->
+  <text class="round" x="22" y="117">ROUND 1</text>
+  <text class="round" x="22" y="353">ROUND 2</text>
+
+  <!-- round 1: NonceGen -->
+  <rect class="box" x="386" y="100" width="88" height="26" rx="4"/>
+  <text class="step" x="430" y="117">NonceGen()</text>
+  <rect class="box" x="576" y="100" width="88" height="26" rx="4"/>
+  <text class="step" x="620" y="117">NonceGen()</text>
+  <rect class="box" x="756" y="100" width="88" height="26" rx="4"/>
+  <text class="step" x="800" y="117">NonceGen()</text>
+
+  <!-- round 1: pubnonces to coordinator -->
+  <text class="msg" x="307" y="142"><tspan>pubnonce</tspan><tspan class="sub" dy="3">0</tspan></text>
+  <line class="arrow" x1="430" y1="150" x2="188" y2="150" marker-end="url(#ah)"/>
+  <text class="msg" x="307" y="168"><tspan>pubnonce</tspan><tspan class="sub" dy="3">1</tspan></text>
+  <line class="arrow" x1="620" y1="176" x2="188" y2="176" marker-end="url(#ah)"/>
+  <text class="msg" x="307" y="194"><tspan>pubnonce</tspan><tspan class="sub" dy="3">n-1</tspan></text>
+  <line class="arrow" x1="800" y1="202" x2="188" y2="202" marker-end="url(#ah)"/>
+
+  <!-- round 1: NonceAgg -->
+  <rect class="box" x="138" y="226" width="94" height="26" rx="4"/>
+  <text class="step" x="185" y="243">NonceAgg()</text>
+  <text class="note" x="245" y="237">signers are selected, their</text>
+  <text class="note" x="245" y="251">pubnonces are aggregated</text>
+
+  <!-- round 1: aggnonce to selected signers -->
+  <text class="msg" x="307" y="284">aggnonce</text>
+  <line class="arrow" x1="188" y1="290" x2="426" y2="290" marker-end="url(#ah)"/>
+  <line class="arrow" x1="434" y1="290" x2="615" y2="290" marker-end="url(#ah)"/>
+  <text class="subnote" x="307" y="307">completes the Session Context</text>
+
+  <!-- round 2: Sign -->
+  <rect class="box" x="398" y="336" width="64" height="26" rx="4"/>
+  <text class="step" x="430" y="353">Sign()</text>
+  <rect class="box" x="588" y="336" width="64" height="26" rx="4"/>
+  <text class="step" x="620" y="353">Sign()</text>
+
+  <!-- round 2: psigs to coordinator -->
+  <text class="msg" x="307" y="382"><tspan>psig</tspan><tspan class="sub" dy="3">0</tspan></text>
+  <line class="arrow" x1="430" y1="390" x2="188" y2="390" marker-end="url(#ah)"/>
+  <text class="msg" x="307" y="408"><tspan>psig</tspan><tspan class="sub" dy="3">1</tspan></text>
+  <line class="arrow" x1="620" y1="416" x2="188" y2="416" marker-end="url(#ah)"/>
+
+  <!-- round 2: PartialSigAgg -->
+  <rect class="box" x="126" y="440" width="118" height="26" rx="4"/>
+  <text class="step" x="185" y="457">PartialSigAgg()</text>
+
+  <!-- round 2: final signature to signers -->
+  <text class="msg" x="307" y="492">bip340 sig</text>
+  <line class="arrow" x1="188" y1="498" x2="426" y2="498" marker-end="url(#ah)"/>
+  <line class="arrow" x1="434" y1="498" x2="615" y2="498" marker-end="url(#ah)"/>
+</svg>

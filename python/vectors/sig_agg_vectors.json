@@ -34,6 +34,21 @@
                 },
                 {
                     "tc_id": 2,
+                    "comment": "Public shares list is absent",
+                    "ids": [0, 1],
+                    "pubshare_indices": null,
+                    "aggnonce": "030F261BFE5DF0AE3EC06BB7A1D6394A3AF206968281F03B70D25FB84D49036CE203BE48277630579C72160430C819AABB1DFA20FF70749666080BB886B728476261",
+                    "tweak_indices": [],
+                    "is_xonly": [],
+                    "psigs": [
+                        "93DDE8C9CEE714EB5BDF2BE00FEC3327F9CF386D3AC672F0DA734FFC08E7A041",
+                        "4368B9CD58815001630403FA8F6319CFD4849E95F13379FA431A288FD230E872"
+                    ],
+                    "msg": "F95466D086770E689964664219266FE5ED215C92AE20BAB5C9D79ADDDDF3C0CF",
+                    "expected": "74B202858D1B9B1113A5615E20CDB41CD6CAEE2DC125EB32AEA1A7C189621C12D746A297276864ECBEE32FDA9F4F4CF7CE53D7032BF9ECEB1D8D788BDB1888B3"
+                },
+                {
+                    "tc_id": 3,
                     "comment": "Reordering the signer set leaves the aggregate signature unchanged, because the partial signatures are summed and the identifiers are sorted before they are bound into the binding value",
                     "ids": [1, 0],
                     "pubshare_indices": [1, 0],
@@ -48,7 +63,7 @@
                     "expected": "74B202858D1B9B1113A5615E20CDB41CD6CAEE2DC125EB32AEA1A7C189621C12D746A297276864ECBEE32FDA9F4F4CF7CE53D7032BF9ECEB1D8D788BDB1888B3"
                 },
                 {
-                    "tc_id": 3,
+                    "tc_id": 4,
                     "comment": "Aggregation with three tweaks applied (one x-only, two plain)",
                     "ids": [0, 1],
                     "pubshare_indices": [0, 1],
@@ -63,7 +78,7 @@
                     "expected": "E2308F92DE70BC5F612D329F69F141BF4E886797B25539FCBDF39096B53E0F081093777BBF7DAF39BD06D299CB3860D43F647FC3A36507E2A57061D031F5696E"
                 },
                 {
-                    "tc_id": 4,
+                    "tc_id": 5,
                     "comment": "All signers participate, no tweaks",
                     "ids": [0, 1, 2],
                     "pubshare_indices": [0, 1, 2],
@@ -81,7 +96,7 @@
             ],
             "error_tests": [
                 {
-                    "tc_id": 5,
+                    "tc_id": 6,
                     "comment": "Partial signature equals the group order, which is out of range",
                     "ids": [0, 1],
                     "pubshare_indices": [0, 1],
@@ -100,7 +115,7 @@
                     }
                 },
                 {
-                    "tc_id": 6,
+                    "tc_id": 7,
                     "comment": "Number of partial signatures does not match the number of signers",
                     "ids": [0, 1],
                     "pubshare_indices": [0, 1],
@@ -113,7 +128,7 @@
                     "msg": "F95466D086770E689964664219266FE5ED215C92AE20BAB5C9D79ADDDDF3C0CF",
                     "error": {
                         "type": "ValueError",
-                        "message": "The psigs and ids arrays must have the same length."
+                        "message": "The psigs and ids lists must have the same length."
                     }
                 }
             ]
@@ -136,7 +151,7 @@
             ],
             "valid_tests": [
                 {
-                    "tc_id": 7,
+                    "tc_id": 8,
                     "comment": "Minimum threshold subset of signers, no tweaks",
                     "ids": [0],
                     "pubshare_indices": [0],
@@ -150,7 +165,21 @@
                     "expected": "3EA6A192ECA9027F78FA5354DDCB5315C8C2AB067F9BB679D36DF70D4F78E397B7C3FA9AEA2B0989D150B57433233015A269CB56232B1DE2AFE573491D960B2C"
                 },
                 {
-                    "tc_id": 8,
+                    "tc_id": 9,
+                    "comment": "Public shares list is absent",
+                    "ids": [0],
+                    "pubshare_indices": null,
+                    "aggnonce": "026805DC7B318F796C360BB82F85FA0C106AB8775FECF892A0A7F85FB66720CBAB039509CF07C0A787AB8628C84E1F6F5E9CA424496D6ED4AC36722E5602E0C32C57",
+                    "tweak_indices": [],
+                    "is_xonly": [],
+                    "psigs": [
+                        "B7C3FA9AEA2B0989D150B57433233015A269CB56232B1DE2AFE573491D960B2C"
+                    ],
+                    "msg": "F95466D086770E689964664219266FE5ED215C92AE20BAB5C9D79ADDDDF3C0CF",
+                    "expected": "3EA6A192ECA9027F78FA5354DDCB5315C8C2AB067F9BB679D36DF70D4F78E397B7C3FA9AEA2B0989D150B57433233015A269CB56232B1DE2AFE573491D960B2C"
+                },
+                {
+                    "tc_id": 10,
                     "comment": "Aggregation with three tweaks applied (one x-only, two plain)",
                     "ids": [0],
                     "pubshare_indices": [0],
@@ -164,7 +193,7 @@
                     "expected": "31C4E26F6FF48E6BF58FFC7BCCB6429B48A8926D38815858B4DAF9676D25C1EDB3FA2D48AFD3C625E9D4954ADA10544DA3A035959026DA6E6638833B1CFF9CF8"
                 },
                 {
-                    "tc_id": 9,
+                    "tc_id": 11,
                     "comment": "All signers participate, no tweaks",
                     "ids": [0, 1, 2],
                     "pubshare_indices": [0, 1, 2],
@@ -182,7 +211,7 @@
             ],
             "error_tests": [
                 {
-                    "tc_id": 10,
+                    "tc_id": 12,
                     "comment": "Partial signature equals the group order, which is out of range",
                     "ids": [0],
                     "pubshare_indices": [0],
@@ -200,7 +229,7 @@
                     }
                 },
                 {
-                    "tc_id": 11,
+                    "tc_id": 13,
                     "comment": "Number of partial signatures does not match the number of signers",
                     "ids": [0],
                     "pubshare_indices": [0],
@@ -211,7 +240,7 @@
                     "msg": "F95466D086770E689964664219266FE5ED215C92AE20BAB5C9D79ADDDDF3C0CF",
                     "error": {
                         "type": "ValueError",
-                        "message": "The psigs and ids arrays must have the same length."
+                        "message": "The psigs and ids lists must have the same length."
                     }
                 }
             ]
@@ -234,7 +263,7 @@
             ],
             "valid_tests": [
                 {
-                    "tc_id": 12,
+                    "tc_id": 14,
                     "comment": "Minimum threshold subset of signers, no tweaks",
                     "ids": [0, 1, 2],
                     "pubshare_indices": [0, 1, 2],
@@ -250,7 +279,23 @@
                     "expected": "386DC4546A4FB1D79FE9C40C06488DD271EF541325E492643794413EADFA280C0A7A3CCF226CEFF7185E99E1084AAF924AC008C042398C251C66A6DC12619190"
                 },
                 {
-                    "tc_id": 13,
+                    "tc_id": 15,
+                    "comment": "Public shares list is absent",
+                    "ids": [0, 1, 2],
+                    "pubshare_indices": null,
+                    "aggnonce": "030CC8DD7811033474FAD57D2DD03801584ED6A68CD1A73B3301C3DD1F685BBF7802DE9250BDBEF74C5EC1854A171EC8F5BD06CBDDCFB78384435AC62E5B359ACF2C",
+                    "tweak_indices": [],
+                    "is_xonly": [],
+                    "psigs": [
+                        "305FE509F00F665AAC836D1E49FF2539D3A11A9B20462457A49EBE28BED06728",
+                        "2C2DF99912A2EE3E694F3808AFA14B15C990AF29621B33850AC1E23D08B84C18",
+                        "ADEC5E2C1FBA9B5E028BF4BA0EAA3F41683D1BE26F20D4842CD865031B0F1F91"
+                    ],
+                    "msg": "F95466D086770E689964664219266FE5ED215C92AE20BAB5C9D79ADDDDF3C0CF",
+                    "expected": "386DC4546A4FB1D79FE9C40C06488DD271EF541325E492643794413EADFA280C0A7A3CCF226CEFF7185E99E1084AAF924AC008C042398C251C66A6DC12619190"
+                },
+                {
+                    "tc_id": 16,
                     "comment": "Reordering the signer set leaves the aggregate signature unchanged, because the partial signatures are summed and the identifiers are sorted before they are bound into the binding value",
                     "ids": [2, 1, 0],
                     "pubshare_indices": [2, 1, 0],
@@ -266,7 +311,7 @@
                     "expected": "386DC4546A4FB1D79FE9C40C06488DD271EF541325E492643794413EADFA280C0A7A3CCF226CEFF7185E99E1084AAF924AC008C042398C251C66A6DC12619190"
                 },
                 {
-                    "tc_id": 14,
+                    "tc_id": 17,
                     "comment": "Aggregation with three tweaks applied (one x-only, two plain)",
                     "ids": [0, 1, 2],
                     "pubshare_indices": [0, 1, 2],
@@ -284,7 +329,7 @@
             ],
             "error_tests": [
                 {
-                    "tc_id": 15,
+                    "tc_id": 18,
                     "comment": "Partial signature equals the group order, which is out of range",
                     "ids": [0, 1, 2],
                     "pubshare_indices": [0, 1, 2],
@@ -304,7 +349,7 @@
                     }
                 },
                 {
-                    "tc_id": 16,
+                    "tc_id": 19,
                     "comment": "Number of partial signatures does not match the number of signers",
                     "ids": [0, 1, 2],
                     "pubshare_indices": [0, 1, 2],
@@ -318,7 +363,7 @@
                     "msg": "F95466D086770E689964664219266FE5ED215C92AE20BAB5C9D79ADDDDF3C0CF",
                     "error": {
                         "type": "ValueError",
-                        "message": "The psigs and ids arrays must have the same length."
+                        "message": "The psigs and ids lists must have the same length."
                     }
                 }
             ]
@@ -343,7 +388,7 @@
             ],
             "valid_tests": [
                 {
-                    "tc_id": 17,
+                    "tc_id": 20,
                     "comment": "Minimum threshold subset of signers, no tweaks",
                     "ids": [0, 1, 2],
                     "pubshare_indices": [0, 1, 2],
@@ -359,7 +404,23 @@
                     "expected": "2ACEEC78D476DB0C7000D548B010023BCD9E54008B966147A232003DA91AA79021E48338D73DDD6B6876401AF4841900D6413760B0F5909993418D1552714F8A"
                 },
                 {
-                    "tc_id": 18,
+                    "tc_id": 21,
+                    "comment": "Public shares list is absent",
+                    "ids": [0, 1, 2],
+                    "pubshare_indices": null,
+                    "aggnonce": "0391D52F656B3CA3E66AC5DAEF5B0D347F7E85B7DD7A9EBA10E9827AE23FB76E93031610E184E540470139F7626253F27E8871D6354941CC9FF94A07D83F61BB4CD5",
+                    "tweak_indices": [],
+                    "is_xonly": [],
+                    "psigs": [
+                        "603EC1EA86B284E28CEFD59C85F8DDC6DFE81C0744F59D8FB5BEB29F1C27F38B",
+                        "0E1CB1C6B75847D62D7DE29DA5B61E66386F512C1BFFD12C202D2D28D5455314",
+                        "B3890F87993310B2AE0887E0C8D51CD27898A713FF48C2197D280BDA313A4A2C"
+                    ],
+                    "msg": "F95466D086770E689964664219266FE5ED215C92AE20BAB5C9D79ADDDDF3C0CF",
+                    "expected": "2ACEEC78D476DB0C7000D548B010023BCD9E54008B966147A232003DA91AA79021E48338D73DDD6B6876401AF4841900D6413760B0F5909993418D1552714F8A"
+                },
+                {
+                    "tc_id": 22,
                     "comment": "Reordering the signer set leaves the aggregate signature unchanged, because the partial signatures are summed and the identifiers are sorted before they are bound into the binding value",
                     "ids": [2, 1, 0],
                     "pubshare_indices": [2, 1, 0],
@@ -375,7 +436,7 @@
                     "expected": "2ACEEC78D476DB0C7000D548B010023BCD9E54008B966147A232003DA91AA79021E48338D73DDD6B6876401AF4841900D6413760B0F5909993418D1552714F8A"
                 },
                 {
-                    "tc_id": 19,
+                    "tc_id": 23,
                     "comment": "Aggregation with three tweaks applied (one x-only, two plain)",
                     "ids": [0, 1, 2],
                     "pubshare_indices": [0, 1, 2],
@@ -391,7 +452,7 @@
                     "expected": "75220B52F1BD906E4314713F2DF189B52FEC6A333F42505D1F1C2A65EF3ED47A17360AADFD3FFCE1E89052420936B4991B2FD0E20F7D5FF7115231FBDB2E767D"
                 },
                 {
-                    "tc_id": 20,
+                    "tc_id": 24,
                     "comment": "All signers participate, no tweaks",
                     "ids": [0, 1, 2, 3, 4],
                     "pubshare_indices": [0, 1, 2, 3, 4],
@@ -411,7 +472,7 @@
             ],
             "error_tests": [
                 {
-                    "tc_id": 21,
+                    "tc_id": 25,
                     "comment": "Partial signature equals the group order, which is out of range",
                     "ids": [0, 1, 2],
                     "pubshare_indices": [0, 1, 2],
@@ -431,7 +492,7 @@
                     }
                 },
                 {
-                    "tc_id": 22,
+                    "tc_id": 26,
                     "comment": "Number of partial signatures does not match the number of signers",
                     "ids": [0, 1, 2],
                     "pubshare_indices": [0, 1, 2],
@@ -445,7 +506,7 @@
                     "msg": "F95466D086770E689964664219266FE5ED215C92AE20BAB5C9D79ADDDDF3C0CF",
                     "error": {
                         "type": "ValueError",
-                        "message": "The psigs and ids arrays must have the same length."
+                        "message": "The psigs and ids lists must have the same length."
                     }
                 }
             ]
