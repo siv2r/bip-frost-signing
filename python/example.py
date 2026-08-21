@@ -173,7 +173,7 @@ async def coordinator(
         psig = await chans.receive_from(i)
         assert partial_sig_verify(
             psig, pubnonces, *signer_set, tweaks, is_xonly, msg, i
-        ), f"Partial signature verification failed for singer {i}"
+        ), f"Partial signature verification failed for signer {i}"
         psigs.append(psig)
 
     # Aggregate partial signatures

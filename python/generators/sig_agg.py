@@ -60,8 +60,9 @@ class SigAggGroupBuilder:
         comment: str,
         pubshares_absent: bool = False,
     ) -> bytes:
-        # An absent public share list is a session that cannot run partial signature
-        # verification, and nothing else.
+        # An absent public share list drops every check that needs them: partial
+        # signature verification, the session's key material check, and Sign's
+        # check of the signer's own secshare.
         pubshares = (
             None
             if pubshares_absent
