@@ -94,10 +94,11 @@
   <text class="note" x="245" y="251">pubnonces are aggregated</text>
 
   <!-- round 1: aggnonce to selected signers -->
-  <text class="msg" x="307" y="284">aggnonce</text>
+  <text class="msg" x="307" y="284"><tspan>aggnonce, id</tspan><tspan class="sub" dy="3">1..u</tspan></text>
   <line class="arrow" x1="188" y1="290" x2="426" y2="290" marker-end="url(#ah)"/>
   <line class="arrow" x1="434" y1="290" x2="615" y2="290" marker-end="url(#ah)"/>
-  <text class="subnote" x="307" y="307">completes the Session Context</text>
+  <text class="subnote" x="307" y="305">signer combines these with its own</text>
+  <text class="subnote" x="307" y="318">Threshold Info to form the Session Context</text>
 
   <!-- round 2: Sign -->
   <rect class="box" x="398" y="336" width="64" height="26" rx="4"/>

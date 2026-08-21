@@ -343,7 +343,7 @@ def get_session_values(
         )
 
     Q, gacc, tacc = thresh_pubkey_and_tweak(thresh_pk, tweaks, is_xonly)
-    # sort the ids before serializing because Olaf paper considers them as a set
+    # the signers are a set, so serialize_ids sorts to keep b independent of ids order
     ser_ids = serialize_ids(ids)
     b = Scalar.from_bytes_wrapping(
         tagged_hash(

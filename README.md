@@ -90,7 +90,9 @@ Signing takes two inputs.
 The first is a participant's long-term *secret share*, individual to each participant and never shared with anyone.
 The second is a [Threshold Info](#threshold-info), common to all participants and the coordinator, consisting of the threshold *t*, the threshold public key, and the participants' public shares indexed by their identifiers.
 
-Once the coordinator has selected the signers, their identifiers and public shares, the aggregate nonce, the tweaks, and the message form the [Session Context](#session-context) that the second communication round operates on.
+The threshold public key and public shares a signer uses must come from its own threshold info, an output of key generation, and **never** from the coordinator. The coordinator contributes only the selected signer identifiers and the aggregate nonce.
+
+Once the coordinator has selected the signers, each signer forms the [Session Context](#session-context) that the second communication round operates on: it looks up the selected identifiers in its own threshold info to obtain their public shares, and adds the aggregate nonce, the tweaks, and the message.
 
 This signing protocol is compatible with any key generation protocol that produces valid FROST keys.
 Valid keys satisfy: (1) each *secret share* is a Shamir share of the *threshold secret key*, and (2) each *public share* equals the scalar multiplication *secshare \* G*.[^chilldkg-keys]
@@ -509,6 +511,11 @@ The Session Context is a data structure consisting of the following elements:
 - The message *m*: a byte array[^max-msg-len]
 
 > [!NOTE]
+> The signers form a set, not a sequence. Listing them in a different order, with each *pubshare<sub>i</sub>* kept alongside its *id<sub>i</sub>*, leaves the output of every algorithm in this document unchanged.
+
+<!-- -->
+
+> [!NOTE]
 > The signing protocol does not require the public shares to create a signature. When they are absent:
 >
 > - *PartialSigVerify* cannot run, so malicious signers cannot be identified.
@@ -533,7 +540,7 @@ Algorithm *GetSessionValues(session_ctx)*:
 - For *i = 1 .. v*:
   - Let *tweak_ctx<sub>i</sub> = ApplyTweak(tweak_ctx<sub>i-1</sub>, tweak<sub>i</sub>, is_xonly_t<sub>i</sub>)*; fail if that fails
 - Let *(Q, gacc, tacc) = tweak_ctx<sub>v</sub>*
-- Let *ser_ids* = *SerializeIds(id<sub>1..u</sub>)*[^canonical-ids-det-sign]
+- Let *ser_ids* = *SerializeIds(id<sub>1..u</sub>)*
 - Let *b* = *scalar_from_bytes_wrapping(hash<sub>BIP0445/noncecoef</sub>(bytes(4, u) || ser_ids || aggnonce || xbytes(Q) || m))*
 - Fail if *b = Scalar(0)*[^negligible-zero-scalar]
 - Let *R<sub>1</sub> = cpoint_ext(aggnonce[0:33]), R<sub>2</sub> = cpoint_ext(aggnonce[33:66])*; fail if that fails and blame the coordinator for invalid *aggnonce*.
@@ -546,7 +553,7 @@ Algorithm *GetSessionValues(session_ctx)*:
 - Fail if *e = Scalar(0)*[^negligible-zero-scalar]
 - Return (Q, gacc, tacc, id<sub>1..u</sub>, pubshare<sub>1..u</sub>, b, R, e)
 
-Internal Algorithm *SerializeIds(id<sub>1..u</sub>)*:
+Internal Algorithm *SerializeIds(id<sub>1..u</sub>)*:[^canonical-ids]
 
 - Let *sorted_id<sub>1..u</sub> = sorted(id<sub>1..u</sub>)*
 - *res = empty_bytestring*
@@ -554,7 +561,7 @@ Internal Algorithm *SerializeIds(id<sub>1..u</sub>)*:
   - *res = res || bytes(4, sorted_id<sub>i</sub>)*
 - Return *res*
 
-[^canonical-ids-det-sign]: The identifiers are sorted so that *b* commits to the signer *set*, not the order they appear in. This matters for *DeterministicSign*, where a signer reproduces the same secret nonce *(k<sub>1</sub>, k<sub>2</sub>)* whenever its inputs are unchanged. Suppose an implementation sorts the identifiers when deriving this nonce but not when deriving *b*. A malicious coordinator can then replay one signing session under three orderings of the same signer set: the victim returns the same nonce each time, but *b* and the challenge *e* change with the order. The three partial signatures *s = k<sub>1</sub> + b k<sub>2</sub> + e &lambda; d* form a system of three linear equations in *(k<sub>1</sub>, k<sub>2</sub>, d)*, which the coordinator solves to recover the secret share *d*. Sorting prevents this. It is the order analog of the attack in [^det-signer-set].
+[^canonical-ids]: Sorting makes *b* commit to the signer *set*, not the order the identifiers happen to arrive in. An implementation that skips the sort reopens the replay attack of [^det-signer-set], with the coordinator varying the ordering of one signer set instead of the set itself.
 
 ### Signing
 
@@ -713,7 +720,7 @@ Algorithm *DeterministicSign(secshare, my_id, aggothernonce, n, t, id<sub>1..u</
 - Let *session_ctx = (n, t, u, id<sub>1..u</sub>, pubshare<sub>1..u</sub>, thresh_pk, aggnonce, v, tweak<sub>1..v</sub>, is_xonly_t<sub>1..v</sub>, m)*
 - Return (pubnonce, Sign(secnonce, secshare, my_id, session_ctx))
 
-[^det-signer-set]: Without binding to the signer set, a malicious coordinator can replay the same *aggothernonce* to the last signer across three sessions while varying *id<sub>1..u</sub>*. The victim produces byte-identical secret nonces *(k<sub>1</sub>, k<sub>2</sub>)* across sessions, but because the Lagrange interpolating coefficient *&lambda;* and nonce coefficient *b* depend on the signer set, the three partial signatures form a system of three linear equations in *(k<sub>1</sub>, k<sub>2</sub>, d)* where *d* is the victim's secret share, enough to recover *d* by solving the system. This consideration does not apply to MuSig2's *DeterministicSign* because MuSig2 is always *n*-of-*n* and the signer set is fixed by the protocol.
+[^det-signer-set]: Without binding to the signer set, a malicious coordinator can replay the same *aggothernonce* to the last signer across three sessions while varying *id<sub>1..u</sub>*. The victim produces byte-identical secret nonces *(k<sub>1</sub>, k<sub>2</sub>)* across sessions, but because the Lagrange interpolating coefficient *&lambda;* and nonce coefficient *b* depend on the signer set, the three partial signatures form a system of three linear equations in *(k<sub>1</sub>, k<sub>2</sub>, d)* where *d* is the victim's secret share, enough to recover *d* by solving the system. This replay attack does not apply to MuSig2's *DeterministicSign* because MuSig2 is always *n*-of-*n* and the signer set is fixed by the protocol.
 
 [^det-threshold-one]: The threshold *t = 1* is a special case. In a *1-of-n* setup, every participant's *secret share* equals the *threshold secret key* itself, so any single participant can produce a signature alone (*u = 1*). The lone signer calls *DeterministicSign* without the *aggothernonce* argument, which makes the derived nonce fully deterministic, just as in ordinary single-signer [BIP340][bip340] signing. The signer may instead run *Sign*, but that path still draws fresh randomness through *NonceGen*. Simplest of all, because a *1-of-n* group is effectively one secret key held by everyone, the participant can skip the FROST algorithms and sign with the ordinary [BIP340][bip340] signing algorithm[^t-edge-cases].
 
@@ -855,6 +862,7 @@ This document proposes a standard for the FROST threshold signature scheme that 
 
 ## Changelog
 
+- *0.9.1* (2026-08-19): State in the *Session Context* that the signers form a set whose order carries no meaning, and shorten the footnote on sorting the identifiers accordingly.
 - *0.9.0* (2026-08-18): Introduces the following changes:
   - Introduce the *Threshold Info* data structure, holding the public key material that a key generation protocol produces, and *ValidateThresholdInfo* to check it.
   - Remove *SignersContext* and *ValidateSignersCtx*, folding their checks into *GetSessionValues*, their fields into *SessionContext*, and passing those fields directly to *PartialSigVerify* and *DeterministicSign*.
