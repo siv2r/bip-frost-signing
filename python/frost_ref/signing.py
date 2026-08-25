@@ -311,10 +311,13 @@ def thresh_pubkey_and_tweak(
     return tweak_ctx
 
 
-def get_session_values(
-    session_ctx: SessionContext,
-) -> Tuple[GE, Scalar, Scalar, List[int], Optional[List[PlainPk]], Scalar, GE, Scalar]:
-    (n, t, ids, pubshares, thresh_pk, aggnonce, tweaks, is_xonly, msg) = session_ctx
+def validate_session_params(
+    n: int,
+    t: int,
+    ids: List[int],
+    pubshares: Optional[List[PlainPk]],
+    thresh_pk: PlainPk,
+) -> None:
     if not (1 <= t <= n):
         raise ValueError("The threshold must be 1 <= t <= n.")
     if not (t <= len(ids) <= n):
@@ -342,6 +345,12 @@ def get_session_values(
             "The provided key material is incorrect: the public shares do not match the threshold public key."
         )
 
+
+def get_session_values(
+    session_ctx: SessionContext,
+) -> Tuple[GE, Scalar, Scalar, List[int], Optional[List[PlainPk]], Scalar, GE, Scalar]:
+    (n, t, ids, pubshares, thresh_pk, aggnonce, tweaks, is_xonly, msg) = session_ctx
+    validate_session_params(n, t, ids, pubshares, thresh_pk)
     Q, gacc, tacc = thresh_pubkey_and_tweak(thresh_pk, tweaks, is_xonly)
     # the signers are a set, so serialize_ids sorts to keep b independent of ids order
     ser_ids = serialize_ids(ids)
@@ -453,6 +462,7 @@ def deterministic_sign(
     msg: bytes,
     aux_rand: Optional[bytes],
 ) -> Tuple[bytes, bytes]:
+    validate_session_params(n, t, ids, pubshares, thresh_pk)
     if aux_rand is not None:
         secshare_ = xor_bytes(secshare, tagged_hash(FROST_TAG_AUX, aux_rand))
     else:
@@ -525,6 +535,7 @@ def partial_sig_verify(
         raise ValueError("The signer index must satisfy 0 <= i <= u - 1.")
     if len(tweaks) != len(is_xonly):
         raise ValueError("The tweaks and is_xonly lists must have the same length.")
+    validate_session_params(n, t, ids, pubshares, thresh_pk)
     aggnonce = nonce_agg(pubnonces)
     session_ctx = SessionContext(
         n, t, ids, pubshares, thresh_pk, aggnonce, tweaks, is_xonly, msg

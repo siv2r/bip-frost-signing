@@ -527,15 +527,7 @@ We write "Let *(n, t, u, id<sub>1..u</sub>, pubshare<sub>1..u</sub>, thresh_pk, 
 Algorithm *GetSessionValues(session_ctx)*:
 
 - Let *(n, t, u, id<sub>1..u</sub>, pubshare<sub>1..u</sub>, thresh_pk, aggnonce, v, tweak<sub>1..v</sub>, is_xonly_t<sub>1..v</sub>, m) = session_ctx*
-- Fail if not *1 ≤ t ≤ n*
-- Fail if not *t ≤ u ≤ n*
-- For *i = 1 .. u*:
-  - Fail if not *0 ≤ id<sub>i</sub> ≤ n - 1*
-  - If *pubshare<sub>1..u</sub>* is present:
-    - Let *P<sub>i</sub> = cpoint(pubshare<sub>i</sub>)*; fail if that fails
-- Fail if *has_duplicates(id<sub>1..u</sub>)*
-- If *pubshare<sub>1..u</sub>* is present:
-  - Fail if *DeriveThreshPubkey(id<sub>1..u</sub>, P<sub>1..u</sub>) ≠ thresh_pk*
+- Run *ValidateSessionParams(n, t, u, id<sub>1..u</sub>, pubshare<sub>1..u</sub>, thresh_pk)*; fail if that fails
 - Let *tweak_ctx<sub>0</sub> = TweakCtxInit(thresh_pk)*; fail if that fails
 - For *i = 1 .. v*:
   - Let *tweak_ctx<sub>i</sub> = ApplyTweak(tweak_ctx<sub>i-1</sub>, tweak<sub>i</sub>, is_xonly_t<sub>i</sub>)*; fail if that fails
@@ -552,6 +544,18 @@ Algorithm *GetSessionValues(session_ctx)*:
 - Let *e = scalar_from_bytes_wrapping(hash<sub>BIP0340/challenge</sub>((xbytes(R) || xbytes(Q) || m)))*
 - Fail if *e = Scalar(0)*[^negligible-zero-scalar]
 - Return (Q, gacc, tacc, id<sub>1..u</sub>, pubshare<sub>1..u</sub>, b, R, e)
+
+Internal Algorithm *ValidateSessionParams(n, t, u, id<sub>1..u</sub>, pubshare<sub>1..u</sub>, thresh_pk)*:
+
+- Fail if not *1 ≤ t ≤ n*
+- Fail if not *t ≤ u ≤ n*
+- For *i = 1 .. u*:
+  - Fail if not *0 ≤ id<sub>i</sub> ≤ n - 1*
+  - If *pubshare<sub>1..u</sub>* is present:
+    - Let *P<sub>i</sub> = cpoint(pubshare<sub>i</sub>)*; fail if that fails
+- Fail if *has_duplicates(id<sub>1..u</sub>)*
+- If *pubshare<sub>1..u</sub>* is present:
+  - Fail if *DeriveThreshPubkey(id<sub>1..u</sub>, P<sub>1..u</sub>) ≠ thresh_pk*
 
 Internal Algorithm *SerializeIds(id<sub>1..u</sub>)*:[^canonical-ids]
 
@@ -610,6 +614,7 @@ Algorithm *PartialSigVerify(psig, pubnonce<sub>1..u</sub>, n, t, id<sub>1..u</su
   - The list of tweak modes *is_xonly_t<sub>1..v</sub>* : *v* booleans
   - The message *m*: a byte array[^max-msg-len]
   - The index *i* of the signer in the list of public nonces where *0 ≤ i ≤ u - 1*
+- Run *ValidateSessionParams(n, t, u, id<sub>1..u</sub>, pubshare<sub>1..u</sub>, thresh_pk)*; fail if that fails
 - Let *aggnonce = NonceAgg(pubnonce<sub>1..u</sub>)*; fail if that fails
 - Let *session_ctx = (n, t, u, id<sub>1..u</sub>, pubshare<sub>1..u</sub>, thresh_pk, aggnonce, v, tweak<sub>1..v</sub>, is_xonly_t<sub>1..v</sub>, m)*
 - Run *PartialSigVerifyInternal(psig, id<sub>i</sub>, pubnonce<sub>i</sub>, pubshare<sub>i</sub>, session_ctx)*
@@ -696,6 +701,7 @@ Algorithm *DeterministicSign(secshare, my_id, aggothernonce, n, t, id<sub>1..u</
   - The list of tweak modes *is_xonly_t<sub>1..v</sub>*: *v* booleans
   - The message *m*: a byte array[^max-msg-len]
   - The auxiliary randomness *aux_rand*: a 32-byte array (optional argument)
+- Run *ValidateSessionParams(n, t, u, id<sub>1..u</sub>, pubshare<sub>1..u</sub>, thresh_pk)*; fail if that fails
 - If the optional argument *aux_rand* is present:
   - Let *secshare' = xor_bytes(secshare, hash<sub>BIP0445/aux</sub>(aux_rand))*
 - Else:
@@ -862,10 +868,10 @@ This document proposes a standard for the FROST threshold signature scheme that 
 
 ## Changelog
 
-- *0.9.1* (2026-08-19): State in the *Session Context* that the signers form a set whose order carries no meaning, and shorten the footnote on sorting the identifiers accordingly.
 - *0.9.0* (2026-08-18): Introduces the following changes:
   - Introduce the *Threshold Info* data structure, holding the public key material that a key generation protocol produces, and *ValidateThresholdInfo* to check it.
   - Remove *SignersContext* and *ValidateSignersCtx*, folding their checks into *GetSessionValues*, their fields into *SessionContext*, and passing those fields directly to *PartialSigVerify* and *DeterministicSign*.
+  - Split the session parameter checks out of *GetSessionValues* into *ValidateSessionParams*, which *PartialSigVerify* and *DeterministicSign* now run before aggregating nonces.
   - Make the session's public share list optional, leaving *PartialSigVerify* as the only algorithm that requires it, and extend the test vectors to cover a session without it.
 - *0.8.0* (2026-07-30): Prefix the *noncecoef* hash input with the number of signers *u*, so that distinct *(id<sub>1..u</sub>, aggnonce, Q, m)* tuples can no longer map to the same nonce coefficient *b*. The affected test vectors were regenerated.
 - *0.7.0* (2026-07-23): Introduces the following changes:
