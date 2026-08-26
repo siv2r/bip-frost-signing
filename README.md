@@ -7,7 +7,7 @@
   Assigned: 2026-01-30
   License: CC0-1.0
   Discussion: 2024-07-31: https://groups.google.com/g/bitcoindev/c/PeMp2HQl-H4/m/AcJtK0aKAwAJ
-  Version: 0.9.0
+  Version: 0.10.0
   Requires: 340
 ```
 
@@ -73,10 +73,10 @@ Key generation protocols produce *public shares* and *threshold public keys* in 
 
 #### Protocol Parties and Network Setup
 
-There are *u* (where *1 <= t <= u <= n < 2^32*)[^n-bound] signers[^participant-vs-signer] and one coordinator initiating the FROST signing protocol.
+There are *u* (where *1 <= t <= u <= n <= 128*)[^n-bound] signers[^participant-vs-signer] and one coordinator initiating the FROST signing protocol.
 Each participant has a point-to-point communication link to the coordinator (but participants do not have direct communication links to each other).
 
-[^n-bound]: This bound on *n* comes from the identifier encoding. A participant identifier is serialized as a 4-byte big-endian integer and fed into the tagged hash function that binds the nonces to the signer set, so it must fit in 32 bits. No realistic threshold signing group approaches 2^32 participants, so the bound doesn't limit practical implementations.
+[^n-bound]: The upper bound on *n* is a security requirement. The unforgeability proof of FROST3 assumes that the set of compromised participants is fixed before key generation. An attacker that instead chooses whom to compromise after observing the public shares may, for large *n*, be able to forge with fewer compromised participants than the threshold, provided it can solve a search problem whose hardness has not been established[[CS25][adaptive-attack]]. This search problem is called the Low-Dimensional Vector Representation (LDVR) problem, and it is provably hard for any threshold whenever *n ≤ 131*, where solving it costs at least as much as computing a discrete logarithm on secp256k1[[CKKTZ25][ldvr]]. This document requires *n ≤ 128*, which stays inside that range with a margin.
 
 [^participant-vs-signer]: This document says *participant* for anyone who took part in key generation, all *n* of them, and *signer* for a participant taking part in the current signing session, the *u* of them. Key material issued during key generation keeps the participant label, so *secshare*, *pubshare*, and the identifiers stay participant values even when a signer supplies them to an algorithm.
 
@@ -325,7 +325,7 @@ The Threshold Info is a data structure holding the public key material that a ke
 
 - The threshold number *t* of participants required to issue a signature: an integer with *1 ≤ t ≤ n*
 - The threshold public key *thresh_pk*: a 33-byte array, compressed serialized point
-- The list of participant public shares *pubshare<sub>0..n-1</sub>*: *n* entries, each either a 33-byte array (a compressed serialized point) or *empty_bytestring*, where *1 ≤ n < 2<sup>32</sup>*
+- The list of participant public shares *pubshare<sub>0..n-1</sub>*: *n* entries, each either a 33-byte array (a compressed serialized point) or *empty_bytestring*, where *1 ≤ n ≤ 128*
 
 We write "Let *(t, thresh_pk, pubshare<sub>0..n-1</sub>) = info*" to assign names to the elements of a Threshold Info.
 
@@ -498,7 +498,7 @@ Algorithm *NonceAgg(pubnonce<sub>1..u</sub>)*:
 
 The Session Context is a data structure consisting of the following elements:
 
-- The total number *n* of participants involved in key generation: an integer with *1 ≤ n < 2<sup>32</sup>*[^t-edge-cases]
+- The total number *n* of participants involved in key generation: an integer with *1 ≤ n ≤ 128*[^t-edge-cases]
 - The threshold number *t* of participants required to issue a signature: an integer with *1 ≤ t ≤ n*
 - The number *u* of signers: an integer with *t ≤ u ≤ n*
 - The list of participant identifiers *id<sub>1..u</sub>*: *u* distinct integers, each with *0 ≤ id<sub>i</sub> ≤ n - 1*
@@ -604,7 +604,7 @@ Algorithm *PartialSigVerify(psig, pubnonce<sub>1..u</sub>, n, t, id<sub>1..u</su
 - Inputs:
   - The partial signature *psig*: a 32-byte array, serialized scalar
   - The list of public nonces *pubnonce<sub>1..u</sub>*: *u* 66-byte arrays, each an output of *NonceGen*
-  - The total number *n* of participants involved in key generation: an integer with *1 ≤ n < 2<sup>32</sup>*
+  - The total number *n* of participants involved in key generation: an integer with *1 ≤ n ≤ 128*
   - The threshold number *t* of participants required to issue a signature: an integer with *1 ≤ t ≤ n*
   - The list of participant identifiers *id<sub>1..u</sub>*: *u* distinct integers with *t ≤ u ≤ n*, each with *0 ≤ id<sub>i</sub> ≤ n - 1*
   - The list of participant public shares *pubshare<sub>1..u</sub>*: *u* 33-byte arrays, each a compressed serialized point
@@ -691,7 +691,7 @@ Algorithm *DeterministicSign(secshare, my_id, aggothernonce, n, t, id<sub>1..u</
   - The participant secret share *secshare*: a 32-byte array, serialized scalar
   - The participant identifier *my_id*: an integer with *0 ≤ my_id ≤ n-1*
   - The aggregate public nonce *aggothernonce* (see [above](#modifications-to-nonce-generation)): a 66-byte array, output of *NonceAgg* (optional argument)[^det-threshold-one]
-  - The total number *n* of participants involved in key generation: an integer with *1 ≤ n < 2<sup>32</sup>*
+  - The total number *n* of participants involved in key generation: an integer with *1 ≤ n ≤ 128*
   - The threshold number *t* of participants required to issue a signature: an integer with *1 ≤ t ≤ n*
   - The list of participant identifiers *id<sub>1..u</sub>*: *u* distinct integers with *t ≤ u ≤ n*, each with *0 ≤ id<sub>i</sub> ≤ n - 1*
   - The list of participant public shares *pubshare<sub>1..u</sub>*: *u* 33-byte arrays, each a compressed serialized point, or the whole list is absent
@@ -868,6 +868,7 @@ This document proposes a standard for the FROST threshold signature scheme that 
 
 ## Changelog
 
+- *0.10.0* (2026-08-26): Tighten the upper bound on the total number of participants *n* from *2<sup>32</sup> - 1* to *128*, the range in which the LDVR problem is provably hard.
 - *0.9.0* (2026-08-18): Introduces the following changes:
   - Introduce the *Threshold Info* data structure, holding the public key material that a key generation protocol produces, and *ValidateThresholdInfo* to check it.
   - Remove *SignersContext* and *ValidateSignersCtx*, folding their checks into *GetSessionValues*, their fields into *SessionContext*, and passing those fields directly to *PartialSigVerify* and *DeterministicSign*.
@@ -927,4 +928,6 @@ We thank Jonas Nick, Tim Ruffing, Jesse Posner, Sebastian Falbesoner, Chris Stew
 [olaf]: https://eprint.iacr.org/2023/899
 [roast]: https://eprint.iacr.org/2022/550
 [rerandomized-frost]: https://eprint.iacr.org/2024/436
+[adaptive-attack]: https://eprint.iacr.org/2025/1001
+[ldvr]: https://eprint.iacr.org/2025/1061
 [rfc9591]: https://www.rfc-editor.org/rfc/rfc9591.html

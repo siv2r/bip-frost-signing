@@ -26,6 +26,10 @@ FROST_TAG_NONCECOEF = "BIP0445/noncecoef"
 FROST_TAG_DETERMINISTIC_NONCE = "BIP0445/deterministic/nonce"
 BIP340_TAG_CHALLENGE = "BIP0340/challenge"
 
+# Upper bound on the total number of participants n. See the footnote on this
+# bound in the BIP text for the security rationale.
+MAX_PARTICIPANTS = 128
+
 # There are two types of exceptions that can be raised by this implementation:
 #   - ValueError for indicating that an input doesn't conform to some function
 #     precondition (e.g. an input array is the wrong length, a serialized
@@ -109,6 +113,8 @@ def validate_threshold_info(info: ThresholdInfo) -> None:
 
     if not (1 <= t <= n):
         raise ValueError("The threshold must be 1 <= t <= n.")
+    if n > MAX_PARTICIPANTS:
+        raise ValueError(f"The number of participants must be n <= {MAX_PARTICIPANTS}.")
 
     # 1. Validate the threshold public key
     # deserializing before interpolating ensures serialization failures
@@ -320,6 +326,8 @@ def validate_session_params(
 ) -> None:
     if not (1 <= t <= n):
         raise ValueError("The threshold must be 1 <= t <= n.")
+    if n > MAX_PARTICIPANTS:
+        raise ValueError(f"The number of participants must be n <= {MAX_PARTICIPANTS}.")
     if not (t <= len(ids) <= n):
         raise ValueError("The number of signers must be between t and n.")
     if pubshares is not None and len(pubshares) != len(ids):
