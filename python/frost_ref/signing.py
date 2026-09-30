@@ -448,6 +448,7 @@ def det_nonce_hash(
     buf += my_id.to_bytes(4, "big")
     buf += len(ids).to_bytes(4, "big")
     buf += serialize_ids(ids)
+    buf += len(aggothernonce).to_bytes(1, "big")
     buf += aggothernonce
     buf += tweaked_thresh_pk_xonly
     buf += len(msg).to_bytes(8, "big")
