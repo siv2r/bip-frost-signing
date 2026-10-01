@@ -37,6 +37,10 @@ MAX_PARTICIPANTS = 128
 #   - InvalidContributionError for indicating that a signer (or the
 #     coordinator) is misbehaving in the protocol.
 #
+# Byte arrays received from other parties (pubnonces, aggnonce, aggothernonce,
+# psigs) are always length-checked. The signer's own inputs are assumed to have
+# the lengths the BIP specifies (only nonce_gen and apply_tweak check them).
+#
 # Assertions are used to (1) satisfy the type-checking system, and (2) check for
 # inconvenient events that can't happen except with negligible probability (e.g.
 # output of a hash function is 0) and can't be manually triggered by any
@@ -280,6 +284,9 @@ def nonce_gen(
 
 
 def nonce_agg(pubnonces: List[bytes]) -> bytes:
+    for idx, pubnonce in enumerate(pubnonces):
+        if len(pubnonce) != 66:
+            raise ValueError(f"The pubnonce at index {idx} must be a 66-byte array.")
     aggnonce = b""
     for j in (1, 2):
         R_j = GE()
@@ -360,6 +367,8 @@ def get_session_values(
     (n, t, ids, pubshares, thresh_pk, aggnonce, tweaks, is_xonly, msg) = session_ctx
     validate_session_params(n, t, ids, pubshares, thresh_pk)
     Q, gacc, tacc = thresh_pubkey_and_tweak(thresh_pk, tweaks, is_xonly)
+    if len(aggnonce) != 66:
+        raise ValueError("The aggnonce must be a 66-byte array.")
     # the signers are a set, so serialize_ids sorts to keep b independent of ids order
     ser_ids = serialize_ids(ids)
     b = Scalar.from_bytes_wrapping(
@@ -487,6 +496,8 @@ def deterministic_sign(
     else:
         masked_secshare = d.to_bytes()
 
+    if aggothernonce is not None and len(aggothernonce) != 66:
+        raise ValueError("The aggothernonce must be a 66-byte array.")
     # A sole signer (u = 1) has no other nonces to aggregate, so aggothernonce is
     # omitted. Bind the empty byte string into the nonce hash and use the signer's
     # own pubnonce as the aggregate nonce below.
@@ -569,6 +580,8 @@ def partial_sig_verify_internal(
     session_ctx: SessionContext,
 ) -> bool:
     (Q, gacc, _, ids, _, b, R, e) = get_session_values(session_ctx)
+    if len(psig) != 32:
+        return False
     try:
         s = Scalar.from_bytes_checked(psig)
     except ValueError:
@@ -594,6 +607,9 @@ def partial_sig_agg(psigs: List[bytes], session_ctx: SessionContext) -> bytes:
     (Q, _, tacc, ids, _, _, R, e) = get_session_values(session_ctx)
     if len(psigs) != len(ids):
         raise ValueError("The psigs and ids lists must have the same length.")
+    for idx, psig in enumerate(psigs):
+        if len(psig) != 32:
+            raise ValueError(f"The psig at index {idx} must be a 32-byte array.")
     s = Scalar(0)
     for idx, psig in enumerate(psigs):
         try:
