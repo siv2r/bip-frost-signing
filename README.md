@@ -7,7 +7,7 @@
   Assigned: 2026-01-30
   License: CC0-1.0
   Discussion: 2024-07-31: https://groups.google.com/g/bitcoindev/c/PeMp2HQl-H4/m/AcJtK0aKAwAJ
-  Version: 0.10.0
+  Version: 0.11.0
   Requires: 340
 ```
 
@@ -704,19 +704,23 @@ Algorithm *DeterministicSign(secshare, my_id, aggothernonce, n, t, id<sub>1..u</
   - The message *m*: a byte array[^max-msg-len]
   - The auxiliary randomness *aux_rand*: a 32-byte array (optional argument)
 - Run *ValidateSessionParams(n, t, u, id<sub>1..u</sub>, pubshare<sub>1..u</sub>, thresh_pk)*; fail if that fails
+- Let *tweak_ctx<sub>0</sub> = TweakCtxInit(thresh_pk)*; fail if that fails
+- For *i = 1 .. v*:
+  - Let *tweak_ctx<sub>i</sub> = ApplyTweak(tweak_ctx<sub>i-1</sub>, tweak<sub>i</sub>, is_xonly_t<sub>i</sub>)*; fail if that fails
+- Let *(Q, gacc, _) = tweak_ctx<sub>v</sub>*
+- Let *tweaked_thresh_pk_xonly = GetXonlyPubkey(tweak_ctx<sub>v</sub>)*
+- Let *d' = scalar_from_bytes_nonzero_checked(secshare)*; fail if that fails
+- Let *g = Scalar(1)* if *has_even_y(Q)*, otherwise let *g = Scalar(-1)*
+- Let *d = g &middot; gacc &middot; d' &ensp;(mod ord)*[^det-negated-share]
 - If the optional argument *aux_rand* is present:
-  - Let *secshare' = xor_bytes(secshare, hash<sub>BIP0445/aux</sub>(aux_rand))*
+  - Let *masked_secshare = xor_bytes(scalar_to_bytes(d), hash<sub>BIP0445/aux</sub>(aux_rand))*
 - Else:
-  - Let *secshare' = secshare*
+  - Let *masked_secshare = scalar_to_bytes(d)*
 - If the optional argument *aggothernonce* is present:
   - Let *aggothernonce' = aggothernonce*
 - Else:
   - Let *aggothernonce' = empty_bytestring*
-- Let *tweak_ctx<sub>0</sub> = TweakCtxInit(thresh_pk)*; fail if that fails
-- For *i = 1 .. v*:
-  - Let *tweak_ctx<sub>i</sub> = ApplyTweak(tweak_ctx<sub>i-1</sub>, tweak<sub>i</sub>, is_xonly_t<sub>i</sub>)*; fail if that fails
-- Let *tweaked_thresh_pk_xonly = GetXonlyPubkey(tweak_ctx<sub>v</sub>)*
-- Let *k<sub>i</sub> = scalar_from_bytes_wrapping(hash<sub>BIP0445/deterministic/nonce</sub>(secshare' || bytes(4, my_id) || bytes(4, u) || SerializeIds(id<sub>1..u</sub>) || bytes(1, len(aggothernonce')) || aggothernonce' || tweaked_thresh_pk_xonly || bytes(8, len(m)) || m || bytes(1, i - 1)))* for *i = 1,2*
+- Let *k<sub>i</sub> = scalar_from_bytes_wrapping(hash<sub>BIP0445/deterministic/nonce</sub>(masked_secshare || bytes(4, my_id) || bytes(4, u) || SerializeIds(id<sub>1..u</sub>) || bytes(1, len(aggothernonce')) || aggothernonce' || tweaked_thresh_pk_xonly || bytes(8, len(m)) || m || bytes(1, i - 1)))* for *i = 1,2*
 - Fail if *k<sub>1</sub> = Scalar(0)* or *k<sub>2</sub> = Scalar(0)*[^negligible-zero-scalar]
 - Let *R<sub>\*,1</sub> = k<sub>1</sub> &middot; G, R<sub>\*,2</sub> = k<sub>2</sub> &middot; G*
 - Let *pubnonce = cbytes(R<sub>\*,1</sub>) || cbytes(R<sub>\*,2</sub>)*
@@ -729,6 +733,8 @@ Algorithm *DeterministicSign(secshare, my_id, aggothernonce, n, t, id<sub>1..u</
 - Return (pubnonce, Sign(secnonce, secshare, my_id, session_ctx))
 
 [^det-signer-set]: Without binding to the signer set, a malicious coordinator can replay the same *aggothernonce* to the last signer across three sessions while varying *id<sub>1..u</sub>*. The victim produces byte-identical secret nonces *(k<sub>1</sub>, k<sub>2</sub>)* across sessions, but because the Lagrange interpolating coefficient *&lambda;* and nonce coefficient *b* depend on the signer set, the three partial signatures form a system of three linear equations in *(k<sub>1</sub>, k<sub>2</sub>, d)* where *d* is the victim's secret share, enough to recover *d* by solving the system. This replay attack does not apply to MuSig2's *DeterministicSign* because MuSig2 is always *n*-of-*n* and the signer set is fixed by the protocol.
+
+[^det-negated-share]: The nonce is derived from *d* (the possibly negated secret share) rather than from raw *secshare*, so that it commits to the factor *g &middot; gacc* in the partial signature equation. This is defense in depth. As long as the threshold public key comes from the signer's own [Threshold Info](#threshold-info), committing to *tweaked_thresh_pk_xonly* already commits to *g &middot; gacc*.
 
 [^det-threshold-one]: The threshold *t = 1* is a special case. In a *1-of-n* setup, every participant's *secret share* equals the *threshold secret key* itself, so any single participant can produce a signature alone (*u = 1*). The lone signer calls *DeterministicSign* without the *aggothernonce* argument, which makes the derived nonce fully deterministic, just as in ordinary single-signer [BIP340][bip340] signing. The signer may instead run *Sign*, but that path still draws fresh randomness through *NonceGen*. Simplest of all, because a *1-of-n* group is effectively one secret key held by everyone, the participant can skip the FROST algorithms and sign with the ordinary [BIP340][bip340] signing algorithm[^t-edge-cases].
 
@@ -870,6 +876,7 @@ This document proposes a standard for the FROST threshold signature scheme that 
 
 ## Changelog
 
+- *0.11.0* (2026-10-01): In *DeterministicSign*, derive the nonce from the possibly negated secret share instead of the raw *secshare*, and prefix *aggothernonce* with its length in the nonce hash input. The affected test vectors were regenerated.
 - *0.10.0* (2026-08-26): Tighten the upper bound on the total number of participants *n* from *2<sup>32</sup> - 1* to *128*, the range in which the LDVR problem is provably hard.
 - *0.9.0* (2026-08-18): Introduces the following changes:
   - Introduce the *Threshold Info* data structure, holding the public key material that a key generation protocol produces, and *ValidateThresholdInfo* to check it.

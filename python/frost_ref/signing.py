@@ -435,7 +435,7 @@ def sign(
 
 
 def det_nonce_hash(
-    secshare_: bytes,
+    masked_secshare: bytes,
     my_id: int,
     ids: List[int],
     aggothernonce: bytes,
@@ -444,7 +444,7 @@ def det_nonce_hash(
     i: int,
 ) -> bytes:
     buf = b""
-    buf += secshare_
+    buf += masked_secshare
     buf += my_id.to_bytes(4, "big")
     buf += len(ids).to_bytes(4, "big")
     buf += serialize_ids(ids)
@@ -472,13 +472,20 @@ def deterministic_sign(
     aux_rand: Optional[bytes],
 ) -> Tuple[bytes, bytes]:
     validate_session_params(n, t, ids, pubshares, thresh_pk)
+    tweak_ctx = thresh_pubkey_and_tweak(thresh_pk, tweaks, is_xonly)
+    Q, gacc, _ = tweak_ctx
+    tweaked_thresh_pk_xonly = get_xonly_pk(tweak_ctx)
+    try:
+        d_ = Scalar.from_bytes_nonzero_checked(secshare)
+    except ValueError:
+        raise ValueError("The signer's secret share value is out of range.")
+    g = Scalar(1) if Q.has_even_y() else Scalar(-1)
+    # hash the possibly negated secshare, so the nonce binds to g * gacc
+    d = g * gacc * d_
     if aux_rand is not None:
-        secshare_ = xor_bytes(secshare, tagged_hash(FROST_TAG_AUX, aux_rand))
+        masked_secshare = xor_bytes(d.to_bytes(), tagged_hash(FROST_TAG_AUX, aux_rand))
     else:
-        secshare_ = secshare
-    tweaked_thresh_pk_xonly = get_xonly_pk(
-        thresh_pubkey_and_tweak(thresh_pk, tweaks, is_xonly)
-    )
+        masked_secshare = d.to_bytes()
 
     # A sole signer (u = 1) has no other nonces to aggregate, so aggothernonce is
     # omitted. Bind the empty byte string into the nonce hash and use the signer's
@@ -490,12 +497,12 @@ def deterministic_sign(
 
     k_1 = Scalar.from_bytes_wrapping(
         det_nonce_hash(
-            secshare_, my_id, ids, aggothernonce_, tweaked_thresh_pk_xonly, msg, 0
+            masked_secshare, my_id, ids, aggothernonce_, tweaked_thresh_pk_xonly, msg, 0
         )
     )
     k_2 = Scalar.from_bytes_wrapping(
         det_nonce_hash(
-            secshare_, my_id, ids, aggothernonce_, tweaked_thresh_pk_xonly, msg, 1
+            masked_secshare, my_id, ids, aggothernonce_, tweaked_thresh_pk_xonly, msg, 1
         )
     )
     # k_1 == 0 or k_2 == 0 cannot occur except with negligible probability.
