@@ -95,7 +95,7 @@ The threshold public key and public shares a signer uses must come from its own 
 Once the coordinator has selected the signers, each signer forms the [Session Context](#session-context) that the second communication round operates on: it looks up the selected identifiers in its own threshold info to obtain their public shares, and adds the aggregate nonce, the tweaks, and the message.
 
 This signing protocol is compatible with any key generation protocol that produces valid FROST keys.
-Valid keys satisfy: (1) each *secret share* is a Shamir share of the *threshold secret key*, and (2) each *public share* equals the scalar multiplication *secshare \* G*.[^chilldkg-keys]
+Valid keys satisfy: (1) each *secret share* is a Shamir share of the *threshold secret key*, and (2) each *public share* equals the scalar multiplication *secshare &middot; G*.[^chilldkg-keys]
 Before signing, the threshold info must pass *ValidateThresholdInfo*, which checks that every signer set selectable from its public shares reproduces the threshold public key.
 Running it on a threshold info containing all *n* public shares therefore validates the entire key material.
 *GetSessionValues* repeats this check for the one signer set the coordinator selected.
@@ -545,7 +545,7 @@ Algorithm *GetSessionValues(session_ctx)*:
   - Let final nonce *R = R'*
 - Let *e = scalar_from_bytes_wrapping(hash<sub>BIP0340/challenge</sub>((xbytes(R) || xbytes(Q) || m)))*
 - Fail if *e = Scalar(0)*[^negligible-zero-scalar]
-- Return (Q, gacc, tacc, id<sub>1..u</sub>, pubshare<sub>1..u</sub>, b, R, e)
+- Return *(Q, gacc, tacc, id<sub>1..u</sub>, pubshare<sub>1..u</sub>, b, R, e)*
 
 Internal Algorithm *ValidateSessionParams(n, t, u, id<sub>1..u</sub>, pubshare<sub>1..u</sub>, thresh_pk)*:
 
@@ -726,7 +726,7 @@ Algorithm *DeterministicSign(secshare, my_id, aggothernonce, n, t, id<sub>1..u</
 - Else:
   - Let *aggnonce = pubnonce*
 - Let *session_ctx = (n, t, u, id<sub>1..u</sub>, pubshare<sub>1..u</sub>, thresh_pk, aggnonce, v, tweak<sub>1..v</sub>, is_xonly_t<sub>1..v</sub>, m)*
-- Return (pubnonce, Sign(secnonce, secshare, my_id, session_ctx))
+- Return *(pubnonce, Sign(secnonce, secshare, my_id, session_ctx))*
 
 [^det-signer-set]: Without binding to the signer set, a malicious coordinator can replay the same *aggothernonce* to the last signer across three sessions while varying *id<sub>1..u</sub>*. The victim produces byte-identical secret nonces *(k<sub>1</sub>, k<sub>2</sub>)* across sessions, but because the Lagrange interpolating coefficient *&lambda;* and nonce coefficient *b* depend on the signer set, the three partial signatures form a system of three linear equations in *(k<sub>1</sub>, k<sub>2</sub>, d)* where *d* is the victim's secret share, enough to recover *d* by solving the system. This replay attack does not apply to MuSig2's *DeterministicSign* because MuSig2 is always *n*-of-*n* and the signer set is fixed by the protocol.
 
