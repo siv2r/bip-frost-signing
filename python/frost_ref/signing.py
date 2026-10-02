@@ -481,6 +481,14 @@ def deterministic_sign(
     aux_rand: Optional[bytes],
 ) -> Tuple[bytes, bytes]:
     validate_session_params(n, t, ids, pubshares, thresh_pk)
+    # aggothernonce is omitted if and only if there is a sole signer (u = 1). A sole
+    # signer hashes the empty byte string and uses its own pubnonce as the aggnonce.
+    if len(ids) == 1 and aggothernonce is not None:
+        raise ValueError("The aggothernonce must be omitted for a sole signer (u = 1).")
+    if len(ids) > 1 and (aggothernonce is None or len(aggothernonce) != 66):
+        raise ValueError(
+            "The aggothernonce must be present and a 66-byte array when u > 1."
+        )
     tweak_ctx = thresh_pubkey_and_tweak(thresh_pk, tweaks, is_xonly)
     Q, gacc, _ = tweak_ctx
     tweaked_thresh_pk_xonly = get_xonly_pk(tweak_ctx)
@@ -496,11 +504,6 @@ def deterministic_sign(
     else:
         masked_secshare = d.to_bytes()
 
-    if aggothernonce is not None and len(aggothernonce) != 66:
-        raise ValueError("The aggothernonce must be a 66-byte array.")
-    # A sole signer (u = 1) has no other nonces to aggregate, so aggothernonce is
-    # omitted. Bind the empty byte string into the nonce hash and use the signer's
-    # own pubnonce as the aggregate nonce below.
     if aggothernonce is None:
         aggothernonce_ = b""
     else:

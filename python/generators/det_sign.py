@@ -78,14 +78,14 @@ class DetSignGroupBuilder:
         msg: bytes,
         aux_rand: Optional[bytes],
     ) -> Optional[bytes]:
-        """Return None when the set holds no signer other than my_id, so there is
-        nothing to aggregate. Otherwise aggregate the other signers' public nonces.
+        """Return None when the set holds at most one signer (u <= 1), since
+        aggothernonce is omitted if and only if u = 1. Otherwise aggregate the
+        public nonces of the signers other than my_id.
 
-        An empty ids_set satisfies this vacuously, which is what the sub-threshold
-        error cases rely on: aggregating nothing yields a 66-byte all-zero string
-        that deterministic_sign would reject as an invalid coordinator
-        contribution, masking the signer-count error the case is testing."""
-        if all(pid == my_id for pid in ids_set):
+        Keying on u rather than on my_id's membership keeps the u = 1 error cases
+        (my_id absent, id out of range) reaching the check they test instead of the
+        aggothernonce presence check."""
+        if len(ids_set) <= 1:
             return None
         tmp = b"" if aux_rand is None else aux_rand
         other_pubnonces = []
@@ -165,10 +165,14 @@ class DetSignGroupBuilder:
         error: str,
         comment: str,
         aggothernonce: Optional[bytes] = None,
+        omit_aggothernonce: bool = False,
     ) -> None:
-        # A caller may supply a crafted aggothernonce to exercise an error path.
+        # A caller may supply a crafted aggothernonce, or omit it, to exercise an
+        # error path.
         curr_aggothernonce: Optional[bytes]
-        if aggothernonce is not None:
+        if omit_aggothernonce:
+            curr_aggothernonce = None
+        elif aggothernonce is not None:
             curr_aggothernonce = aggothernonce
         else:
             curr_aggothernonce = self._derive_aggothernonce(ids, my_id, msg, aux_rand)
@@ -490,6 +494,38 @@ class DetSignGroupBuilder:
             "Aggregate of the other signers' nonces is invalid: second half's x-coordinate exceeds the field size",
             aggothernonce=AGGOTHERNONCE_EXCEEDS_FIELD,
         )
+        # aggothernonce omitted although there are other signers.
+        self._append_error(
+            0,
+            self.min2,
+            self.min2,
+            0,
+            RANDS[0],
+            COMMON_MSGS[0],
+            [],
+            [],
+            "value",
+            "Aggregate of the other signers' nonces is absent although there are multiple signers",
+            omit_aggothernonce=True,
+        )
+        # aggothernonce supplied to a sole signer. Only reachable at t = 1, since
+        # u = 1 < t fails the signer-count check first.
+        if t == 1:
+            self._append_error(
+                0,
+                [0],
+                [0],
+                0,
+                RANDS[0],
+                COMMON_MSGS[0],
+                [],
+                [],
+                "value",
+                "Aggregate of the other signers' nonces is present although the signer is the only signer",
+                aggothernonce=self._derive_aggothernonce(
+                    self.min2, 0, COMMON_MSGS[0], RANDS[0]
+                ),
+            )
         # tweak exceeds the group order.
         self._append_error(
             0,
