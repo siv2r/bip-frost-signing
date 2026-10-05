@@ -339,6 +339,7 @@ Algorithm *ValidateThresholdInfo(info)*:
   - The *info*: a [Threshold Info](#threshold-info) data structure
 - *(t, thresh_pk, pubshare<sub>0..n-1</sub>) = info*
 - Fail if not *1 ≤ t ≤ n*
+- Fail if not *n ≤ 128*
 - Fail if *cpoint(thresh_pk)* fails
 - Let *id<sub>1..w</sub>* be the identifiers *i* with *pubshare<sub>i</sub> ≠ empty_bytestring*, in ascending order
 - For *j = 1 .. w*:
@@ -550,6 +551,7 @@ Algorithm *GetSessionValues(session_ctx)*:
 Internal Algorithm *ValidateSessionParams(n, t, u, id<sub>1..u</sub>, pubshare<sub>1..u</sub>, thresh_pk)*:
 
 - Fail if not *1 ≤ t ≤ n*
+- Fail if not *n ≤ 128*
 - Fail if not *t ≤ u ≤ n*
 - For *i = 1 .. u*:
   - Fail if not *0 ≤ id<sub>i</sub> ≤ n - 1*
