@@ -20,7 +20,6 @@ from generators.common import (
     bytes_to_hex,
     expect_exception,
     get_subset,
-    has_excl0_subset,
     set_group_config,
     swap_last_two,
     write_test_vectors,
@@ -55,6 +54,7 @@ class SignVerifyGroupBuilder:
         self.full = get_subset(cfg, "full")
         self.alt = get_subset(cfg, "alt")
         self.min2 = get_subset(cfg, "min2")
+        self.tplus1 = get_subset(cfg, "tplus1")
         self.aggnonce_min = self._agg(self.min_s)
 
         self.group = {}
@@ -117,7 +117,7 @@ class SignVerifyGroupBuilder:
         self,
         my_id: int,
         ids: List[int],
-        pubshare_indices: List[int],
+        pubshare_indices: Optional[List[int]],
         secshare_idx: int,
         secnonce_idx: int,
         aggnonce: bytes,
@@ -125,7 +125,12 @@ class SignVerifyGroupBuilder:
         error: str,
         comment: str,
     ) -> None:
-        pubshares = [self.inputs.pool_pubshares[i] for i in pubshare_indices]
+        # A null pubshare_indices is a session whose public share list is absent.
+        pubshares = (
+            None
+            if pubshare_indices is None
+            else [self.inputs.pool_pubshares[i] for i in pubshare_indices]
+        )
         secshare = self.inputs.pool_secshares[secshare_idx]
         secnonce = bytearray(self.inputs.pool_secnonces[secnonce_idx])
         signer_set = (self.n, self.t, ids, pubshares, self.thresh_pk)
@@ -234,23 +239,23 @@ class SignVerifyGroupBuilder:
             "Signing without the public share list",
         )
         assert psig_no_pubshares == psig_min
-        # Order-invariance (needs a set of size >= 2 to be meaningful).
-        if t >= 2:
-            rev = list(reversed(self.min_s))
-            self._append_valid(
-                0,
-                rev,
-                rev,
-                rev,
-                self._agg(rev),
-                COMMON_MSGS[0],
-                "Reordering the signer set leaves the partial signature unchanged, because the identifiers are sorted before they are bound into the binding value",
-            )
-        # A different threshold subset (needs t >= 2 and t < n, else the alt set
-        # collapses to the minimum set or is the only valid set).
+        # Order-invariance (u = min(t+1, n) signers, excluding id 0 where possible).
+        shifted = get_subset(self.cfg, "tplus1_shifted")
+        rev = list(reversed(shifted))
+        self._append_valid(
+            shifted[1],
+            rev,
+            rev,
+            rev,
+            self._agg(rev),
+            COMMON_MSGS[0],
+            "Signer set in descending order, so the identifiers must be sorted before hashing",
+        )
+        # A different threshold subset without id 0 (needs t >= 2 and t < n, else
+        # the alt set is a lone id or repeats id 1).
         if t >= 2 and t < n:
             self._append_valid(
-                0,
+                1,
                 self.alt,
                 self.alt,
                 self.alt,
@@ -258,16 +263,6 @@ class SignVerifyGroupBuilder:
                 COMMON_MSGS[0],
                 "A different threshold subset gives a different partial signature, since the Lagrange coefficients depend on the signer set",
             )
-        # All n signers, signed by a non-first member.
-        self._append_valid(
-            1,
-            self.full,
-            self.full,
-            self.full,
-            self._agg(self.full),
-            COMMON_MSGS[0],
-            "All signers participate, signed by a non-first member of the signer set",
-        )
         # Aggregate nonce is the point at infinity. The inverse pubnonce cancels
         # the first n-1 real pubnonces, so the aggregate over them is infinity.
         inf_pubnonce_indices = list(range(n - 1)) + [self.inputs.INVERSE_PUBNONCE_IDX]
@@ -305,12 +300,13 @@ class SignVerifyGroupBuilder:
     def add_sign_error_tests(self) -> None:
         t, n = self.t, self.n
         # my_id is a valid participant absent from the set (needs t < n so a valid
-        # participant can sit outside the only valid set).
+        # participant can sit outside the only valid set). Shares absent, so only the
+        # id membership check can reject it.
         if t < n:
             self._append_sign_error(
                 t,
                 self.min_s,
-                self.min_s,
+                None,
                 0,
                 0,
                 self.aggnonce_min,
@@ -330,21 +326,20 @@ class SignVerifyGroupBuilder:
             "value",
             "Signer set contains a duplicate id",
         )
-        # Signer loads share 0 but the set excludes id 0, so its derived pubshare
-        # is absent (needs t >= 2 for distinct shares and t < n for a participant
-        # outside the set).
-        if has_excl0_subset(t, n):
-            excl0 = get_subset(self.cfg, "excl0")
+        # Signer 1 loads share 0, which is listed at position 0, not at its own
+        # position, so a check that searches the whole list misses it (needs t >= 2
+        # for distinct shares).
+        if t >= 2:
             self._append_sign_error(
                 1,
-                excl0,
-                excl0,
+                self.min_s,
+                self.min_s,
                 0,
                 0,
-                self._agg(excl0),
+                self.aggnonce_min,
                 COMMON_MSGS[0],
                 "value",
-                "Signer's public share is not in the public share list",
+                "Signer's public share does not match the public share listed at its index",
             )
         # A listed public share is off-curve (at position 1, so min2 forces size 2).
         pubshare_indices_offcurve = [
@@ -377,16 +372,15 @@ class SignVerifyGroupBuilder:
             "Public shares of the signer set interpolate to the point at infinity",
         )
         # A signer id equals n, outside the valid range. For t >= 2 an in-range
-        # member signs. At t=1 the lone id is out of range and the check fires
-        # first, so the self fields are inert. This assumes signer-id range
-        # validation runs before the pubshare/threshold-key checks; a different
-        # order would surface a different error.
+        # member signs with shares absent, so only the id range check can reject
+        # it. At t=1 the set is [n] and the signer is 0, which is not in it, so the
+        # own-id check rejects it either way and the instance is coverage-only.
         if t >= 2:
             ids_out_of_range = [self.inputs.OUT_OF_RANGE_ID] + list(range(1, t))
             self._append_sign_error(
                 1,
                 ids_out_of_range,
-                list(range(t)),
+                None,
                 1,
                 1,
                 self.aggnonce_min,
@@ -407,18 +401,35 @@ class SignVerifyGroupBuilder:
                 "A signer id is outside the valid range [0, n-1]",
             )
         # Public shares won't interpolate to the correct threshold key, since we're
-        # swapping the last two positions (needs t >= 2 for distinct shares).
+        # swapping the last two positions of the u = min(t+1, n) set. Signer 0's own
+        # share stays in place, so only the key check fires (needs t >= 2 for
+        # distinct shares).
         if t >= 2:
             self._append_sign_error(
                 0,
-                self.min_s,
-                swap_last_two(self.min_s),
+                self.tplus1,
+                swap_last_two(self.tplus1),
                 0,
                 0,
-                self.aggnonce_min,
+                self._agg(self.tplus1),
                 COMMON_MSGS[0],
                 "value",
                 "Signer set's public shares do not match the threshold public key",
+            )
+        # u = t+1 signers whose first t shares are honest and whose last share is
+        # a wrong point, so a check that interpolates only the first t shares
+        # accepts it (needs t < n for a share beyond the first t).
+        if t < n:
+            self._append_sign_error(
+                0,
+                self.tplus1,
+                self.tplus1[:-1] + [self.inputs.WRONG_PUBSHARE_IDX],
+                0,
+                0,
+                self._agg(self.tplus1),
+                COMMON_MSGS[0],
+                "value",
+                "Public share beyond the first t signers is inconsistent with the threshold public key",
             )
         # Invalid aggregate nonce literals.
         self._append_sign_error(
@@ -478,14 +489,28 @@ class SignVerifyGroupBuilder:
             "value",
             "Secret nonce's second half is out of range (zero)",
         )
+        # Secret nonce with a zero first scalar and a valid second scalar.
+        self._append_sign_error(
+            0,
+            self.min_s,
+            self.min_s,
+            0,
+            self.inputs.SECNONCE_ZERO_FIRST_IDX,
+            self.aggnonce_min,
+            COMMON_MSGS[0],
+            "value",
+            "Secret nonce's first half is out of range (zero)",
+        )
         # Fewer signers than the threshold (empty set at t=1). The aggnonce, secshare,
         # and secnonce fields are inert placeholders: session validation rejects the
-        # sub-threshold set before sign() reads them.
+        # sub-threshold set before sign() reads them. Shares absent for t >= 2, so
+        # the key check cannot mask a missing size check. At t=1 the empty set is
+        # coverage-only.
         below = list(range(t - 1))
         self._append_sign_error(
             0,
             below,
-            below,
+            None if t >= 2 else below,
             0,
             0,
             self.aggnonce_min,
@@ -555,37 +580,47 @@ class SignVerifyGroupBuilder:
     # --- Array D: verify_error_tests ---
 
     def add_verify_error_tests(self) -> None:
-        # Base partial signature: signer 0 over the minimum set.
+        # Base partial signature: signer 0 over min2. The faults below sit at
+        # position 1 while signer 0 is verified, so blame must name the faulty
+        # signer, not the one being verified.
         secnonce = bytearray(self.inputs.pool_secnonces[0])
         signer_set = (
             self.n,
             self.t,
-            self.min_s,
-            [self.inputs.pool_pubshares[i] for i in self.min_s],
+            self.min2,
+            [self.inputs.pool_pubshares[i] for i in self.min2],
             self.thresh_pk,
         )
-        session = SessionContext(*signer_set, self.aggnonce_min, [], [], COMMON_MSGS[0])
-        psig_min = sign(secnonce, self.inputs.pool_secshares[0], 0, session)
+        session = SessionContext(
+            *signer_set, self._agg(self.min2), [], [], COMMON_MSGS[0]
+        )
+        psig = sign(secnonce, self.inputs.pool_secshares[0], 0, session)
 
-        # Off-curve public nonce at position 0.
-        pubnonce_indices_offcurve = [self.inputs.INVALID_PUBNONCE_IDX] + self.min_s[1:]
+        # Off-curve public nonce at position 1.
+        pubnonce_indices_offcurve = [
+            self.min2[0],
+            self.inputs.INVALID_PUBNONCE_IDX,
+        ] + self.min2[2:]
         self._append_verify_error(
-            self.min_s,
-            self.min_s,
+            self.min2,
+            self.min2,
             pubnonce_indices_offcurve,
             0,
-            psig_min,
+            psig,
             "invalid_contrib",
             "Verification rejects an invalid public nonce, blaming the malicious signer",
         )
-        # Off-curve public share at position 0.
-        pubshare_indices_offcurve = [self.inputs.INVALID_PUBSHARE_IDX] + self.min_s[1:]
+        # Off-curve public share at position 1.
+        pubshare_indices_offcurve = [
+            self.min2[0],
+            self.inputs.INVALID_PUBSHARE_IDX,
+        ] + self.min2[2:]
         self._append_verify_error(
-            self.min_s,
+            self.min2,
             pubshare_indices_offcurve,
-            self.min_s,
+            self.min2,
             0,
-            psig_min,
+            psig,
             "value",
             "A public share is not a valid point",
         )

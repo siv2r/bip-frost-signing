@@ -217,9 +217,13 @@ class SharedGroupInputs:
         cancel_sk = (
             Scalar.from_bytes_checked(secshares[min2_ids[-1]]) - thresh_sk / lam_last
         )
+        cancel_pubshare = PlainPk((cancel_sk * G).to_bytes_compressed())
+        wrong_pubshare = PlainPk(G.to_bytes_compressed())
+        assert wrong_pubshare not in pubshares and wrong_pubshare != cancel_pubshare
         self.pool_pubshares = pubshares + [
             PlainPk(INVALID_PUBSHARE),
-            PlainPk((cancel_sk * G).to_bytes_compressed()),
+            cancel_pubshare,
+            wrong_pubshare,
         ]
         # secshares pool: zero scalar at slot n.
         self.pool_secshares = secshares + [b"\x00" * 32]
@@ -236,10 +240,17 @@ class SharedGroupInputs:
         ).to_bytes_compressed_with_infinity()
         self.pool_pubnonces = self.pubnonces + [INVALID_PUBNONCE, inverse_pubnonce]
 
-        # secnonces pool: all-zero at slot n, nonzero-first/zero-second at slot n+1.
+        # secnonces pool: all-zero at slot n, nonzero-first/zero-second at slot n+1,
+        # zero-first/nonzero-second at slot n+2.
         zero_second_secnonce = self.secnonces[0][0:32] + b"\x00" * 32
         assert Scalar.from_bytes_nonzero_checked(zero_second_secnonce[0:32])
-        self.pool_secnonces = self.secnonces + [b"\x00" * 64, zero_second_secnonce]
+        zero_first_secnonce = b"\x00" * 32 + self.secnonces[0][32:64]
+        assert Scalar.from_bytes_nonzero_checked(zero_first_secnonce[32:64])
+        self.pool_secnonces = self.secnonces + [
+            b"\x00" * 64,
+            zero_second_secnonce,
+            zero_first_secnonce,
+        ]
 
         # tweaks pool: 4 common tweaks, out-of-range tweak, then the per-config
         # infinity tweak (negation of the reconstructed threshold secret over the
@@ -254,11 +265,13 @@ class SharedGroupInputs:
         # named offsets into the pools, all derived from n
         self.INVALID_PUBSHARE_IDX = n
         self.INFINITY_PUBSHARE_IDX = n + 1
+        self.WRONG_PUBSHARE_IDX = n + 2
         self.SECSHARE_ZERO_IDX = n
         self.INVALID_PUBNONCE_IDX = n
         self.INVERSE_PUBNONCE_IDX = n + 1
         self.SECNONCE_ZERO_IDX = n
         self.SECNONCE_ZERO_SECOND_IDX = n + 1
+        self.SECNONCE_ZERO_FIRST_IDX = n + 2
         self.OUT_OF_RANGE_ID = n
         # tweaks-pool offsets, n-independent
         self.OUT_OF_RANGE_TWEAK_IDX = len(COMMON_TWEAKS)
@@ -278,8 +291,14 @@ def get_subset(cfg, strategy="min"):
             return list(range(cfg.t))
         case "full":  # all n participants
             return list(range(cfg.n))
-        case "alt":  # id 0 + the last t-1 ids; collapses to [0] at t=1 (caller guards)
-            return [0] + list(range(cfg.n - cfg.t + 1, cfg.n))
+        case "alt":  # id 1 + the last t-1 ids, excludes id 0 (caller guards 2 <= t < n)
+            return [1] + list(range(cfg.n - cfg.t + 1, cfg.n))
+        case "tplus1":  # u = min(t+1, n) ids from 0
+            return list(range(min(cfg.t + 1, cfg.n)))
+        case "tplus1_shifted":  # u = min(t+1, n) ids, from 1 when u < n (excludes id 0)
+            u = min(cfg.t + 1, cfg.n)
+            start = 1 if u < cfg.n else 0
+            return list(range(start, start + u))
         case "min2":  # size-at-least-2 baseline; [0, 1] at t=1
             return list(range(max(cfg.t, 2)))
         case "excl0":  # t ids from 1, excludes id 0 (only valid when has_excl0_subset)

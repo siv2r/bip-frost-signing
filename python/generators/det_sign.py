@@ -250,11 +250,11 @@ class DetSignGroupBuilder:
                 [],
                 "Reordering the signer set leaves the deterministic output unchanged, because the identifiers are sorted before they are bound into the nonce derivation and the binding value",
             )
-        # a different threshold subset (needs t >= 2; at t=1 alt collapses to the
-        # minimum set, matching sign_verify).
+        # a different threshold subset without id 0 (needs t >= 2 and t < n,
+        # matching sign_verify).
         if t >= 2 and t < n:
             self._append_valid(
-                0,
+                1,
                 self.alt,
                 self.alt,
                 RANDS[0],

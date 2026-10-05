@@ -201,7 +201,11 @@ def test_sign_verify_vectors():
         for tc in group["sign_error_tests"]:
             exception, except_fn = get_error_details(tc)
             ids_tmp = tc["ids"]
-            pubshares_tmp = [PlainPk(pubshares[i]) for i in tc["pubshare_indices"]]
+            pubshares_tmp = (
+                None
+                if tc["pubshare_indices"] is None
+                else [PlainPk(pubshares[i]) for i in tc["pubshare_indices"]]
+            )
             aggnonce_tmp = bytes.fromhex(tc["aggnonce"])
             msg = bytes.fromhex(tc["msg"])
             my_id = tc["my_id"]

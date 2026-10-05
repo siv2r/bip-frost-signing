@@ -10,7 +10,8 @@
                 "0284DC4AB2CB78A621EB87FA1F14BCE2B725AFEAAC981ADCBAFF5CC2D417D2A63A",
                 "036441EC2D4C1266201CD89B69549A2F5B2188612A0D434153E625FB38173DD509",
                 "020000000000000000000000000000000000000000000000000000000000000007",
-                "02A5363A0993E3E2096EF80B7B4DA1EDF650DBF02CAE168BB4ACC0E90A24CED0FD"
+                "02A5363A0993E3E2096EF80B7B4DA1EDF650DBF02CAE168BB4ACC0E90A24CED0FD",
+                "0279BE667EF9DCBBAC55A06295CE870B07029BFCDB2DCE28D959F2815B16F81798"
             ],
             "secshares": [
                 "53442FA9BD72EEA0A42DF6F2D2D76A2C0D3A3DFA2BE2F820F41ADE976B8259FB",
@@ -73,18 +74,18 @@
                 {
                     "tc_id": 4,
                     "comment": "A different threshold subset gives a different deterministic nonce, since the signer set is bound into the nonce derivation",
-                    "my_id": 0,
-                    "ids": [0, 2],
-                    "pubshare_indices": [0, 2],
-                    "secshare_index": 0,
+                    "my_id": 1,
+                    "ids": [1, 2],
+                    "pubshare_indices": [1, 2],
+                    "secshare_index": 1,
                     "aggothernonce": "03A120B35316945A5EB22B309A9088EDEDFCF45C6CED2DDF153661CB7666031B86034A04D6C34C51F81BFD9ADAC20906DFCC7798210872020BF2AD0F52887D602623",
                     "aux_rand": "0000000000000000000000000000000000000000000000000000000000000000",
                     "msg": "F95466D086770E689964664219266FE5ED215C92AE20BAB5C9D79ADDDDF3C0CF",
                     "tweaks": [],
                     "is_xonly": [],
                     "expected": [
-                        "0393FD8642105B8E6ABA754BF90802B0B9B15FF32C24C059FD960D3F0937E4F60F02B49D8D7191F06D9CFF64766543E3F75C1C75B7CCA2F1C388C2ABB1767114D15C",
-                        "7F48176E891C81856CA266613EC37A6C2F54FB8B34224A895E10BA525F0B6B70"
+                        "03C7945724370D6DB7D6DDF6385EFBDF2815E06406867235CEF60F7B3D7433F41803D8BB0F129CA0B8C8C901868A0124CF6909456383FEAB58222DD285304F4576B8",
+                        "8B14DBD660EF1D2B8C45EBAB40766CAE09A7D5FF6EE9180B913C13570DF9A08B"
                     ]
                 },
                 {
@@ -241,7 +242,7 @@
                     "is_xonly": [],
                     "error": {
                         "type": "ValueError",
-                        "message": "The signer's pubshare is missing from the pubshares list."
+                        "message": "The signer's pubshare does not match the pubshares list entry at the signer's position."
                     }
                 },
                 {
@@ -449,7 +450,8 @@
                 "03D1939BE87D18EA5AB302E27077D16B2C2FD93516F91514BA049933D348DA441F",
                 "03D1939BE87D18EA5AB302E27077D16B2C2FD93516F91514BA049933D348DA441F",
                 "020000000000000000000000000000000000000000000000000000000000000007",
-                "0394F8592DC5FEC76CFF92200ED3BA2BCF78518B46B706A47BD55458DB31D294A7"
+                "0394F8592DC5FEC76CFF92200ED3BA2BCF78518B46B706A47BD55458DB31D294A7",
+                "0279BE667EF9DCBBAC55A06295CE870B07029BFCDB2DCE28D959F2815B16F81798"
             ],
             "secshares": [
                 "06D47E05E97481428654563E5AE69C20C49642773B7334220E63110259A30C32",
@@ -837,7 +839,8 @@
                 "0201E5FEAC0DB5059C32B045F37799101A96262B3C88CE85D610451FC21A0457FF",
                 "03EF72D10D1DFE4E786619536A458507CAF105FCCDB8173DAF2E358054AF2FA4A2",
                 "020000000000000000000000000000000000000000000000000000000000000007",
-                "028FB6424719CF2E40146B4025715FDA43918A722F33A6260CB08A21E65CB9E14E"
+                "028FB6424719CF2E40146B4025715FDA43918A722F33A6260CB08A21E65CB9E14E",
+                "0279BE667EF9DCBBAC55A06295CE870B07029BFCDB2DCE28D959F2815B16F81798"
             ],
             "secshares": [
                 "D4DE571C662C319E7C4F46420F5ACBEFD2D905C3B52771C553DE1F76197D940D",
@@ -1227,7 +1230,8 @@
                 "026E1A50E672FEDD3F3C378D6121E5702B050669DBC241D2C2299880152CD207BD",
                 "02DC06C4CA919DE70B4B8281901CCF9471AB91FBFBEE1A8C570D83911CAAF9E2FA",
                 "020000000000000000000000000000000000000000000000000000000000000007",
-                "031B21F2B4931AC17435D943ABADB969CBCD4AFE3EB71D1CD62E87F9D2BD825164"
+                "031B21F2B4931AC17435D943ABADB969CBCD4AFE3EB71D1CD62E87F9D2BD825164",
+                "0279BE667EF9DCBBAC55A06295CE870B07029BFCDB2DCE28D959F2815B16F81798"
             ],
             "secshares": [
                 "77C9316A64770B17D500840E020A9478F793D37DB0E6A276CB4E6270187D6C90",
@@ -1292,18 +1296,18 @@
                 {
                     "tc_id": 70,
                     "comment": "A different threshold subset gives a different deterministic nonce, since the signer set is bound into the nonce derivation",
-                    "my_id": 0,
-                    "ids": [0, 3, 4],
-                    "pubshare_indices": [0, 3, 4],
-                    "secshare_index": 0,
+                    "my_id": 1,
+                    "ids": [1, 3, 4],
+                    "pubshare_indices": [1, 3, 4],
+                    "secshare_index": 1,
                     "aggothernonce": "03BD60BBC5F251F988DA82505A0025C0B2AC9D90FE1708CDC6AF73A2D505120FFA032EA935A597AE9A6FFA87238B5E5B19D99B82DAFD2E63FBDF79405D8804B0BEA5",
                     "aux_rand": "0000000000000000000000000000000000000000000000000000000000000000",
                     "msg": "F95466D086770E689964664219266FE5ED215C92AE20BAB5C9D79ADDDDF3C0CF",
                     "tweaks": [],
                     "is_xonly": [],
                     "expected": [
-                        "02DCCCA55738E40516943AB0CAADDE3BAC384F03F243A5492AEA5DA5A372DE3CA803DBA4C4FC464CE06D879697BFACCAF5AE31CB2D25FD8099C31AD09863D36CF718",
-                        "1FF9F9F4A44D63D4D36EF0D4382A1183F9132DB98FAFDB9E926C9C2CF4C51F69"
+                        "03C6A9A8A006F70191F1F57750A108F00826EC4D5FDB0765A429B4F3406D7C074F02C1823CE43F7E0500A79C12F0517B72225DC61351EF137F4EC05D86F963A412C4",
+                        "1E3E368E748E62B58895B2865FDA79F65C7DBA9B53083D5C9B697E3D1048C21E"
                     ]
                 },
                 {
@@ -1460,7 +1464,7 @@
                     "is_xonly": [],
                     "error": {
                         "type": "ValueError",
-                        "message": "The signer's pubshare is missing from the pubshares list."
+                        "message": "The signer's pubshare does not match the pubshares list entry at the signer's position."
                     }
                 },
                 {
