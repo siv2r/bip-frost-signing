@@ -278,13 +278,6 @@ class SharedGroupInputs:
         self.INFINITY_TWEAK_IDX = len(COMMON_TWEAKS) + 1
 
 
-def has_excl0_subset(t, n):
-    # The "excl0" subset (a size-t signer set that excludes participant 0) is
-    # usable only when t >= 2 and t < n. At t=n no size-t set can exclude id 0,
-    # and at t=1 all shares are identical, so excluding id 0 changes nothing.
-    return t >= 2 and t < n
-
-
 def get_subset(cfg, strategy="min"):
     match strategy:
         case "min":  # minimum threshold subset, the first t ids
@@ -301,9 +294,6 @@ def get_subset(cfg, strategy="min"):
             return list(range(start, start + u))
         case "min2":  # size-at-least-2 baseline; [0, 1] at t=1
             return list(range(max(cfg.t, 2)))
-        case "excl0":  # t ids from 1, excludes id 0 (only valid when has_excl0_subset)
-            assert has_excl0_subset(cfg.t, cfg.n)
-            return list(range(1, cfg.t + 1))
         case _:
             raise ValueError(f"Unknown subset strategy: {strategy}")
 

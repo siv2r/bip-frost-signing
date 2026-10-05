@@ -411,9 +411,11 @@ def test_det_sign_vectors():
         for test_case in group["error_tests"]:
             exception, except_fn = get_error_details(test_case)
             ids_tmp = test_case["ids"]
-            pubshares_tmp = [
-                PlainPk(pubshares[i]) for i in test_case["pubshare_indices"]
-            ]
+            pubshares_tmp = (
+                None
+                if test_case["pubshare_indices"] is None
+                else [PlainPk(pubshares[i]) for i in test_case["pubshare_indices"]]
+            )
             secshare = secshares[test_case["secshare_index"]]
             aggothernonce = (
                 bytes.fromhex(test_case["aggothernonce"])
