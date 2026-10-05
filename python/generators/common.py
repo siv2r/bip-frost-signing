@@ -16,6 +16,8 @@ from secp256k1lab.secp256k1 import G, GE, Scalar
 from secp256k1lab.keys import pubkey_gen_plain
 from trusted_dealer import trusted_dealer_keygen
 
+VECTORS_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "vectors")
+
 
 def bytes_to_hex(data: bytes) -> str:
     return data.hex().upper()
@@ -117,7 +119,7 @@ def _inline_scalar_array(match):
 
 
 def write_test_vectors(filename, vectors):
-    output_file = os.path.join("vectors", filename)
+    output_file = os.path.join(VECTORS_DIR, filename)
     text = _SCALAR_ARRAY_RE.sub(_inline_scalar_array, json.dumps(vectors, indent=4))
     json.loads(text)  # guard: inlining must keep the JSON parseable
     with open(output_file, "w") as f:

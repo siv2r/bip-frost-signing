@@ -126,6 +126,25 @@ def generate_nonce_gen_vectors():
         }
     )
     tc_id += 1
+    # --- Valid Test Case 6 ---
+    extra_in_33 = bytes.fromhex("08" * 33)
+    secnonce, pubnonce = nonce_gen_internal(
+        COMMON_RAND, secshares[0], pubshares[0], xonly_thresh_pk, msg, extra_in_33
+    )
+    vectors["valid_tests"].append(
+        {
+            "tc_id": tc_id,
+            "comment": "Non-standard extra_in length (33 bytes)",
+            "rand": bytes_to_hex(COMMON_RAND),
+            "secshare": bytes_to_hex(secshares[0]),
+            "pubshare": bytes_to_hex(pubshares[0]),
+            "thresh_pk_xonly": bytes_to_hex(xonly_thresh_pk),
+            "msg": bytes_to_hex(msg),
+            "extra_in": bytes_to_hex(extra_in_33),
+            "expected": [bytes_to_hex(secnonce), bytes_to_hex(pubnonce)],
+        }
+    )
+    tc_id += 1
 
     write_test_vectors("nonce_gen_vectors.json", vectors)
 

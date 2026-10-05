@@ -4,6 +4,7 @@ import glob
 import os
 import sys
 
+from generators.common import VECTORS_DIR
 from generators.det_sign import generate_det_sign_vectors
 from generators.nonce import (
     generate_nonce_agg_vectors,
@@ -15,8 +16,8 @@ from generators.tweak import generate_tweak_vectors
 
 
 def create_vectors_directory():
-    os.makedirs("vectors", exist_ok=True)
-    for f in glob.glob("vectors/*.json"):
+    os.makedirs(VECTORS_DIR, exist_ok=True)
+    for f in glob.glob(os.path.join(VECTORS_DIR, "*.json")):
         os.remove(f)
 
 
