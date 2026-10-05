@@ -49,33 +49,34 @@
                 },
                 {
                     "tc_id": 3,
-                    "comment": "Reordering the signer set leaves the aggregate signature unchanged, because the partial signatures are summed and the identifiers are sorted before they are bound into the binding value",
-                    "ids": [1, 0],
-                    "pubshare_indices": [1, 0],
-                    "aggnonce": "030F261BFE5DF0AE3EC06BB7A1D6394A3AF206968281F03B70D25FB84D49036CE203BE48277630579C72160430C819AABB1DFA20FF70749666080BB886B728476261",
+                    "comment": "Signer set in descending order, so the identifiers must be sorted before hashing",
+                    "ids": [2, 1, 0],
+                    "pubshare_indices": [2, 1, 0],
+                    "aggnonce": "02CBC2E41AF87290A1401D49927FC30D7F40A404C4DF3E5FC734014188DBC44E1503C15312EDC691EB213F3B8AAC195D251A390563CD5E313D738A89DAEB4DA80746",
                     "tweak_indices": [],
                     "is_xonly": [],
                     "psigs": [
-                        "4368B9CD58815001630403FA8F6319CFD4849E95F13379FA431A288FD230E872",
-                        "93DDE8C9CEE714EB5BDF2BE00FEC3327F9CF386D3AC672F0DA734FFC08E7A041"
+                        "012450173674FA82C0048E8DA589C450E742469CD2C81AAACE071297D9F1072C",
+                        "09955F6B6CF09ED383F33C1BFCFE059E79E9D26FECC0095F4A31F22E7ED242AE",
+                        "0187D09300F20F940B837AA93AB9F4863821C044627931F402D4ACDA618C0E15"
                     ],
                     "msg": "F95466D086770E689964664219266FE5ED215C92AE20BAB5C9D79ADDDDF3C0CF",
-                    "expected": "74B202858D1B9B1113A5615E20CDB41CD6CAEE2DC125EB32AEA1A7C189621C12D746A297276864ECBEE32FDA9F4F4CF7CE53D7032BF9ECEB1D8D788BDB1888B3"
+                    "expected": "0128035A92709B871A9E7CD6871E52B475114EE189D5E56AC5B9E6EE861274690C418015A457A8EA4F7B4552DD41BE75994DD951220155FE1B0DB1A0BA4F57EF"
                 },
                 {
                     "tc_id": 4,
-                    "comment": "Aggregation with three tweaks applied (one x-only, two plain)",
+                    "comment": "Aggregation with three tweaks applied (one plain, two x-only)",
                     "ids": [0, 1],
                     "pubshare_indices": [0, 1],
                     "aggnonce": "030F261BFE5DF0AE3EC06BB7A1D6394A3AF206968281F03B70D25FB84D49036CE203BE48277630579C72160430C819AABB1DFA20FF70749666080BB886B728476261",
                     "tweak_indices": [0, 1, 2],
-                    "is_xonly": [true, false, false],
+                    "is_xonly": [false, true, true],
                     "psigs": [
-                        "CC60DFBCAEE58593EF5A58C757621FE8E6644925945B973527268D6493C1CB0E",
-                        "6BF7AC278EA83796031547BAA813C4FBF2D7B25B70EC59DD46ECB82C9104A5B0"
+                        "C2FEB90BDF51989DDC471D37C2D1C56B4C154F1D96E19CC8E2F29262357C2F00",
+                        "2C01E2B9FC9BF3FEAC022CCA394CD0B814BA64010EC73E3C9DED5EF1897D0832"
                     ],
                     "msg": "F95466D086770E689964664219266FE5ED215C92AE20BAB5C9D79ADDDDF3C0CF",
-                    "expected": "E2308F92DE70BC5F612D329F69F141BF4E886797B25539FCBDF39096B53E0F081093777BBF7DAF39BD06D299CB3860D43F647FC3A36507E2A57061D031F5696E"
+                    "expected": "43B2A23585AB2490AA7DCDF1093CCE19062D7E8CCA0F84CDBAAB696FDD93149E699CE775E66D800588DE4B1DFD04E0C18D32B4ABA86D71C2F07E5E0E3E417A51"
                 },
                 {
                     "tc_id": 5,
@@ -180,20 +181,35 @@
                 },
                 {
                     "tc_id": 10,
-                    "comment": "Aggregation with three tweaks applied (one x-only, two plain)",
+                    "comment": "Signer set in descending order, so the identifiers must be sorted before hashing",
+                    "ids": [2, 1],
+                    "pubshare_indices": [2, 1],
+                    "aggnonce": "03FBEA8F3C4CCA7DFD6BD61F7DF7B49BE720D0DE014144457C1EEB0882B40CA76B02289A43F164E3403CDA987383887BB807EB8CF3329949DC80C3DD5D757EF4B841",
+                    "tweak_indices": [],
+                    "is_xonly": [],
+                    "psigs": [
+                        "99BB237B2AE73506206171AFCD299CECAA42A5F0539659DB0DB33FE32DD77A77",
+                        "2A09C72624FD8445395922199EF9F37EE54282C0289FDEC2418A46D0C0D3E403"
+                    ],
+                    "msg": "F95466D086770E689964664219266FE5ED215C92AE20BAB5C9D79ADDDDF3C0CF",
+                    "expected": "CCB108B7EFF290CA91781212362F477EBDB5C3532F22404808E87A7EFE7C9B8BC3C4EAA14FE4B94B59BA93C96C23906B8F8528B07C36389D4F3D86B3EEAB5E7A"
+                },
+                {
+                    "tc_id": 11,
+                    "comment": "Aggregation with three tweaks applied (one plain, two x-only)",
                     "ids": [0],
                     "pubshare_indices": [0],
                     "aggnonce": "026805DC7B318F796C360BB82F85FA0C106AB8775FECF892A0A7F85FB66720CBAB039509CF07C0A787AB8628C84E1F6F5E9CA424496D6ED4AC36722E5602E0C32C57",
                     "tweak_indices": [0, 1, 2],
-                    "is_xonly": [true, false, false],
+                    "is_xonly": [false, true, true],
                     "psigs": [
-                        "BBC0D36C2FA70A62BA1B6E0A59FFB7C62EE36643B6D19E40180A267DB5F48869"
+                        "B6C025EF4DB8117C68B1A10F8D4E42FE8ACFA0F4DCB50EA3AEC0ABFD6C4BE3C4"
                     ],
                     "msg": "F95466D086770E689964664219266FE5ED215C92AE20BAB5C9D79ADDDDF3C0CF",
-                    "expected": "31C4E26F6FF48E6BF58FFC7BCCB6429B48A8926D38815858B4DAF9676D25C1EDB3FA2D48AFD3C625E9D4954ADA10544DA3A035959026DA6E6638833B1CFF9CF8"
+                    "expected": "8F5F705150DB303F0475B4550ECDE12637A95EA53329C68259EDEC969D0EE2E0B0E58D58540ACCEE3925B86C9CEC84F61222142C1AC64311D878A3117057D69F"
                 },
                 {
-                    "tc_id": 11,
+                    "tc_id": 12,
                     "comment": "All signers participate, no tweaks",
                     "ids": [0, 1, 2],
                     "pubshare_indices": [0, 1, 2],
@@ -211,7 +227,7 @@
             ],
             "error_tests": [
                 {
-                    "tc_id": 12,
+                    "tc_id": 13,
                     "comment": "Partial signature equals the group order, which is out of range",
                     "ids": [0],
                     "pubshare_indices": [0],
@@ -229,7 +245,7 @@
                     }
                 },
                 {
-                    "tc_id": 13,
+                    "tc_id": 14,
                     "comment": "Number of partial signatures does not match the number of signers",
                     "ids": [0],
                     "pubshare_indices": [0],
@@ -263,7 +279,7 @@
             ],
             "valid_tests": [
                 {
-                    "tc_id": 14,
+                    "tc_id": 15,
                     "comment": "Minimum threshold subset of signers, no tweaks",
                     "ids": [0, 1, 2],
                     "pubshare_indices": [0, 1, 2],
@@ -279,7 +295,7 @@
                     "expected": "386DC4546A4FB1D79FE9C40C06488DD271EF541325E492643794413EADFA280C0A7A3CCF226CEFF7185E99E1084AAF924AC008C042398C251C66A6DC12619190"
                 },
                 {
-                    "tc_id": 15,
+                    "tc_id": 16,
                     "comment": "Public shares list is absent",
                     "ids": [0, 1, 2],
                     "pubshare_indices": null,
@@ -295,8 +311,8 @@
                     "expected": "386DC4546A4FB1D79FE9C40C06488DD271EF541325E492643794413EADFA280C0A7A3CCF226CEFF7185E99E1084AAF924AC008C042398C251C66A6DC12619190"
                 },
                 {
-                    "tc_id": 16,
-                    "comment": "Reordering the signer set leaves the aggregate signature unchanged, because the partial signatures are summed and the identifiers are sorted before they are bound into the binding value",
+                    "tc_id": 17,
+                    "comment": "Signer set in descending order, so the identifiers must be sorted before hashing",
                     "ids": [2, 1, 0],
                     "pubshare_indices": [2, 1, 0],
                     "aggnonce": "030CC8DD7811033474FAD57D2DD03801584ED6A68CD1A73B3301C3DD1F685BBF7802DE9250BDBEF74C5EC1854A171EC8F5BD06CBDDCFB78384435AC62E5B359ACF2C",
@@ -311,25 +327,25 @@
                     "expected": "386DC4546A4FB1D79FE9C40C06488DD271EF541325E492643794413EADFA280C0A7A3CCF226CEFF7185E99E1084AAF924AC008C042398C251C66A6DC12619190"
                 },
                 {
-                    "tc_id": 17,
-                    "comment": "Aggregation with three tweaks applied (one x-only, two plain)",
+                    "tc_id": 18,
+                    "comment": "Aggregation with three tweaks applied (one plain, two x-only)",
                     "ids": [0, 1, 2],
                     "pubshare_indices": [0, 1, 2],
                     "aggnonce": "030CC8DD7811033474FAD57D2DD03801584ED6A68CD1A73B3301C3DD1F685BBF7802DE9250BDBEF74C5EC1854A171EC8F5BD06CBDDCFB78384435AC62E5B359ACF2C",
                     "tweak_indices": [0, 1, 2],
-                    "is_xonly": [true, false, false],
+                    "is_xonly": [false, true, true],
                     "psigs": [
-                        "E6DD426B51E8CD40C1731714028497174ED24C3FFD8DD42977BC909C4EB9CBA6",
-                        "A3C2B9914E16CC923D88FC56A57A81ADAE615EABF0AA393010FD6A081208AADE",
-                        "EE2AE76EA4BC9D291832D84D9E81C3B11986E02CF326E9CE4EEBF772B46E1EAB"
+                        "FC2C090314689E9484619ECD92529353A4FDFD96AB39483765922FFD6B34008B",
+                        "993E7A7E079AA7CDC6D755037D999936546118506C03B054AD40AA8C17D1BD9F",
+                        "15275A86783FE8253F7FE5F1CBEACF688239767A1A6DA1F24E2FC6D122C99D9F"
                     ],
                     "msg": "F95466D086770E689964664219266FE5ED215C92AE20BAB5C9D79ADDDDF3C0CF",
-                    "expected": "9E225C551791D819F757C1D07A9A4888D3AD051E116548A3C021BA590DB185582BFD18A0DFF9AD8137CA33BB8CBDD9534BE7DA7F03929BB10A913FD815467861"
+                    "expected": "D32F9CF54982DED595E8484E9E3C438BBA42E259A9C0935AC6A03B7607758F92E63951D8353EFAF165F45E500E1A54109354D44E3F76C6F7E4907F99D28F2A5C"
                 }
             ],
             "error_tests": [
                 {
-                    "tc_id": 18,
+                    "tc_id": 19,
                     "comment": "Partial signature equals the group order, which is out of range",
                     "ids": [0, 1, 2],
                     "pubshare_indices": [0, 1, 2],
@@ -349,7 +365,7 @@
                     }
                 },
                 {
-                    "tc_id": 19,
+                    "tc_id": 20,
                     "comment": "Number of partial signatures does not match the number of signers",
                     "ids": [0, 1, 2],
                     "pubshare_indices": [0, 1, 2],
@@ -388,7 +404,7 @@
             ],
             "valid_tests": [
                 {
-                    "tc_id": 20,
+                    "tc_id": 21,
                     "comment": "Minimum threshold subset of signers, no tweaks",
                     "ids": [0, 1, 2],
                     "pubshare_indices": [0, 1, 2],
@@ -404,7 +420,7 @@
                     "expected": "2ACEEC78D476DB0C7000D548B010023BCD9E54008B966147A232003DA91AA79021E48338D73DDD6B6876401AF4841900D6413760B0F5909993418D1552714F8A"
                 },
                 {
-                    "tc_id": 21,
+                    "tc_id": 22,
                     "comment": "Public shares list is absent",
                     "ids": [0, 1, 2],
                     "pubshare_indices": null,
@@ -420,39 +436,40 @@
                     "expected": "2ACEEC78D476DB0C7000D548B010023BCD9E54008B966147A232003DA91AA79021E48338D73DDD6B6876401AF4841900D6413760B0F5909993418D1552714F8A"
                 },
                 {
-                    "tc_id": 22,
-                    "comment": "Reordering the signer set leaves the aggregate signature unchanged, because the partial signatures are summed and the identifiers are sorted before they are bound into the binding value",
-                    "ids": [2, 1, 0],
-                    "pubshare_indices": [2, 1, 0],
-                    "aggnonce": "0391D52F656B3CA3E66AC5DAEF5B0D347F7E85B7DD7A9EBA10E9827AE23FB76E93031610E184E540470139F7626253F27E8871D6354941CC9FF94A07D83F61BB4CD5",
+                    "tc_id": 23,
+                    "comment": "Signer set in descending order, so the identifiers must be sorted before hashing",
+                    "ids": [4, 3, 2, 1],
+                    "pubshare_indices": [4, 3, 2, 1],
+                    "aggnonce": "03796AF19731925E993800984EFBBB914A01387F1CAA890B5F3BDE5AC4CCB9E121037361E62F97C96733BC4CC2B3D45FF53ADDA101162D97E753932A804516085EAE",
                     "tweak_indices": [],
                     "is_xonly": [],
                     "psigs": [
-                        "B3890F87993310B2AE0887E0C8D51CD27898A713FF48C2197D280BDA313A4A2C",
-                        "0E1CB1C6B75847D62D7DE29DA5B61E66386F512C1BFFD12C202D2D28D5455314",
-                        "603EC1EA86B284E28CEFD59C85F8DDC6DFE81C0744F59D8FB5BEB29F1C27F38B"
+                        "349B6896B1B75F0811B9C58CD28664249D5953E8081D4C912FDDDD3045C2407A",
+                        "60231643C880CC512A28C6C1426C80EBF92FC11FB7605A2884C0D4363ACFC0C8",
+                        "3A9ABEAB0A8255BACEF7CEC2807C5E7A9AEDC283BC0A094616B7A13FD16099C9",
+                        "A3E9D2FD13428ACA7B4E9AD0FD74416C0F68974BED05E7159C7924F785BD4FD9"
                     ],
                     "msg": "F95466D086770E689964664219266FE5ED215C92AE20BAB5C9D79ADDDDF3C0CF",
-                    "expected": "2ACEEC78D476DB0C7000D548B010023BCD9E54008B966147A232003DA91AA79021E48338D73DDD6B6876401AF4841900D6413760B0F5909993418D1552714F8A"
+                    "expected": "B339BCFC9C695957E119A1EDB5224C16884B5366D73E422562CD6EF6BDDDD0E27343108297FD0BDE8628F5E192E384F8863091F0B944F6D9A7FD19110779A9A3"
                 },
                 {
-                    "tc_id": 23,
-                    "comment": "Aggregation with three tweaks applied (one x-only, two plain)",
+                    "tc_id": 24,
+                    "comment": "Aggregation with three tweaks applied (one plain, two x-only)",
                     "ids": [0, 1, 2],
                     "pubshare_indices": [0, 1, 2],
                     "aggnonce": "0391D52F656B3CA3E66AC5DAEF5B0D347F7E85B7DD7A9EBA10E9827AE23FB76E93031610E184E540470139F7626253F27E8871D6354941CC9FF94A07D83F61BB4CD5",
                     "tweak_indices": [0, 1, 2],
-                    "is_xonly": [true, false, false],
+                    "is_xonly": [false, true, true],
                     "psigs": [
-                        "F7AD2F8DACC5D22A0F68007BB0AA3D6555F229AA3E3EE3D58ECA5AB5DEE1EC61",
-                        "296C561EDB37E9DD750190B526FD96F3EEA362CFF3DEEA614697ABE2963CF4E0",
-                        "83F2306CD21A2F003817258B4D33904771AA229AED0226A72739E8EF2BDD7BF3"
+                        "56EFCDF5CD18B58C5A687CBA75067D5CBF21A0959BA102001497DE24AB8604F4",
+                        "6236426EBB7317EDDC273AFB67CA17F934B40B89CA20807CFCC6392E428D3A48",
+                        "095DC0E501060CC491A5EA4B53DC1428869B4CE851E0EA07E1BA0FB80F05D80F"
                     ],
                     "msg": "F95466D086770E689964664219266FE5ED215C92AE20BAB5C9D79ADDDDF3C0CF",
-                    "expected": "75220B52F1BD906E4314713F2DF189B52FEC6A333F42505D1F1C2A65EF3ED47A17360AADFD3FFCE1E89052420936B4991B2FD0E20F7D5FF7115231FBDB2E767D"
+                    "expected": "F3140AD61B2DAFE1C4E9B50B2D458F06794ADCFA1559BEEA03CDF132E4D66D09BB2D96D2944B71631157F6E2B27B740411290BB91820EC8DA41DA5452CECD59D"
                 },
                 {
-                    "tc_id": 24,
+                    "tc_id": 25,
                     "comment": "All signers participate, no tweaks",
                     "ids": [0, 1, 2, 3, 4],
                     "pubshare_indices": [0, 1, 2, 3, 4],
@@ -472,7 +489,7 @@
             ],
             "error_tests": [
                 {
-                    "tc_id": 25,
+                    "tc_id": 26,
                     "comment": "Partial signature equals the group order, which is out of range",
                     "ids": [0, 1, 2],
                     "pubshare_indices": [0, 1, 2],
@@ -492,7 +509,7 @@
                     }
                 },
                 {
-                    "tc_id": 26,
+                    "tc_id": 27,
                     "comment": "Number of partial signatures does not match the number of signers",
                     "ids": [0, 1, 2],
                     "pubshare_indices": [0, 1, 2],

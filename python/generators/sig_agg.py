@@ -40,6 +40,7 @@ class SigAggGroupBuilder:
 
         self.min_s = get_subset(cfg, "min")
         self.full = get_subset(cfg, "full")
+        self.shifted = get_subset(cfg, "tplus1_shifted")
 
         self.group = {}
         set_group_config(self.group, cfg, self.inputs)
@@ -169,23 +170,23 @@ class SigAggGroupBuilder:
             pubshares_absent=True,
         )
         assert sig_no_pubshares == sig_min
-        # Order-invariance (needs a set of size >= 2 to be meaningful).
-        if t >= 2:
-            rev = list(reversed(self.min_s))
-            self._append_valid(
-                rev,
-                [],
-                [],
-                COMMON_MSGS[0],
-                "Reordering the signer set leaves the aggregate signature unchanged, because the partial signatures are summed and the identifiers are sorted before they are bound into the binding value",
-            )
-        # Three tweaks applied (one x-only, two plain).
+        # Order-invariance (u = min(t+1, n) signers, excluding id 0 where possible).
+        rev = list(reversed(self.shifted))
+        self._append_valid(
+            rev,
+            [],
+            [],
+            COMMON_MSGS[0],
+            "Signer set in descending order, so the identifiers must be sorted before hashing",
+        )
+        # Three tweaks applied (one plain, two x-only), so a non-zero tacc meets
+        # an x-only step.
         self._append_valid(
             self.min_s,
             [0, 1, 2],
-            [True, False, False],
+            [False, True, True],
             COMMON_MSGS[0],
-            "Aggregation with three tweaks applied (one x-only, two plain)",
+            "Aggregation with three tweaks applied (one plain, two x-only)",
         )
         # All n signers participate (dropped when t == n, as the all-n set
         # equals the minimum set and partial_sig_agg has no my_id field, so the
