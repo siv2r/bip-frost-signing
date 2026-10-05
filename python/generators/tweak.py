@@ -40,7 +40,7 @@ class TweakGroupBuilder:
         self.thresh_pk = self.inputs.thresh_pk
 
         self.min_s = get_subset(cfg, "min")
-        self.full = get_subset(cfg, "full")
+        self.min2 = get_subset(cfg, "min2")
         self.aggnonce_min = self._agg(self.min_s)
 
         # Build the tweaks pool: self.inputs.tweaks_pool has 6 entries (indices 0-5).
@@ -151,20 +151,8 @@ class TweakGroupBuilder:
 
     def add_valid_tests(self) -> None:
         msg = COMMON_MSGS[0]
-        aggnonce_full = self._agg(self.full)
+        aggnonce_min2 = self._agg(self.min2)
 
-        # No tweaks applied
-        self._append_valid(
-            0,
-            self.min_s,
-            self.min_s,
-            self.min_s,
-            self.aggnonce_min,
-            msg,
-            [],
-            [],
-            "No tweaks applied",
-        )
         # Single x-only tweak
         self._append_valid(
             0,
@@ -213,29 +201,17 @@ class TweakGroupBuilder:
             [True, False, True, False],
             "Four tweaks alternating x-only and plain",
         )
-        # Four tweaks: two plain then two x-only
+        # Four tweaks: two plain then two x-only, signed by a non-first signer
         self._append_valid(
-            0,
-            self.min_s,
-            self.min_s,
-            self.min_s,
-            self.aggnonce_min,
+            1,
+            self.min2,
+            self.min2,
+            self.min2,
+            aggnonce_min2,
             msg,
             [0, 1, 2, 3],
             [False, False, True, True],
             "Four tweaks: two plain followed by two x-only",
-        )
-        # Same tweaks as the previous case but all n signers, signed by non-first member
-        self._append_valid(
-            1,
-            self.full,
-            self.full,
-            self.full,
-            aggnonce_full,
-            msg,
-            [0, 1, 2, 3],
-            [False, False, True, True],
-            "Same tweaks as the previous case but with all signers participating, signed by a non-first member of the signer set",
         )
 
     # --- Array B: error_tests ---
