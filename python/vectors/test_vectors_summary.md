@@ -47,7 +47,7 @@ A few things stay out of that scheme:
   (the `(t, n)` label and the shared key setup), not part of the index scheme.
 - Per-session values stay inline in the case, with no shared input: the
   message (`msg`), the aggregate nonce (`aggnonce`, or `aggothernonce` in
-  `det_sign`), and the signer's own id (`my_id`). In `det_sign`,
+  `det_sign`), and the signer's own id (`signer_id`). In `det_sign`,
   `aggothernonce` is `null` when the session has a single signer, so
   there are no other nonces to aggregate.
 - `pubshare_indices` is `null` in one `sign`, `deterministic_sign` and
@@ -129,12 +129,12 @@ The `error` object comes in two shapes:
 
 ## Signer identifiers
 
-Three nearby fields are easy to mix up. The distinction that matters: `my_id`
+Three nearby fields are easy to mix up. The distinction that matters: `signer_id`
 is an id value, while both `signer_index` fields are positions in a list.
 
 | Field | Where | What it is |
 |---|---|---|
-| `my_id` | sign-side cases (`sign`, `deterministic_sign`, tweak) | The signer's id value. Pass it straight to the function. |
+| `signer_id` | sign-side cases (`sign`, `deterministic_sign`, tweak) | The signer's id value. Pass it straight to the function. |
 | `signer_index` | verify-side cases (`verify_fail`, `verify_error`) | The signer's position in the case's `ids` list, passed as the index argument to `partial_sig_verify`. |
 | `error.signer_index` | inside an `error` object | The position of the blamed contribution in the input list, or `null` for an aggregator-level fault. |
 

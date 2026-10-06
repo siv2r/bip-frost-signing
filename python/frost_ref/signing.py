@@ -52,7 +52,7 @@ MAX_PARTICIPANTS = 128
 # contributions. Instead, they should hold the offending party accountable.
 class InvalidContributionError(Exception):
     def __init__(self, signer_index: Optional[int], contrib: ContribKind) -> None:
-        # index of the signer who sent the invalid value, or None for coordinator
+        # position in ids of the signer who sent the invalid value, or None for coordinator
         self.signer_index = signer_index
         self.contrib = contrib
 
@@ -61,17 +61,17 @@ def has_duplicates(lst: List[int]) -> bool:
     return len(set(lst)) != len(lst)
 
 
-def derive_interpolating_value(ids: List[int], my_id: int) -> Scalar:
-    assert my_id in ids
-    assert 0 <= my_id < 2**32
+def derive_interpolating_value(ids: List[int], id_i: int) -> Scalar:
+    assert id_i in ids
+    assert 0 <= id_i < 2**32
     assert not has_duplicates(ids)
     num = Scalar(1)
     deno = Scalar(1)
-    for curr_id in ids:
-        if curr_id == my_id:
+    for id_k in ids:
+        if id_k == id_i:
             continue
-        num *= Scalar(curr_id + 1)
-        deno *= Scalar(curr_id - my_id)
+        num *= Scalar(id_k + 1)
+        deno *= Scalar(id_k - id_i)
     return num / deno
 
 
@@ -79,15 +79,15 @@ def derive_pubshare_at(ids: List[int], pubshares: List[GE], x: int) -> GE:
     assert len(ids) == len(pubshares)
     assert not has_duplicates(ids)
     Q = GE()
-    for my_id, X_i in zip(ids, pubshares):
-        assert 0 <= my_id < 2**32
+    for id_i, X_i in zip(ids, pubshares):
+        assert 0 <= id_i < 2**32
         num = Scalar(1)
         deno = Scalar(1)
-        for curr_id in ids:
-            if curr_id == my_id:
+        for id_k in ids:
+            if id_k == id_i:
                 continue
-            num *= Scalar(x - curr_id)
-            deno *= Scalar(my_id - curr_id)
+            num *= Scalar(x - id_k)
+            deno *= Scalar(id_i - id_k)
         Q += (num / deno) * X_i
     return Q  # can be infinity
 
@@ -343,8 +343,8 @@ def validate_session_params(
         raise ValueError("The pubshares and ids lists must have the same length.")
     # ensure all pubshares and ids are within the valid range
     pubshare_points = []
-    for idx, i in enumerate(ids):
-        if not 0 <= i <= n - 1:
+    for idx, id_i in enumerate(ids):
+        if not 0 <= id_i <= n - 1:
             raise ValueError(f"The id at index {idx} must satisfy 0 <= id <= n - 1.")
         if pubshares is not None:
             try:
@@ -403,7 +403,7 @@ def serialize_ids(ids: List[int]) -> bytes:
 
 
 def sign(
-    secnonce: bytearray, secshare: bytes, my_id: int, session_ctx: SessionContext
+    secnonce: bytearray, secshare: bytes, signer_id: int, session_ctx: SessionContext
 ) -> bytes:
     (Q, gacc, _, ids, pubshares, b, R, e) = get_session_values(session_ctx)
     try:
@@ -425,14 +425,14 @@ def sign(
         raise ValueError("The secshare is out of range.")
     P = d_ * G
     assert not P.infinity
-    my_pubshare = P.to_bytes_compressed()
-    if my_id not in ids:
+    signer_pubshare = P.to_bytes_compressed()
+    if signer_id not in ids:
         raise ValueError("The signer's id is missing from the ids list.")
-    if pubshares is not None and pubshares[ids.index(my_id)] != my_pubshare:
+    if pubshares is not None and pubshares[ids.index(signer_id)] != signer_pubshare:
         raise ValueError(
             "The signer's pubshare does not match its entry in the pubshares list."
         )
-    a = derive_interpolating_value(ids, my_id)
+    a = derive_interpolating_value(ids, signer_id)
     g = Scalar(1) if Q.has_even_y() else Scalar(-1)
     d = g * gacc * d_
     s = k_1 + b * k_2 + e * a * d
@@ -443,13 +443,15 @@ def sign(
     assert not R2_partial.infinity
     pubnonce = R1_partial.to_bytes_compressed() + R2_partial.to_bytes_compressed()
     # Optional correctness check. The result of signing should pass signature verification.
-    assert partial_sig_verify_internal(psig, my_id, pubnonce, my_pubshare, session_ctx)
+    assert partial_sig_verify_internal(
+        psig, signer_id, pubnonce, signer_pubshare, session_ctx
+    )
     return psig
 
 
 def det_nonce_hash(
     masked_secshare: bytes,
-    my_id: int,
+    signer_id: int,
     ids: List[int],
     aggothernonce: bytes,
     tweaked_thresh_pk_xonly: bytes,
@@ -458,7 +460,7 @@ def det_nonce_hash(
 ) -> bytes:
     buf = b""
     buf += masked_secshare
-    buf += my_id.to_bytes(4, "big")
+    buf += signer_id.to_bytes(4, "big")
     buf += len(ids).to_bytes(4, "big")
     buf += serialize_ids(ids)
     buf += len(aggothernonce).to_bytes(1, "big")
@@ -472,7 +474,7 @@ def det_nonce_hash(
 
 def deterministic_sign(
     secshare: bytes,
-    my_id: int,
+    signer_id: int,
     aggothernonce: Optional[bytes],
     n: int,
     t: int,
@@ -515,12 +517,24 @@ def deterministic_sign(
 
     k_1 = Scalar.from_bytes_wrapping(
         det_nonce_hash(
-            masked_secshare, my_id, ids, aggothernonce_, tweaked_thresh_pk_xonly, msg, 0
+            masked_secshare,
+            signer_id,
+            ids,
+            aggothernonce_,
+            tweaked_thresh_pk_xonly,
+            msg,
+            0,
         )
     )
     k_2 = Scalar.from_bytes_wrapping(
         det_nonce_hash(
-            masked_secshare, my_id, ids, aggothernonce_, tweaked_thresh_pk_xonly, msg, 1
+            masked_secshare,
+            signer_id,
+            ids,
+            aggothernonce_,
+            tweaked_thresh_pk_xonly,
+            msg,
+            1,
         )
     )
     # k_1 == 0 or k_2 == 0 cannot occur except with negligible probability.
@@ -544,7 +558,7 @@ def deterministic_sign(
     session_ctx = SessionContext(
         n, t, ids, pubshares, thresh_pk, aggnonce, tweaks, is_xonly, msg
     )
-    psig = sign(secnonce, secshare, my_id, session_ctx)
+    psig = sign(secnonce, secshare, signer_id, session_ctx)
     return (pubnonce, psig)
 
 
@@ -581,7 +595,7 @@ def partial_sig_verify(
 
 def partial_sig_verify_internal(
     psig: bytes,
-    my_id: int,
+    signer_id: int,
     pubnonce: bytes,
     pubshare: bytes,
     session_ctx: SessionContext,
@@ -604,7 +618,7 @@ def partial_sig_verify_internal(
         P = GE.from_bytes_compressed(pubshare)
     except ValueError:
         return False
-    a = derive_interpolating_value(ids, my_id)
+    a = derive_interpolating_value(ids, signer_id)
     g = Scalar(1) if Q.has_even_y() else Scalar(-1)
     g_ = g * gacc
     return s * G == Re_s + (e * a * g_) * P

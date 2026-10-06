@@ -36,7 +36,7 @@ AGGNONCE_EXCEEDS_FIELD = bytes.fromhex(
 class SignVerifyGroupBuilder:
     """Builds one (t, n) test group for sign_verify_vectors.json.
 
-    Index convention: valid cases use secshare_index == secnonce_index == my_id, and
+    Index convention: valid cases use secshare_index == secnonce_index == signer_id, and
     verify-side cases use signer 0's material as the base partial signature."""
 
     def __init__(self, cfg):
@@ -69,7 +69,7 @@ class SignVerifyGroupBuilder:
 
     def _append_valid(
         self,
-        my_id: int,
+        signer_id: int,
         ids: List[int],
         pubshare_indices: Optional[List[int]],
         pubnonce_indices: List[int],
@@ -84,24 +84,24 @@ class SignVerifyGroupBuilder:
             else [self.inputs.pool_pubshares[i] for i in pubshare_indices]
         )
         pubnonces = [self.inputs.pool_pubnonces[i] for i in pubnonce_indices]
-        secnonce = bytearray(self.inputs.pool_secnonces[my_id])
+        secnonce = bytearray(self.inputs.pool_secnonces[signer_id])
         signer_set = (self.n, self.t, ids, pubshares, self.thresh_pk)
         session = SessionContext(*signer_set, aggnonce, [], [], msg)
-        psig = sign(secnonce, self.inputs.pool_secshares[my_id], my_id, session)
+        psig = sign(secnonce, self.inputs.pool_secshares[signer_id], signer_id, session)
         if pubshares is not None:
             verify_set = (self.n, self.t, ids, pubshares, self.thresh_pk)
             assert partial_sig_verify(
-                psig, pubnonces, *verify_set, [], [], msg, ids.index(my_id)
+                psig, pubnonces, *verify_set, [], [], msg, ids.index(signer_id)
             )
         self.group["valid_tests"].append(
             {
                 "comment": comment,
-                "my_id": my_id,
+                "signer_id": signer_id,
                 "ids": ids,
                 "pubshare_indices": pubshare_indices,
                 "pubnonce_indices": pubnonce_indices,
-                "secshare_index": my_id,
-                "secnonce_index": my_id,
+                "secshare_index": signer_id,
+                "secnonce_index": signer_id,
                 "aggnonce": bytes_to_hex(aggnonce),
                 "msg": bytes_to_hex(msg),
                 "expected": bytes_to_hex(psig),
@@ -111,7 +111,7 @@ class SignVerifyGroupBuilder:
 
     def _append_sign_error(
         self,
-        my_id: int,
+        signer_id: int,
         ids: List[int],
         pubshare_indices: Optional[List[int]],
         secshare_idx: int,
@@ -133,12 +133,12 @@ class SignVerifyGroupBuilder:
         session = SessionContext(*signer_set, aggnonce, [], [], msg)
         expected_exc = ValueError if error == "value" else InvalidContributionError
         err = expect_exception(
-            lambda: sign(secnonce, secshare, my_id, session), expected_exc
+            lambda: sign(secnonce, secshare, signer_id, session), expected_exc
         )
         self.group["sign_error_tests"].append(
             {
                 "comment": comment,
-                "my_id": my_id,
+                "signer_id": signer_id,
                 "ids": ids,
                 "pubshare_indices": pubshare_indices,
                 "secshare_index": secshare_idx,

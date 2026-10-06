@@ -28,7 +28,7 @@ INVALID_33_BYTE_TWEAK = bytes.fromhex(
 class TweakGroupBuilder:
     """Builds one (t, n) test group for tweak_vectors.json.
 
-    Index convention: valid cases use secshare_index == secnonce_index == my_id."""
+    Index convention: valid cases use secshare_index == secnonce_index == signer_id."""
 
     def __init__(self, cfg):
         self.inputs = SharedGroupInputs(cfg)
@@ -59,7 +59,7 @@ class TweakGroupBuilder:
 
     def _append_valid(
         self,
-        my_id: int,
+        signer_id: int,
         ids: List[int],
         pubshare_indices: List[int],
         pubnonce_indices: List[int],
@@ -71,10 +71,10 @@ class TweakGroupBuilder:
     ) -> None:
         pubshares = [self.inputs.pubshares[i] for i in pubshare_indices]
         tweaks = [self.tweaks_pool[i] for i in tweak_indices]
-        secnonce = bytearray(self.inputs.secnonces[my_id])
+        secnonce = bytearray(self.inputs.secnonces[signer_id])
         signer_set = (self.n, self.t, ids, pubshares, self.thresh_pk)
         session = SessionContext(*signer_set, aggnonce, tweaks, is_xonly, msg)
-        psig = sign(secnonce, self.inputs.secshares[my_id], my_id, session)
+        psig = sign(secnonce, self.inputs.secshares[signer_id], signer_id, session)
         assert partial_sig_verify(
             psig,
             [self.inputs.pubnonces[i] for i in pubnonce_indices],
@@ -82,17 +82,17 @@ class TweakGroupBuilder:
             tweaks,
             is_xonly,
             msg,
-            ids.index(my_id),
+            ids.index(signer_id),
         )
         self.group["valid_tests"].append(
             {
                 "comment": comment,
-                "my_id": my_id,
+                "signer_id": signer_id,
                 "ids": ids,
                 "pubshare_indices": pubshare_indices,
                 "pubnonce_indices": pubnonce_indices,
-                "secshare_index": my_id,
-                "secnonce_index": my_id,
+                "secshare_index": signer_id,
+                "secnonce_index": signer_id,
                 "aggnonce": bytes_to_hex(aggnonce),
                 "msg": bytes_to_hex(msg),
                 "tweak_indices": tweak_indices,
@@ -103,7 +103,7 @@ class TweakGroupBuilder:
 
     def _append_error(
         self,
-        my_id: int,
+        signer_id: int,
         ids: List[int],
         pubshare_indices: List[int],
         secshare_index: int,
@@ -121,12 +121,12 @@ class TweakGroupBuilder:
         signer_set = (self.n, self.t, ids, pubshares, self.thresh_pk)
         session = SessionContext(*signer_set, aggnonce, tweaks, is_xonly, msg)
         err = expect_exception(
-            lambda: sign(secnonce, secshare, my_id, session), ValueError
+            lambda: sign(secnonce, secshare, signer_id, session), ValueError
         )
         self.group["error_tests"].append(
             {
                 "comment": comment,
-                "my_id": my_id,
+                "signer_id": signer_id,
                 "ids": ids,
                 "pubshare_indices": pubshare_indices,
                 "secshare_index": secshare_index,
@@ -201,10 +201,10 @@ class TweakGroupBuilder:
 
     def add_error_tests(self) -> None:
         msg = COMMON_MSGS[0]
-        my_id = 0
+        signer_id = 0
 
         self._append_error(
-            my_id,
+            signer_id,
             self.min_s,
             self.min_s,
             0,
@@ -216,7 +216,7 @@ class TweakGroupBuilder:
             "Tweak equals the group order, which is out of range",
         )
         self._append_error(
-            my_id,
+            signer_id,
             self.min_s,
             self.min_s,
             0,
@@ -228,7 +228,7 @@ class TweakGroupBuilder:
             "Plain tweak drives the tweaked threshold public key to the point at infinity",
         )
         self._append_error(
-            my_id,
+            signer_id,
             self.min_s,
             self.min_s,
             0,
@@ -240,7 +240,7 @@ class TweakGroupBuilder:
             "Number of tweaks does not match the number of tweak modes",
         )
         self._append_error(
-            my_id,
+            signer_id,
             self.min_s,
             self.min_s,
             0,

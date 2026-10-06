@@ -38,7 +38,7 @@
                 {
                     "tc_id": 1,
                     "comment": "Single x-only tweak (used for BIP341 Taproot)",
-                    "my_id": 0,
+                    "signer_id": 0,
                     "ids": [0, 1],
                     "pubshare_indices": [0, 1],
                     "pubnonce_indices": [0, 1],
@@ -53,7 +53,7 @@
                 {
                     "tc_id": 2,
                     "comment": "Single plain tweak (used for BIP32 derivation)",
-                    "my_id": 0,
+                    "signer_id": 0,
                     "ids": [0, 1],
                     "pubshare_indices": [0, 1],
                     "pubnonce_indices": [0, 1],
@@ -68,7 +68,7 @@
                 {
                     "tc_id": 3,
                     "comment": "A plain tweak followed by an x-only tweak",
-                    "my_id": 0,
+                    "signer_id": 0,
                     "ids": [0, 1],
                     "pubshare_indices": [0, 1],
                     "pubnonce_indices": [0, 1],
@@ -83,7 +83,7 @@
                 {
                     "tc_id": 4,
                     "comment": "Four tweaks alternating x-only and plain",
-                    "my_id": 0,
+                    "signer_id": 0,
                     "ids": [0, 1],
                     "pubshare_indices": [0, 1],
                     "pubnonce_indices": [0, 1],
@@ -98,7 +98,7 @@
                 {
                     "tc_id": 5,
                     "comment": "Four tweaks: two plain followed by two x-only",
-                    "my_id": 1,
+                    "signer_id": 1,
                     "ids": [0, 1],
                     "pubshare_indices": [0, 1],
                     "pubnonce_indices": [0, 1],
@@ -115,7 +115,7 @@
                 {
                     "tc_id": 6,
                     "comment": "Tweak equals the group order, which is out of range",
-                    "my_id": 0,
+                    "signer_id": 0,
                     "ids": [0, 1],
                     "pubshare_indices": [0, 1],
                     "secshare_index": 0,
@@ -132,7 +132,7 @@
                 {
                     "tc_id": 7,
                     "comment": "Plain tweak drives the tweaked threshold public key to the point at infinity",
-                    "my_id": 0,
+                    "signer_id": 0,
                     "ids": [0, 1],
                     "pubshare_indices": [0, 1],
                     "secshare_index": 0,
@@ -149,7 +149,7 @@
                 {
                     "tc_id": 8,
                     "comment": "Number of tweaks does not match the number of tweak modes",
-                    "my_id": 0,
+                    "signer_id": 0,
                     "ids": [0, 1],
                     "pubshare_indices": [0, 1],
                     "secshare_index": 0,
@@ -166,7 +166,7 @@
                 {
                     "tc_id": 9,
                     "comment": "Tweak is not a 32-byte array",
-                    "my_id": 0,
+                    "signer_id": 0,
                     "ids": [0, 1],
                     "pubshare_indices": [0, 1],
                     "secshare_index": 0,
@@ -220,7 +220,7 @@
                 {
                     "tc_id": 10,
                     "comment": "Single x-only tweak (used for BIP341 Taproot)",
-                    "my_id": 0,
+                    "signer_id": 0,
                     "ids": [0],
                     "pubshare_indices": [0],
                     "pubnonce_indices": [0],
@@ -235,7 +235,7 @@
                 {
                     "tc_id": 11,
                     "comment": "Single plain tweak (used for BIP32 derivation)",
-                    "my_id": 0,
+                    "signer_id": 0,
                     "ids": [0],
                     "pubshare_indices": [0],
                     "pubnonce_indices": [0],
@@ -250,7 +250,7 @@
                 {
                     "tc_id": 12,
                     "comment": "A plain tweak followed by an x-only tweak",
-                    "my_id": 0,
+                    "signer_id": 0,
                     "ids": [0],
                     "pubshare_indices": [0],
                     "pubnonce_indices": [0],
@@ -265,7 +265,7 @@
                 {
                     "tc_id": 13,
                     "comment": "Four tweaks alternating x-only and plain",
-                    "my_id": 0,
+                    "signer_id": 0,
                     "ids": [0],
                     "pubshare_indices": [0],
                     "pubnonce_indices": [0],
@@ -280,7 +280,7 @@
                 {
                     "tc_id": 14,
                     "comment": "Four tweaks: two plain followed by two x-only",
-                    "my_id": 1,
+                    "signer_id": 1,
                     "ids": [0, 1],
                     "pubshare_indices": [0, 1],
                     "pubnonce_indices": [0, 1],
@@ -297,7 +297,7 @@
                 {
                     "tc_id": 15,
                     "comment": "Tweak equals the group order, which is out of range",
-                    "my_id": 0,
+                    "signer_id": 0,
                     "ids": [0],
                     "pubshare_indices": [0],
                     "secshare_index": 0,
@@ -314,7 +314,7 @@
                 {
                     "tc_id": 16,
                     "comment": "Plain tweak drives the tweaked threshold public key to the point at infinity",
-                    "my_id": 0,
+                    "signer_id": 0,
                     "ids": [0],
                     "pubshare_indices": [0],
                     "secshare_index": 0,
@@ -331,7 +331,7 @@
                 {
                     "tc_id": 17,
                     "comment": "Number of tweaks does not match the number of tweak modes",
-                    "my_id": 0,
+                    "signer_id": 0,
                     "ids": [0],
                     "pubshare_indices": [0],
                     "secshare_index": 0,
@@ -348,7 +348,7 @@
                 {
                     "tc_id": 18,
                     "comment": "Tweak is not a 32-byte array",
-                    "my_id": 0,
+                    "signer_id": 0,
                     "ids": [0],
                     "pubshare_indices": [0],
                     "secshare_index": 0,
@@ -402,7 +402,7 @@
                 {
                     "tc_id": 19,
                     "comment": "Single x-only tweak (used for BIP341 Taproot)",
-                    "my_id": 0,
+                    "signer_id": 0,
                     "ids": [0, 1, 2],
                     "pubshare_indices": [0, 1, 2],
                     "pubnonce_indices": [0, 1, 2],
@@ -417,7 +417,7 @@
                 {
                     "tc_id": 20,
                     "comment": "Single plain tweak (used for BIP32 derivation)",
-                    "my_id": 0,
+                    "signer_id": 0,
                     "ids": [0, 1, 2],
                     "pubshare_indices": [0, 1, 2],
                     "pubnonce_indices": [0, 1, 2],
@@ -432,7 +432,7 @@
                 {
                     "tc_id": 21,
                     "comment": "A plain tweak followed by an x-only tweak",
-                    "my_id": 0,
+                    "signer_id": 0,
                     "ids": [0, 1, 2],
                     "pubshare_indices": [0, 1, 2],
                     "pubnonce_indices": [0, 1, 2],
@@ -447,7 +447,7 @@
                 {
                     "tc_id": 22,
                     "comment": "Four tweaks alternating x-only and plain",
-                    "my_id": 0,
+                    "signer_id": 0,
                     "ids": [0, 1, 2],
                     "pubshare_indices": [0, 1, 2],
                     "pubnonce_indices": [0, 1, 2],
@@ -462,7 +462,7 @@
                 {
                     "tc_id": 23,
                     "comment": "Four tweaks: two plain followed by two x-only",
-                    "my_id": 1,
+                    "signer_id": 1,
                     "ids": [0, 1, 2],
                     "pubshare_indices": [0, 1, 2],
                     "pubnonce_indices": [0, 1, 2],
@@ -479,7 +479,7 @@
                 {
                     "tc_id": 24,
                     "comment": "Tweak equals the group order, which is out of range",
-                    "my_id": 0,
+                    "signer_id": 0,
                     "ids": [0, 1, 2],
                     "pubshare_indices": [0, 1, 2],
                     "secshare_index": 0,
@@ -496,7 +496,7 @@
                 {
                     "tc_id": 25,
                     "comment": "Plain tweak drives the tweaked threshold public key to the point at infinity",
-                    "my_id": 0,
+                    "signer_id": 0,
                     "ids": [0, 1, 2],
                     "pubshare_indices": [0, 1, 2],
                     "secshare_index": 0,
@@ -513,7 +513,7 @@
                 {
                     "tc_id": 26,
                     "comment": "Number of tweaks does not match the number of tweak modes",
-                    "my_id": 0,
+                    "signer_id": 0,
                     "ids": [0, 1, 2],
                     "pubshare_indices": [0, 1, 2],
                     "secshare_index": 0,
@@ -530,7 +530,7 @@
                 {
                     "tc_id": 27,
                     "comment": "Tweak is not a 32-byte array",
-                    "my_id": 0,
+                    "signer_id": 0,
                     "ids": [0, 1, 2],
                     "pubshare_indices": [0, 1, 2],
                     "secshare_index": 0,
@@ -592,7 +592,7 @@
                 {
                     "tc_id": 28,
                     "comment": "Single x-only tweak (used for BIP341 Taproot)",
-                    "my_id": 0,
+                    "signer_id": 0,
                     "ids": [0, 1, 2],
                     "pubshare_indices": [0, 1, 2],
                     "pubnonce_indices": [0, 1, 2],
@@ -607,7 +607,7 @@
                 {
                     "tc_id": 29,
                     "comment": "Single plain tweak (used for BIP32 derivation)",
-                    "my_id": 0,
+                    "signer_id": 0,
                     "ids": [0, 1, 2],
                     "pubshare_indices": [0, 1, 2],
                     "pubnonce_indices": [0, 1, 2],
@@ -622,7 +622,7 @@
                 {
                     "tc_id": 30,
                     "comment": "A plain tweak followed by an x-only tweak",
-                    "my_id": 0,
+                    "signer_id": 0,
                     "ids": [0, 1, 2],
                     "pubshare_indices": [0, 1, 2],
                     "pubnonce_indices": [0, 1, 2],
@@ -637,7 +637,7 @@
                 {
                     "tc_id": 31,
                     "comment": "Four tweaks alternating x-only and plain",
-                    "my_id": 0,
+                    "signer_id": 0,
                     "ids": [0, 1, 2],
                     "pubshare_indices": [0, 1, 2],
                     "pubnonce_indices": [0, 1, 2],
@@ -652,7 +652,7 @@
                 {
                     "tc_id": 32,
                     "comment": "Four tweaks: two plain followed by two x-only",
-                    "my_id": 1,
+                    "signer_id": 1,
                     "ids": [0, 1, 2],
                     "pubshare_indices": [0, 1, 2],
                     "pubnonce_indices": [0, 1, 2],
@@ -669,7 +669,7 @@
                 {
                     "tc_id": 33,
                     "comment": "Tweak equals the group order, which is out of range",
-                    "my_id": 0,
+                    "signer_id": 0,
                     "ids": [0, 1, 2],
                     "pubshare_indices": [0, 1, 2],
                     "secshare_index": 0,
@@ -686,7 +686,7 @@
                 {
                     "tc_id": 34,
                     "comment": "Plain tweak drives the tweaked threshold public key to the point at infinity",
-                    "my_id": 0,
+                    "signer_id": 0,
                     "ids": [0, 1, 2],
                     "pubshare_indices": [0, 1, 2],
                     "secshare_index": 0,
@@ -703,7 +703,7 @@
                 {
                     "tc_id": 35,
                     "comment": "Number of tweaks does not match the number of tweak modes",
-                    "my_id": 0,
+                    "signer_id": 0,
                     "ids": [0, 1, 2],
                     "pubshare_indices": [0, 1, 2],
                     "secshare_index": 0,
@@ -720,7 +720,7 @@
                 {
                     "tc_id": 36,
                     "comment": "Tweak is not a 32-byte array",
-                    "my_id": 0,
+                    "signer_id": 0,
                     "ids": [0, 1, 2],
                     "pubshare_indices": [0, 1, 2],
                     "secshare_index": 0,

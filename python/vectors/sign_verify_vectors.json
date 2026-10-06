@@ -38,7 +38,7 @@
                 {
                     "tc_id": 1,
                     "comment": "Minimum threshold subset of signers",
-                    "my_id": 0,
+                    "signer_id": 0,
                     "ids": [0, 1],
                     "pubshare_indices": [0, 1],
                     "pubnonce_indices": [0, 1],
@@ -51,7 +51,7 @@
                 {
                     "tc_id": 2,
                     "comment": "Signing without the public share list",
-                    "my_id": 0,
+                    "signer_id": 0,
                     "ids": [0, 1],
                     "pubshare_indices": null,
                     "pubnonce_indices": [0, 1],
@@ -64,7 +64,7 @@
                 {
                     "tc_id": 3,
                     "comment": "Signer set in descending order, so the identifiers must be sorted before hashing",
-                    "my_id": 1,
+                    "signer_id": 1,
                     "ids": [2, 1, 0],
                     "pubshare_indices": [2, 1, 0],
                     "pubnonce_indices": [2, 1, 0],
@@ -77,7 +77,7 @@
                 {
                     "tc_id": 4,
                     "comment": "A different threshold subset gives a different partial signature, since the Lagrange coefficients depend on the signer set",
-                    "my_id": 1,
+                    "signer_id": 1,
                     "ids": [1, 2],
                     "pubshare_indices": [1, 2],
                     "pubnonce_indices": [1, 2],
@@ -90,7 +90,7 @@
                 {
                     "tc_id": 5,
                     "comment": "Aggregate nonce is the point at infinity, so the final nonce point falls back to the generator G",
-                    "my_id": 0,
+                    "signer_id": 0,
                     "ids": [0, 1, 2],
                     "pubshare_indices": [0, 1, 2],
                     "pubnonce_indices": [0, 1, 4],
@@ -103,7 +103,7 @@
                 {
                     "tc_id": 6,
                     "comment": "Empty message",
-                    "my_id": 0,
+                    "signer_id": 0,
                     "ids": [0, 1],
                     "pubshare_indices": [0, 1],
                     "pubnonce_indices": [0, 1],
@@ -116,7 +116,7 @@
                 {
                     "tc_id": 7,
                     "comment": "Non-standard message length (38 bytes)",
-                    "my_id": 0,
+                    "signer_id": 0,
                     "ids": [0, 1],
                     "pubshare_indices": [0, 1],
                     "pubnonce_indices": [0, 1],
@@ -131,7 +131,7 @@
                 {
                     "tc_id": 8,
                     "comment": "Signer's id is absent from the signer set",
-                    "my_id": 2,
+                    "signer_id": 2,
                     "ids": [0, 1],
                     "pubshare_indices": null,
                     "secshare_index": 0,
@@ -146,7 +146,7 @@
                 {
                     "tc_id": 9,
                     "comment": "Signer set contains a duplicate id",
-                    "my_id": 0,
+                    "signer_id": 0,
                     "ids": [0, 1, 1],
                     "pubshare_indices": [0, 1, 1],
                     "secshare_index": 0,
@@ -161,7 +161,7 @@
                 {
                     "tc_id": 10,
                     "comment": "Signer's public share does not match the public share listed at its index",
-                    "my_id": 1,
+                    "signer_id": 1,
                     "ids": [0, 1],
                     "pubshare_indices": [0, 1],
                     "secshare_index": 0,
@@ -176,7 +176,7 @@
                 {
                     "tc_id": 11,
                     "comment": "A public share is not a valid point",
-                    "my_id": 0,
+                    "signer_id": 0,
                     "ids": [0, 1],
                     "pubshare_indices": [0, 3],
                     "secshare_index": 0,
@@ -191,7 +191,7 @@
                 {
                     "tc_id": 12,
                     "comment": "Public shares of the signer set interpolate to the point at infinity",
-                    "my_id": 0,
+                    "signer_id": 0,
                     "ids": [0, 1],
                     "pubshare_indices": [0, 4],
                     "secshare_index": 0,
@@ -206,7 +206,7 @@
                 {
                     "tc_id": 13,
                     "comment": "A signer id is outside the valid range [0, n-1]",
-                    "my_id": 1,
+                    "signer_id": 1,
                     "ids": [3, 1],
                     "pubshare_indices": null,
                     "secshare_index": 1,
@@ -221,7 +221,7 @@
                 {
                     "tc_id": 14,
                     "comment": "Signer set's public shares do not match the threshold public key",
-                    "my_id": 0,
+                    "signer_id": 0,
                     "ids": [0, 1, 2],
                     "pubshare_indices": [0, 2, 1],
                     "secshare_index": 0,
@@ -236,7 +236,7 @@
                 {
                     "tc_id": 15,
                     "comment": "Public share beyond the first t signers is inconsistent with the threshold public key",
-                    "my_id": 0,
+                    "signer_id": 0,
                     "ids": [0, 1, 2],
                     "pubshare_indices": [0, 1, 5],
                     "secshare_index": 0,
@@ -251,7 +251,7 @@
                 {
                     "tc_id": 16,
                     "comment": "Aggregate nonce is invalid: first half has an unknown tag 0x04",
-                    "my_id": 0,
+                    "signer_id": 0,
                     "ids": [0, 1],
                     "pubshare_indices": [0, 1],
                     "secshare_index": 0,
@@ -267,7 +267,7 @@
                 {
                     "tc_id": 17,
                     "comment": "Aggregate nonce is invalid: second half is not a point on the curve",
-                    "my_id": 0,
+                    "signer_id": 0,
                     "ids": [0, 1],
                     "pubshare_indices": [0, 1],
                     "secshare_index": 0,
@@ -283,7 +283,7 @@
                 {
                     "tc_id": 18,
                     "comment": "Aggregate nonce is invalid: second half's x-coordinate exceeds the field size",
-                    "my_id": 0,
+                    "signer_id": 0,
                     "ids": [0, 1],
                     "pubshare_indices": [0, 1],
                     "secshare_index": 0,
@@ -299,7 +299,7 @@
                 {
                     "tc_id": 19,
                     "comment": "Secret nonce's first half is out of range (all-zero nonce, which may indicate nonce reuse)",
-                    "my_id": 0,
+                    "signer_id": 0,
                     "ids": [0, 1],
                     "pubshare_indices": [0, 1],
                     "secshare_index": 0,
@@ -314,7 +314,7 @@
                 {
                     "tc_id": 20,
                     "comment": "Secret nonce's second half is out of range (zero)",
-                    "my_id": 0,
+                    "signer_id": 0,
                     "ids": [0, 1],
                     "pubshare_indices": [0, 1],
                     "secshare_index": 0,
@@ -329,7 +329,7 @@
                 {
                     "tc_id": 21,
                     "comment": "Secret nonce's first half is out of range (zero)",
-                    "my_id": 0,
+                    "signer_id": 0,
                     "ids": [0, 1],
                     "pubshare_indices": [0, 1],
                     "secshare_index": 0,
@@ -344,7 +344,7 @@
                 {
                     "tc_id": 22,
                     "comment": "Fewer signers than the threshold t",
-                    "my_id": 0,
+                    "signer_id": 0,
                     "ids": [0],
                     "pubshare_indices": null,
                     "secshare_index": 0,
@@ -359,7 +359,7 @@
                 {
                     "tc_id": 23,
                     "comment": "Secret share is out of range (zero)",
-                    "my_id": 0,
+                    "signer_id": 0,
                     "ids": [0, 1],
                     "pubshare_indices": [0, 1],
                     "secshare_index": 3,
@@ -474,7 +474,7 @@
                 {
                     "tc_id": 29,
                     "comment": "Minimum threshold subset of signers",
-                    "my_id": 0,
+                    "signer_id": 0,
                     "ids": [0],
                     "pubshare_indices": [0],
                     "pubnonce_indices": [0],
@@ -487,7 +487,7 @@
                 {
                     "tc_id": 30,
                     "comment": "Signing without the public share list",
-                    "my_id": 0,
+                    "signer_id": 0,
                     "ids": [0],
                     "pubshare_indices": null,
                     "pubnonce_indices": [0],
@@ -500,7 +500,7 @@
                 {
                     "tc_id": 31,
                     "comment": "Signer set in descending order, so the identifiers must be sorted before hashing",
-                    "my_id": 2,
+                    "signer_id": 2,
                     "ids": [2, 1],
                     "pubshare_indices": [2, 1],
                     "pubnonce_indices": [2, 1],
@@ -513,7 +513,7 @@
                 {
                     "tc_id": 32,
                     "comment": "Aggregate nonce is the point at infinity, so the final nonce point falls back to the generator G",
-                    "my_id": 0,
+                    "signer_id": 0,
                     "ids": [0, 1, 2],
                     "pubshare_indices": [0, 1, 2],
                     "pubnonce_indices": [0, 1, 4],
@@ -526,7 +526,7 @@
                 {
                     "tc_id": 33,
                     "comment": "Empty message",
-                    "my_id": 0,
+                    "signer_id": 0,
                     "ids": [0],
                     "pubshare_indices": [0],
                     "pubnonce_indices": [0],
@@ -539,7 +539,7 @@
                 {
                     "tc_id": 34,
                     "comment": "Non-standard message length (38 bytes)",
-                    "my_id": 0,
+                    "signer_id": 0,
                     "ids": [0],
                     "pubshare_indices": [0],
                     "pubnonce_indices": [0],
@@ -554,7 +554,7 @@
                 {
                     "tc_id": 35,
                     "comment": "Signer's id is absent from the signer set",
-                    "my_id": 1,
+                    "signer_id": 1,
                     "ids": [0],
                     "pubshare_indices": null,
                     "secshare_index": 0,
@@ -569,7 +569,7 @@
                 {
                     "tc_id": 36,
                     "comment": "Signer set contains a duplicate id",
-                    "my_id": 0,
+                    "signer_id": 0,
                     "ids": [0, 1, 1],
                     "pubshare_indices": [0, 1, 1],
                     "secshare_index": 0,
@@ -584,7 +584,7 @@
                 {
                     "tc_id": 37,
                     "comment": "A public share is not a valid point",
-                    "my_id": 0,
+                    "signer_id": 0,
                     "ids": [0, 1],
                     "pubshare_indices": [0, 3],
                     "secshare_index": 0,
@@ -599,7 +599,7 @@
                 {
                     "tc_id": 38,
                     "comment": "Public shares of the signer set interpolate to the point at infinity",
-                    "my_id": 0,
+                    "signer_id": 0,
                     "ids": [0, 1],
                     "pubshare_indices": [0, 4],
                     "secshare_index": 0,
@@ -614,7 +614,7 @@
                 {
                     "tc_id": 39,
                     "comment": "A signer id is outside the valid range [0, n-1]",
-                    "my_id": 0,
+                    "signer_id": 0,
                     "ids": [3],
                     "pubshare_indices": [0],
                     "secshare_index": 0,
@@ -629,7 +629,7 @@
                 {
                     "tc_id": 40,
                     "comment": "Public share beyond the first t signers is inconsistent with the threshold public key",
-                    "my_id": 0,
+                    "signer_id": 0,
                     "ids": [0, 1],
                     "pubshare_indices": [0, 5],
                     "secshare_index": 0,
@@ -644,7 +644,7 @@
                 {
                     "tc_id": 41,
                     "comment": "Aggregate nonce is invalid: first half has an unknown tag 0x04",
-                    "my_id": 0,
+                    "signer_id": 0,
                     "ids": [0],
                     "pubshare_indices": [0],
                     "secshare_index": 0,
@@ -660,7 +660,7 @@
                 {
                     "tc_id": 42,
                     "comment": "Aggregate nonce is invalid: second half is not a point on the curve",
-                    "my_id": 0,
+                    "signer_id": 0,
                     "ids": [0],
                     "pubshare_indices": [0],
                     "secshare_index": 0,
@@ -676,7 +676,7 @@
                 {
                     "tc_id": 43,
                     "comment": "Aggregate nonce is invalid: second half's x-coordinate exceeds the field size",
-                    "my_id": 0,
+                    "signer_id": 0,
                     "ids": [0],
                     "pubshare_indices": [0],
                     "secshare_index": 0,
@@ -692,7 +692,7 @@
                 {
                     "tc_id": 44,
                     "comment": "Secret nonce's first half is out of range (all-zero nonce, which may indicate nonce reuse)",
-                    "my_id": 0,
+                    "signer_id": 0,
                     "ids": [0],
                     "pubshare_indices": [0],
                     "secshare_index": 0,
@@ -707,7 +707,7 @@
                 {
                     "tc_id": 45,
                     "comment": "Secret nonce's second half is out of range (zero)",
-                    "my_id": 0,
+                    "signer_id": 0,
                     "ids": [0],
                     "pubshare_indices": [0],
                     "secshare_index": 0,
@@ -722,7 +722,7 @@
                 {
                     "tc_id": 46,
                     "comment": "Secret nonce's first half is out of range (zero)",
-                    "my_id": 0,
+                    "signer_id": 0,
                     "ids": [0],
                     "pubshare_indices": [0],
                     "secshare_index": 0,
@@ -737,7 +737,7 @@
                 {
                     "tc_id": 47,
                     "comment": "Fewer signers than the threshold t",
-                    "my_id": 0,
+                    "signer_id": 0,
                     "ids": [],
                     "pubshare_indices": [],
                     "secshare_index": 0,
@@ -752,7 +752,7 @@
                 {
                     "tc_id": 48,
                     "comment": "Secret share is out of range (zero)",
-                    "my_id": 0,
+                    "signer_id": 0,
                     "ids": [0],
                     "pubshare_indices": [0],
                     "secshare_index": 3,
@@ -867,7 +867,7 @@
                 {
                     "tc_id": 54,
                     "comment": "Minimum threshold subset of signers",
-                    "my_id": 0,
+                    "signer_id": 0,
                     "ids": [0, 1, 2],
                     "pubshare_indices": [0, 1, 2],
                     "pubnonce_indices": [0, 1, 2],
@@ -880,7 +880,7 @@
                 {
                     "tc_id": 55,
                     "comment": "Signing without the public share list",
-                    "my_id": 0,
+                    "signer_id": 0,
                     "ids": [0, 1, 2],
                     "pubshare_indices": null,
                     "pubnonce_indices": [0, 1, 2],
@@ -893,7 +893,7 @@
                 {
                     "tc_id": 56,
                     "comment": "Signer set in descending order, so the identifiers must be sorted before hashing",
-                    "my_id": 1,
+                    "signer_id": 1,
                     "ids": [2, 1, 0],
                     "pubshare_indices": [2, 1, 0],
                     "pubnonce_indices": [2, 1, 0],
@@ -906,7 +906,7 @@
                 {
                     "tc_id": 57,
                     "comment": "Aggregate nonce is the point at infinity, so the final nonce point falls back to the generator G",
-                    "my_id": 0,
+                    "signer_id": 0,
                     "ids": [0, 1, 2],
                     "pubshare_indices": [0, 1, 2],
                     "pubnonce_indices": [0, 1, 4],
@@ -919,7 +919,7 @@
                 {
                     "tc_id": 58,
                     "comment": "Empty message",
-                    "my_id": 0,
+                    "signer_id": 0,
                     "ids": [0, 1, 2],
                     "pubshare_indices": [0, 1, 2],
                     "pubnonce_indices": [0, 1, 2],
@@ -932,7 +932,7 @@
                 {
                     "tc_id": 59,
                     "comment": "Non-standard message length (38 bytes)",
-                    "my_id": 0,
+                    "signer_id": 0,
                     "ids": [0, 1, 2],
                     "pubshare_indices": [0, 1, 2],
                     "pubnonce_indices": [0, 1, 2],
@@ -947,7 +947,7 @@
                 {
                     "tc_id": 60,
                     "comment": "Signer set contains a duplicate id",
-                    "my_id": 0,
+                    "signer_id": 0,
                     "ids": [0, 1, 1],
                     "pubshare_indices": [0, 1, 1],
                     "secshare_index": 0,
@@ -962,7 +962,7 @@
                 {
                     "tc_id": 61,
                     "comment": "Signer's public share does not match the public share listed at its index",
-                    "my_id": 1,
+                    "signer_id": 1,
                     "ids": [0, 1, 2],
                     "pubshare_indices": [0, 1, 2],
                     "secshare_index": 0,
@@ -977,7 +977,7 @@
                 {
                     "tc_id": 62,
                     "comment": "A public share is not a valid point",
-                    "my_id": 0,
+                    "signer_id": 0,
                     "ids": [0, 1, 2],
                     "pubshare_indices": [0, 3, 2],
                     "secshare_index": 0,
@@ -992,7 +992,7 @@
                 {
                     "tc_id": 63,
                     "comment": "Public shares of the signer set interpolate to the point at infinity",
-                    "my_id": 0,
+                    "signer_id": 0,
                     "ids": [0, 1, 2],
                     "pubshare_indices": [0, 1, 4],
                     "secshare_index": 0,
@@ -1007,7 +1007,7 @@
                 {
                     "tc_id": 64,
                     "comment": "A signer id is outside the valid range [0, n-1]",
-                    "my_id": 1,
+                    "signer_id": 1,
                     "ids": [3, 1, 2],
                     "pubshare_indices": null,
                     "secshare_index": 1,
@@ -1022,7 +1022,7 @@
                 {
                     "tc_id": 65,
                     "comment": "Signer set's public shares do not match the threshold public key",
-                    "my_id": 0,
+                    "signer_id": 0,
                     "ids": [0, 1, 2],
                     "pubshare_indices": [0, 2, 1],
                     "secshare_index": 0,
@@ -1037,7 +1037,7 @@
                 {
                     "tc_id": 66,
                     "comment": "Aggregate nonce is invalid: first half has an unknown tag 0x04",
-                    "my_id": 0,
+                    "signer_id": 0,
                     "ids": [0, 1, 2],
                     "pubshare_indices": [0, 1, 2],
                     "secshare_index": 0,
@@ -1053,7 +1053,7 @@
                 {
                     "tc_id": 67,
                     "comment": "Aggregate nonce is invalid: second half is not a point on the curve",
-                    "my_id": 0,
+                    "signer_id": 0,
                     "ids": [0, 1, 2],
                     "pubshare_indices": [0, 1, 2],
                     "secshare_index": 0,
@@ -1069,7 +1069,7 @@
                 {
                     "tc_id": 68,
                     "comment": "Aggregate nonce is invalid: second half's x-coordinate exceeds the field size",
-                    "my_id": 0,
+                    "signer_id": 0,
                     "ids": [0, 1, 2],
                     "pubshare_indices": [0, 1, 2],
                     "secshare_index": 0,
@@ -1085,7 +1085,7 @@
                 {
                     "tc_id": 69,
                     "comment": "Secret nonce's first half is out of range (all-zero nonce, which may indicate nonce reuse)",
-                    "my_id": 0,
+                    "signer_id": 0,
                     "ids": [0, 1, 2],
                     "pubshare_indices": [0, 1, 2],
                     "secshare_index": 0,
@@ -1100,7 +1100,7 @@
                 {
                     "tc_id": 70,
                     "comment": "Secret nonce's second half is out of range (zero)",
-                    "my_id": 0,
+                    "signer_id": 0,
                     "ids": [0, 1, 2],
                     "pubshare_indices": [0, 1, 2],
                     "secshare_index": 0,
@@ -1115,7 +1115,7 @@
                 {
                     "tc_id": 71,
                     "comment": "Secret nonce's first half is out of range (zero)",
-                    "my_id": 0,
+                    "signer_id": 0,
                     "ids": [0, 1, 2],
                     "pubshare_indices": [0, 1, 2],
                     "secshare_index": 0,
@@ -1130,7 +1130,7 @@
                 {
                     "tc_id": 72,
                     "comment": "Fewer signers than the threshold t",
-                    "my_id": 0,
+                    "signer_id": 0,
                     "ids": [0, 1],
                     "pubshare_indices": null,
                     "secshare_index": 0,
@@ -1145,7 +1145,7 @@
                 {
                     "tc_id": 73,
                     "comment": "Secret share is out of range (zero)",
-                    "my_id": 0,
+                    "signer_id": 0,
                     "ids": [0, 1, 2],
                     "pubshare_indices": [0, 1, 2],
                     "secshare_index": 3,
@@ -1268,7 +1268,7 @@
                 {
                     "tc_id": 79,
                     "comment": "Minimum threshold subset of signers",
-                    "my_id": 0,
+                    "signer_id": 0,
                     "ids": [0, 1, 2],
                     "pubshare_indices": [0, 1, 2],
                     "pubnonce_indices": [0, 1, 2],
@@ -1281,7 +1281,7 @@
                 {
                     "tc_id": 80,
                     "comment": "Signing without the public share list",
-                    "my_id": 0,
+                    "signer_id": 0,
                     "ids": [0, 1, 2],
                     "pubshare_indices": null,
                     "pubnonce_indices": [0, 1, 2],
@@ -1294,7 +1294,7 @@
                 {
                     "tc_id": 81,
                     "comment": "Signer set in descending order, so the identifiers must be sorted before hashing",
-                    "my_id": 2,
+                    "signer_id": 2,
                     "ids": [4, 3, 2, 1],
                     "pubshare_indices": [4, 3, 2, 1],
                     "pubnonce_indices": [4, 3, 2, 1],
@@ -1307,7 +1307,7 @@
                 {
                     "tc_id": 82,
                     "comment": "A different threshold subset gives a different partial signature, since the Lagrange coefficients depend on the signer set",
-                    "my_id": 1,
+                    "signer_id": 1,
                     "ids": [1, 3, 4],
                     "pubshare_indices": [1, 3, 4],
                     "pubnonce_indices": [1, 3, 4],
@@ -1320,7 +1320,7 @@
                 {
                     "tc_id": 83,
                     "comment": "Aggregate nonce is the point at infinity, so the final nonce point falls back to the generator G",
-                    "my_id": 0,
+                    "signer_id": 0,
                     "ids": [0, 1, 2, 3, 4],
                     "pubshare_indices": [0, 1, 2, 3, 4],
                     "pubnonce_indices": [0, 1, 2, 3, 6],
@@ -1333,7 +1333,7 @@
                 {
                     "tc_id": 84,
                     "comment": "Empty message",
-                    "my_id": 0,
+                    "signer_id": 0,
                     "ids": [0, 1, 2],
                     "pubshare_indices": [0, 1, 2],
                     "pubnonce_indices": [0, 1, 2],
@@ -1346,7 +1346,7 @@
                 {
                     "tc_id": 85,
                     "comment": "Non-standard message length (38 bytes)",
-                    "my_id": 0,
+                    "signer_id": 0,
                     "ids": [0, 1, 2],
                     "pubshare_indices": [0, 1, 2],
                     "pubnonce_indices": [0, 1, 2],
@@ -1361,7 +1361,7 @@
                 {
                     "tc_id": 86,
                     "comment": "Signer's id is absent from the signer set",
-                    "my_id": 3,
+                    "signer_id": 3,
                     "ids": [0, 1, 2],
                     "pubshare_indices": null,
                     "secshare_index": 0,
@@ -1376,7 +1376,7 @@
                 {
                     "tc_id": 87,
                     "comment": "Signer set contains a duplicate id",
-                    "my_id": 0,
+                    "signer_id": 0,
                     "ids": [0, 1, 1],
                     "pubshare_indices": [0, 1, 1],
                     "secshare_index": 0,
@@ -1391,7 +1391,7 @@
                 {
                     "tc_id": 88,
                     "comment": "Signer's public share does not match the public share listed at its index",
-                    "my_id": 1,
+                    "signer_id": 1,
                     "ids": [0, 1, 2],
                     "pubshare_indices": [0, 1, 2],
                     "secshare_index": 0,
@@ -1406,7 +1406,7 @@
                 {
                     "tc_id": 89,
                     "comment": "A public share is not a valid point",
-                    "my_id": 0,
+                    "signer_id": 0,
                     "ids": [0, 1, 2],
                     "pubshare_indices": [0, 5, 2],
                     "secshare_index": 0,
@@ -1421,7 +1421,7 @@
                 {
                     "tc_id": 90,
                     "comment": "Public shares of the signer set interpolate to the point at infinity",
-                    "my_id": 0,
+                    "signer_id": 0,
                     "ids": [0, 1, 2],
                     "pubshare_indices": [0, 1, 6],
                     "secshare_index": 0,
@@ -1436,7 +1436,7 @@
                 {
                     "tc_id": 91,
                     "comment": "A signer id is outside the valid range [0, n-1]",
-                    "my_id": 1,
+                    "signer_id": 1,
                     "ids": [5, 1, 2],
                     "pubshare_indices": null,
                     "secshare_index": 1,
@@ -1451,7 +1451,7 @@
                 {
                     "tc_id": 92,
                     "comment": "Signer set's public shares do not match the threshold public key",
-                    "my_id": 0,
+                    "signer_id": 0,
                     "ids": [0, 1, 2, 3],
                     "pubshare_indices": [0, 1, 3, 2],
                     "secshare_index": 0,
@@ -1466,7 +1466,7 @@
                 {
                     "tc_id": 93,
                     "comment": "Public share beyond the first t signers is inconsistent with the threshold public key",
-                    "my_id": 0,
+                    "signer_id": 0,
                     "ids": [0, 1, 2, 3],
                     "pubshare_indices": [0, 1, 2, 7],
                     "secshare_index": 0,
@@ -1481,7 +1481,7 @@
                 {
                     "tc_id": 94,
                     "comment": "Aggregate nonce is invalid: first half has an unknown tag 0x04",
-                    "my_id": 0,
+                    "signer_id": 0,
                     "ids": [0, 1, 2],
                     "pubshare_indices": [0, 1, 2],
                     "secshare_index": 0,
@@ -1497,7 +1497,7 @@
                 {
                     "tc_id": 95,
                     "comment": "Aggregate nonce is invalid: second half is not a point on the curve",
-                    "my_id": 0,
+                    "signer_id": 0,
                     "ids": [0, 1, 2],
                     "pubshare_indices": [0, 1, 2],
                     "secshare_index": 0,
@@ -1513,7 +1513,7 @@
                 {
                     "tc_id": 96,
                     "comment": "Aggregate nonce is invalid: second half's x-coordinate exceeds the field size",
-                    "my_id": 0,
+                    "signer_id": 0,
                     "ids": [0, 1, 2],
                     "pubshare_indices": [0, 1, 2],
                     "secshare_index": 0,
@@ -1529,7 +1529,7 @@
                 {
                     "tc_id": 97,
                     "comment": "Secret nonce's first half is out of range (all-zero nonce, which may indicate nonce reuse)",
-                    "my_id": 0,
+                    "signer_id": 0,
                     "ids": [0, 1, 2],
                     "pubshare_indices": [0, 1, 2],
                     "secshare_index": 0,
@@ -1544,7 +1544,7 @@
                 {
                     "tc_id": 98,
                     "comment": "Secret nonce's second half is out of range (zero)",
-                    "my_id": 0,
+                    "signer_id": 0,
                     "ids": [0, 1, 2],
                     "pubshare_indices": [0, 1, 2],
                     "secshare_index": 0,
@@ -1559,7 +1559,7 @@
                 {
                     "tc_id": 99,
                     "comment": "Secret nonce's first half is out of range (zero)",
-                    "my_id": 0,
+                    "signer_id": 0,
                     "ids": [0, 1, 2],
                     "pubshare_indices": [0, 1, 2],
                     "secshare_index": 0,
@@ -1574,7 +1574,7 @@
                 {
                     "tc_id": 100,
                     "comment": "Fewer signers than the threshold t",
-                    "my_id": 0,
+                    "signer_id": 0,
                     "ids": [0, 1],
                     "pubshare_indices": null,
                     "secshare_index": 0,
@@ -1589,7 +1589,7 @@
                 {
                     "tc_id": 101,
                     "comment": "Secret share is out of range (zero)",
-                    "my_id": 0,
+                    "signer_id": 0,
                     "ids": [0, 1, 2],
                     "pubshare_indices": [0, 1, 2],
                     "secshare_index": 5,

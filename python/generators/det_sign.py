@@ -45,7 +45,7 @@ AGGOTHERNONCE_EXCEEDS_FIELD = bytes.fromhex(
 class DetSignGroupBuilder:
     """Builds one (t, n) test group for det_sign_vectors.json.
 
-    Index convention: valid cases use secshare_index == my_id."""
+    Index convention: valid cases use secshare_index == signer_id."""
 
     def __init__(self, cfg):
         self.inputs = SharedGroupInputs(cfg)
@@ -69,24 +69,24 @@ class DetSignGroupBuilder:
     def _derive_aggothernonce(
         self,
         ids_set: List[int],
-        my_id: int,
+        signer_id: int,
         msg: bytes,
         aux_rand: Optional[bytes],
     ) -> Optional[bytes]:
         """Return None when u <= 1 (aggothernonce is omitted iff u = 1), else the
         aggregate of the other signers' public nonces. Keying on u rather than on
-        my_id's membership keeps the u = 1 error cases reaching the check they test."""
+        signer_id's membership keeps the u = 1 error cases reaching the check they test."""
         if len(ids_set) <= 1:
             return None
         tmp = b"" if aux_rand is None else aux_rand
         other_pubnonces = []
-        for pid in ids_set:
-            if pid == my_id:
+        for id_k in ids_set:
+            if id_k == signer_id:
                 continue
             _, pub = nonce_gen_internal(
                 tmp,
-                self.inputs.pool_secshares[pid],
-                self.inputs.pool_pubshares[pid],
+                self.inputs.pool_secshares[id_k],
+                self.inputs.pool_pubshares[id_k],
                 self.inputs.xonly_thresh_pk,
                 msg,
                 None,
@@ -96,7 +96,7 @@ class DetSignGroupBuilder:
 
     def _append_valid(
         self,
-        my_id: int,
+        signer_id: int,
         ids: List[int],
         pubshare_indices: Optional[List[int]],
         aux_rand: Optional[bytes],
@@ -105,7 +105,7 @@ class DetSignGroupBuilder:
         is_xonly: List[bool],
         comment: str,
     ) -> Tuple[bytes, bytes]:
-        curr_aggothernonce = self._derive_aggothernonce(ids, my_id, msg, aux_rand)
+        curr_aggothernonce = self._derive_aggothernonce(ids, signer_id, msg, aux_rand)
         # A null pubshare_indices is a session whose public share list is absent.
         pubshares = (
             None
@@ -113,10 +113,10 @@ class DetSignGroupBuilder:
             else [self.inputs.pool_pubshares[i] for i in pubshare_indices]
         )
         signer_set = (self.n, self.t, ids, pubshares, self.thresh_pk)
-        secshare = self.inputs.pool_secshares[my_id]
+        secshare = self.inputs.pool_secshares[signer_id]
         result = deterministic_sign(
             secshare,
-            my_id,
+            signer_id,
             curr_aggothernonce,
             *signer_set,
             tweaks,
@@ -127,10 +127,10 @@ class DetSignGroupBuilder:
         self.group["valid_tests"].append(
             {
                 "comment": comment,
-                "my_id": my_id,
+                "signer_id": signer_id,
                 "ids": ids,
                 "pubshare_indices": pubshare_indices,
-                "secshare_index": my_id,
+                "secshare_index": signer_id,
                 "aggothernonce": bytes_to_hex(curr_aggothernonce)
                 if curr_aggothernonce is not None
                 else None,
@@ -145,7 +145,7 @@ class DetSignGroupBuilder:
 
     def _append_error(
         self,
-        my_id: int,
+        signer_id: int,
         ids: List[int],
         pubshare_indices: Optional[List[int]],
         secshare_index: int,
@@ -164,7 +164,9 @@ class DetSignGroupBuilder:
         elif aggothernonce is not None:
             curr_aggothernonce = aggothernonce
         else:
-            curr_aggothernonce = self._derive_aggothernonce(ids, my_id, msg, aux_rand)
+            curr_aggothernonce = self._derive_aggothernonce(
+                ids, signer_id, msg, aux_rand
+            )
         pubshares = (
             None
             if pubshare_indices is None
@@ -176,7 +178,7 @@ class DetSignGroupBuilder:
         err = expect_exception(
             lambda: deterministic_sign(
                 secshare,
-                my_id,
+                signer_id,
                 curr_aggothernonce,
                 *signer_set,
                 tweaks,
@@ -189,7 +191,7 @@ class DetSignGroupBuilder:
         self.group["error_tests"].append(
             {
                 "comment": comment,
-                "my_id": my_id,
+                "signer_id": signer_id,
                 "ids": ids,
                 "pubshare_indices": pubshare_indices,
                 "secshare_index": secshare_index,

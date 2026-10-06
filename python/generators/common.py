@@ -141,9 +141,9 @@ def generate_all_nonces(rand, secshares, pubshares, xonly_thresh_pk, msg=None):
 def reconstruct_thresh_sk(ids, secshares):
     assert len(ids) == len(secshares)
     result = Scalar(0)
-    for i, s in zip(ids, secshares):
+    for id_i, s in zip(ids, secshares):
         result = result + derive_interpolating_value(
-            ids, i
+            ids, id_i
         ) * Scalar.from_bytes_checked(s)
     return result
 
@@ -210,7 +210,9 @@ class SharedGroupInputs:
         # zero) that makes the min2 signer set interpolate to the point at infinity.
         min2_ids = list(range(max(t, 2)))
         lam_last = derive_interpolating_value(min2_ids, min2_ids[-1])
-        thresh_sk = reconstruct_thresh_sk(min2_ids, [secshares[i] for i in min2_ids])
+        thresh_sk = reconstruct_thresh_sk(
+            min2_ids, [secshares[id_i] for id_i in min2_ids]
+        )
         cancel_sk = (
             Scalar.from_bytes_checked(secshares[min2_ids[-1]]) - thresh_sk / lam_last
         )
