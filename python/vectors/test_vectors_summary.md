@@ -35,9 +35,9 @@ Within each shared input, entry `i` holds the value for the signer whose id is
 belong to signer `i`, for the `n` real signers in a `test_group`. A few
 deliberately bad or out-of-range entries sit after those.
 
-A valid case points each index straight at its matching signer, so its
-`pubshare_indices` and `pubnonce_indices` just track its `ids` (signer `1`
-reads index `1`, and so on). An error case breaks that pattern on purpose,
+A valid case normally points each index straight at its matching signer, so
+its `pubshare_indices` and `pubnonce_indices` just track its `ids` (signer
+`1` reads index `1`, and so on). An error case breaks that pattern on purpose,
 either pointing an index at one of the appended bad entries or mixing the
 indices up, to trigger the failure it's testing.
 
@@ -55,14 +55,15 @@ A few things stay out of that scheme:
   is absent: the signers know the threshold public key and who is signing, but
   not each other's public shares. Signing, deterministic signing and
   aggregation all work without them, and each of those cases produces exactly
-  the same bytes as the case before it, which does carry them.
+  the same bytes as the case before it, which does carry them. Some
+  `sign` and `deterministic_sign` error cases omit the list too.
   `partial_sig_verify` is the one algorithm that cannot run without the list,
   so it takes the list as a required argument and no case omits it there.
 - `tweaks` and `is_xonly` are parallel lists: position `k` in `is_xonly` says
   whether tweak `k` is x-only. They mirror the API, which takes the two as
-  separate arguments. `tweak_vectors` keeps its tweak values in a shared input
-  and selects them with `tweak_indices`, while `det_sign` inlines its `tweaks`
-  list directly in the case.
+  separate arguments. `tweak_vectors` and `sig_agg_vectors` keep their tweak
+  values in a shared input and select them with `tweak_indices`, while
+  `det_sign` inlines its `tweaks` list directly in the case.
 - A case's expected output stays inline, in its `expected` field.
 
 `nonce_gen` and `nonce_agg` skip the `test_groups` wrapper. `nonce_gen` is
@@ -79,22 +80,24 @@ is generated independently, so it has its own `t`, `n`, `thresh_pk`, and `n`
 real signers with identifiers `0 .. n - 1`. The examples elsewhere in this
 document use the `2-of-3` group.
 
-In every signing file's group, one bogus public share and an out-of-range
-identifier (the value `n`) are appended after the real signers, but only error
-cases use them to trigger "invalid public share" and out-of-range-id failures,
-so don't treat them as valid signers.
+In the `sign_verify` and `det_sign` groups, a few bogus public shares and an
+out-of-range identifier (the value `n`) are appended after the real signers,
+but only error cases use them to trigger public share and out-of-range-id
+failures, so don't treat them as valid signers.
 
-Valid cases exercise different threshold-sized subsets of the group's `n`
-signers, so the `ids` list varies from case to case: a single signer in the
-`1-of-3` group, three of five in `3-of-5`, and subsets like `[0, 1]`, `[1, 0]`,
-`[0, 2]`, or the full `[0, 1, 2]` in the `n = 3` groups.
+Valid cases exercise different subsets of the group's `n` signers, from `t`
+signers up to all `n`, so the `ids` list varies from case to case: a single
+signer in the `1-of-3` group, three of five in `3-of-5`, and subsets like
+`[0, 1]`, `[1, 2]`, the descending `[2, 1, 0]`, or the full `[0, 1, 2]` in
+the `n = 3` groups.
 
 The `secshares` and `secnonces` shared inputs carry the real secret material
 for the group's `n` signers at indices `0 .. n - 1`, signer-aligned like the
-public ones. After those, a few deliberately bad entries are appended that
-only the error cases select: a zero secret share, an all-zero secret nonce,
-and a secret nonce whose second half is zero. Each case's `secshare_index` and
-`secnonce_index` pick out the secret material for the signer it signs as.
+public ones. In `sign_verify` and `det_sign`, a few deliberately bad entries
+are appended after those that only the error cases select: a zero secret
+share, an all-zero secret nonce, and secret nonces whose first or second half
+is zero. Each case's `secshare_index` and `secnonce_index` pick out the secret
+material for the signer it signs as.
 
 ## Case kinds
 

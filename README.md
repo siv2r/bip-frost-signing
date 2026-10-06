@@ -7,7 +7,7 @@
   Assigned: 2026-01-30
   License: CC0-1.0
   Discussion: 2024-07-31: https://groups.google.com/g/bitcoindev/c/PeMp2HQl-H4/m/AcJtK0aKAwAJ
-  Version: 0.11.0
+  Version: 0.11.1
   Requires: 340
 ```
 
@@ -879,6 +879,7 @@ This document proposes a standard for the FROST threshold signature scheme that 
 
 ## Changelog
 
+- *0.11.1* (2026-10-06): Improve test vector coverage.
 - *0.11.0* (2026-10-01): In *DeterministicSign*, derive the nonce from the possibly negated secret share instead of the raw *secshare*, and prefix *aggothernonce* with its length in the nonce hash input. The affected test vectors were regenerated.
 - *0.10.0* (2026-08-26): Tighten the upper bound on the total number of participants *n* from *2<sup>32</sup> - 1* to *128*, the range in which the LDVR problem is provably hard.
 - *0.9.0* (2026-08-18): Introduces the following changes:
