@@ -493,7 +493,7 @@ Algorithm *NonceAgg(pubnonce<sub>1..u</sub>)*:
   - The list of signers' public nonces *pubnonce<sub>1..u</sub>*: *u* 66-byte arrays, each an output of *NonceGen*
 - For *j = 1 .. 2*:
   - For *i = 1 .. u*:
-    - Let *R<sub>i,j</sub> = cpoint(pubnonce<sub>i</sub>[(j-1)\*33:j\*33])*; fail if that fails and blame signer at index *i* for invalid *pubnonce*
+    - Let *R<sub>i,j</sub> = cpoint(pubnonce<sub>i</sub>[(j-1)\*33:j\*33])*; fail if that fails and blame the signer at index *i* for invalid *pubnonce*
   - Let *R<sub>j</sub> = R<sub>1,j</sub> + R<sub>2,j</sub> + ... + R<sub>u,j</sub>*
 - Return *aggnonce = cbytes_ext(R<sub>1</sub>) || cbytes_ext(R<sub>2</sub>)*
 
@@ -538,7 +538,7 @@ Algorithm *GetSessionValues(session_ctx)*:
 - Let *ser_ids* = *SerializeIds(id<sub>1..u</sub>)*
 - Let *b* = *scalar_from_bytes_wrapping(hash<sub>BIP0445/noncecoef</sub>(bytes(4, u) || ser_ids || aggnonce || xbytes(Q) || m))*
 - Fail if *b = Scalar(0)*[^negligible-zero-scalar]
-- Let *R<sub>1</sub> = cpoint_ext(aggnonce[0:33]), R<sub>2</sub> = cpoint_ext(aggnonce[33:66])*; fail if that fails and blame the coordinator for invalid *aggnonce*.
+- Let *R<sub>1</sub> = cpoint_ext(aggnonce[0:33]), R<sub>2</sub> = cpoint_ext(aggnonce[33:66])*; fail if that fails and blame the coordinator for invalid *aggnonce*
 - Let *R' = R<sub>1</sub> + b &middot; R<sub>2</sub>*
 - If *is_infinity(R'):*
   - Let final nonce *R = G* ([see Dealing with Infinity in Nonce Aggregation](#dealing-with-infinity-in-nonce-aggregation))
@@ -648,7 +648,7 @@ Algorithm *PartialSigAgg(psig<sub>1..u</sub>, session_ctx)*:
   - The *session_ctx*: a [Session Context](#session-context) data structure
 - Let *(Q, _, tacc, _, _, _, R, e) = GetSessionValues(session_ctx)*; fail if that fails
 - For *i = 1 .. u*:
-  - Let *s<sub>i</sub> = scalar_from_bytes_checked(psig<sub>i</sub>)*; fail if that fails and blame signer at index *i* for invalid partial signature.
+  - Let *s<sub>i</sub> = scalar_from_bytes_checked(psig<sub>i</sub>)*; fail if that fails and blame the signer at index *i* for invalid *psig*
 - Let *g = Scalar(1)* if *has_even_y(Q)*, otherwise let *g = Scalar(-1)*
 - Let *s = s<sub>1</sub> + ... + s<sub>u</sub> + e &middot; g &middot; tacc &ensp;(mod ord)*
 - Return *sig = xbytes(R) || scalar_to_bytes(s)*
@@ -729,7 +729,7 @@ Algorithm *DeterministicSign(secshare, my_id, aggothernonce, n, t, id<sub>1..u</
 - Let *pubnonce = cbytes(R<sub>\*,1</sub>) || cbytes(R<sub>\*,2</sub>)*
 - Let *secnonce = scalar_to_bytes(k<sub>1</sub>) || scalar_to_bytes(k<sub>2</sub>)*
 - If the optional argument *aggothernonce* is present:
-  - Let *aggnonce = NonceAgg((pubnonce, aggothernonce))*; fail if that fails and blame coordinator for invalid *aggothernonce*.
+  - Let *aggnonce = NonceAgg((pubnonce, aggothernonce))*; fail if that fails and blame the coordinator for invalid *aggothernonce*
 - Else:
   - Let *aggnonce = pubnonce*
 - Let *session_ctx = (n, t, u, id<sub>1..u</sub>, pubshare<sub>1..u</sub>, thresh_pk, aggnonce, v, tweak<sub>1..v</sub>, is_xonly_t<sub>1..v</sub>, m)*

@@ -11,7 +11,7 @@
     "valid_tests": [
         {
             "tc_id": 1,
-            "comment": "valid public nonces",
+            "comment": "Valid public nonces from all signers",
             "pubnonce_indices": [0, 1, 2],
             "expected": "0299B7BDEFF8E0ABBE203D1E3D1DDFD8E6D1CBE500C5DB2BD5CD791CF0F369528B034A44265752E52B8D4F526265402CB367E00792FE1C9C09BDF1FFD840CC5B2B73"
         },

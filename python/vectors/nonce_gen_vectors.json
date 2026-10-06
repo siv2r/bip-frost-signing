@@ -72,7 +72,7 @@
         },
         {
             "tc_id": 6,
-            "comment": "Non-standard extra_in length (33 bytes)",
+            "comment": "Extra input of non-standard length (33 bytes)",
             "rand": "0F0F0F0F0F0F0F0F0F0F0F0F0F0F0F0F0F0F0F0F0F0F0F0F0F0F0F0F0F0F0F0F",
             "secshare": "53442FA9BD72EEA0A42DF6F2D2D76A2C0D3A3DFA2BE2F820F41ADE976B8259FB",
             "pubshare": "039EE3335AF48DFE23702AB353F4AF20D401F67A130DF783CC8457323A860A2FB4",

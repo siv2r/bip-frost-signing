@@ -130,7 +130,7 @@
             "sign_error_tests": [
                 {
                     "tc_id": 8,
-                    "comment": "Signer's identifier is absent from the signer set",
+                    "comment": "Signer's id is absent from the signer set",
                     "my_id": 2,
                     "ids": [0, 1],
                     "pubshare_indices": null,
@@ -170,7 +170,7 @@
                     "msg": "F95466D086770E689964664219266FE5ED215C92AE20BAB5C9D79ADDDDF3C0CF",
                     "error": {
                         "type": "ValueError",
-                        "message": "The signer's pubshare does not match the pubshares list entry at the signer's position."
+                        "message": "The signer's pubshare does not match its entry in the pubshares list."
                     }
                 },
                 {
@@ -185,7 +185,7 @@
                     "msg": "F95466D086770E689964664219266FE5ED215C92AE20BAB5C9D79ADDDDF3C0CF",
                     "error": {
                         "type": "ValueError",
-                        "message": "Invalid pubshare at index 1."
+                        "message": "The pubshare at index 1 is not a valid point."
                     }
                 },
                 {
@@ -215,7 +215,7 @@
                     "msg": "F95466D086770E689964664219266FE5ED215C92AE20BAB5C9D79ADDDDF3C0CF",
                     "error": {
                         "type": "ValueError",
-                        "message": "Invalid id at index 0"
+                        "message": "The id at index 0 must satisfy 0 <= id <= n - 1."
                     }
                 },
                 {
@@ -308,7 +308,7 @@
                     "msg": "F95466D086770E689964664219266FE5ED215C92AE20BAB5C9D79ADDDDF3C0CF",
                     "error": {
                         "type": "ValueError",
-                        "message": "first secnonce value is out of range."
+                        "message": "The first half of secnonce is out of range."
                     }
                 },
                 {
@@ -323,7 +323,7 @@
                     "msg": "F95466D086770E689964664219266FE5ED215C92AE20BAB5C9D79ADDDDF3C0CF",
                     "error": {
                         "type": "ValueError",
-                        "message": "second secnonce value is out of range."
+                        "message": "The second half of secnonce is out of range."
                     }
                 },
                 {
@@ -338,7 +338,7 @@
                     "msg": "F95466D086770E689964664219266FE5ED215C92AE20BAB5C9D79ADDDDF3C0CF",
                     "error": {
                         "type": "ValueError",
-                        "message": "first secnonce value is out of range."
+                        "message": "The first half of secnonce is out of range."
                     }
                 },
                 {
@@ -353,7 +353,7 @@
                     "msg": "F95466D086770E689964664219266FE5ED215C92AE20BAB5C9D79ADDDDF3C0CF",
                     "error": {
                         "type": "ValueError",
-                        "message": "The number of signers must be between t and n."
+                        "message": "The number of signers must satisfy t <= u <= n."
                     }
                 },
                 {
@@ -368,7 +368,7 @@
                     "msg": "F95466D086770E689964664219266FE5ED215C92AE20BAB5C9D79ADDDDF3C0CF",
                     "error": {
                         "type": "ValueError",
-                        "message": "The signer's secret share value is out of range."
+                        "message": "The secshare is out of range."
                     }
                 }
             ],
@@ -407,7 +407,7 @@
             "verify_error_tests": [
                 {
                     "tc_id": 27,
-                    "comment": "Verification rejects an invalid public nonce, blaming the malicious signer",
+                    "comment": "Another signer's public nonce is invalid, so verification blames that signer, not the one being verified",
                     "psig": "93DDE8C9CEE714EB5BDF2BE00FEC3327F9CF386D3AC672F0DA734FFC08E7A041",
                     "ids": [0, 1],
                     "pubshare_indices": [0, 1],
@@ -431,7 +431,7 @@
                     "msg": "F95466D086770E689964664219266FE5ED215C92AE20BAB5C9D79ADDDDF3C0CF",
                     "error": {
                         "type": "ValueError",
-                        "message": "Invalid pubshare at index 1."
+                        "message": "The pubshare at index 1 is not a valid point."
                     }
                 }
             ]
@@ -553,7 +553,7 @@
             "sign_error_tests": [
                 {
                     "tc_id": 35,
-                    "comment": "Signer's identifier is absent from the signer set",
+                    "comment": "Signer's id is absent from the signer set",
                     "my_id": 1,
                     "ids": [0],
                     "pubshare_indices": null,
@@ -593,7 +593,7 @@
                     "msg": "F95466D086770E689964664219266FE5ED215C92AE20BAB5C9D79ADDDDF3C0CF",
                     "error": {
                         "type": "ValueError",
-                        "message": "Invalid pubshare at index 1."
+                        "message": "The pubshare at index 1 is not a valid point."
                     }
                 },
                 {
@@ -623,7 +623,7 @@
                     "msg": "F95466D086770E689964664219266FE5ED215C92AE20BAB5C9D79ADDDDF3C0CF",
                     "error": {
                         "type": "ValueError",
-                        "message": "Invalid id at index 0"
+                        "message": "The id at index 0 must satisfy 0 <= id <= n - 1."
                     }
                 },
                 {
@@ -701,7 +701,7 @@
                     "msg": "F95466D086770E689964664219266FE5ED215C92AE20BAB5C9D79ADDDDF3C0CF",
                     "error": {
                         "type": "ValueError",
-                        "message": "first secnonce value is out of range."
+                        "message": "The first half of secnonce is out of range."
                     }
                 },
                 {
@@ -716,7 +716,7 @@
                     "msg": "F95466D086770E689964664219266FE5ED215C92AE20BAB5C9D79ADDDDF3C0CF",
                     "error": {
                         "type": "ValueError",
-                        "message": "second secnonce value is out of range."
+                        "message": "The second half of secnonce is out of range."
                     }
                 },
                 {
@@ -731,7 +731,7 @@
                     "msg": "F95466D086770E689964664219266FE5ED215C92AE20BAB5C9D79ADDDDF3C0CF",
                     "error": {
                         "type": "ValueError",
-                        "message": "first secnonce value is out of range."
+                        "message": "The first half of secnonce is out of range."
                     }
                 },
                 {
@@ -746,7 +746,7 @@
                     "msg": "F95466D086770E689964664219266FE5ED215C92AE20BAB5C9D79ADDDDF3C0CF",
                     "error": {
                         "type": "ValueError",
-                        "message": "The number of signers must be between t and n."
+                        "message": "The number of signers must satisfy t <= u <= n."
                     }
                 },
                 {
@@ -761,7 +761,7 @@
                     "msg": "F95466D086770E689964664219266FE5ED215C92AE20BAB5C9D79ADDDDF3C0CF",
                     "error": {
                         "type": "ValueError",
-                        "message": "The signer's secret share value is out of range."
+                        "message": "The secshare is out of range."
                     }
                 }
             ],
@@ -800,7 +800,7 @@
             "verify_error_tests": [
                 {
                     "tc_id": 52,
-                    "comment": "Verification rejects an invalid public nonce, blaming the malicious signer",
+                    "comment": "Another signer's public nonce is invalid, so verification blames that signer, not the one being verified",
                     "psig": "429B7F4C0DB7599EA79CD3C05BFA3A77ABCA810428B23D4C4498B60FF24E6DC6",
                     "ids": [0, 1],
                     "pubshare_indices": [0, 1],
@@ -824,7 +824,7 @@
                     "msg": "F95466D086770E689964664219266FE5ED215C92AE20BAB5C9D79ADDDDF3C0CF",
                     "error": {
                         "type": "ValueError",
-                        "message": "Invalid pubshare at index 1."
+                        "message": "The pubshare at index 1 is not a valid point."
                     }
                 }
             ]
@@ -971,7 +971,7 @@
                     "msg": "F95466D086770E689964664219266FE5ED215C92AE20BAB5C9D79ADDDDF3C0CF",
                     "error": {
                         "type": "ValueError",
-                        "message": "The signer's pubshare does not match the pubshares list entry at the signer's position."
+                        "message": "The signer's pubshare does not match its entry in the pubshares list."
                     }
                 },
                 {
@@ -986,7 +986,7 @@
                     "msg": "F95466D086770E689964664219266FE5ED215C92AE20BAB5C9D79ADDDDF3C0CF",
                     "error": {
                         "type": "ValueError",
-                        "message": "Invalid pubshare at index 1."
+                        "message": "The pubshare at index 1 is not a valid point."
                     }
                 },
                 {
@@ -1016,7 +1016,7 @@
                     "msg": "F95466D086770E689964664219266FE5ED215C92AE20BAB5C9D79ADDDDF3C0CF",
                     "error": {
                         "type": "ValueError",
-                        "message": "Invalid id at index 0"
+                        "message": "The id at index 0 must satisfy 0 <= id <= n - 1."
                     }
                 },
                 {
@@ -1094,7 +1094,7 @@
                     "msg": "F95466D086770E689964664219266FE5ED215C92AE20BAB5C9D79ADDDDF3C0CF",
                     "error": {
                         "type": "ValueError",
-                        "message": "first secnonce value is out of range."
+                        "message": "The first half of secnonce is out of range."
                     }
                 },
                 {
@@ -1109,7 +1109,7 @@
                     "msg": "F95466D086770E689964664219266FE5ED215C92AE20BAB5C9D79ADDDDF3C0CF",
                     "error": {
                         "type": "ValueError",
-                        "message": "second secnonce value is out of range."
+                        "message": "The second half of secnonce is out of range."
                     }
                 },
                 {
@@ -1124,7 +1124,7 @@
                     "msg": "F95466D086770E689964664219266FE5ED215C92AE20BAB5C9D79ADDDDF3C0CF",
                     "error": {
                         "type": "ValueError",
-                        "message": "first secnonce value is out of range."
+                        "message": "The first half of secnonce is out of range."
                     }
                 },
                 {
@@ -1139,7 +1139,7 @@
                     "msg": "F95466D086770E689964664219266FE5ED215C92AE20BAB5C9D79ADDDDF3C0CF",
                     "error": {
                         "type": "ValueError",
-                        "message": "The number of signers must be between t and n."
+                        "message": "The number of signers must satisfy t <= u <= n."
                     }
                 },
                 {
@@ -1154,7 +1154,7 @@
                     "msg": "F95466D086770E689964664219266FE5ED215C92AE20BAB5C9D79ADDDDF3C0CF",
                     "error": {
                         "type": "ValueError",
-                        "message": "The signer's secret share value is out of range."
+                        "message": "The secshare is out of range."
                     }
                 }
             ],
@@ -1193,7 +1193,7 @@
             "verify_error_tests": [
                 {
                     "tc_id": 77,
-                    "comment": "Verification rejects an invalid public nonce, blaming the malicious signer",
+                    "comment": "Another signer's public nonce is invalid, so verification blames that signer, not the one being verified",
                     "psig": "305FE509F00F665AAC836D1E49FF2539D3A11A9B20462457A49EBE28BED06728",
                     "ids": [0, 1, 2],
                     "pubshare_indices": [0, 1, 2],
@@ -1217,7 +1217,7 @@
                     "msg": "F95466D086770E689964664219266FE5ED215C92AE20BAB5C9D79ADDDDF3C0CF",
                     "error": {
                         "type": "ValueError",
-                        "message": "Invalid pubshare at index 1."
+                        "message": "The pubshare at index 1 is not a valid point."
                     }
                 }
             ]
@@ -1360,7 +1360,7 @@
             "sign_error_tests": [
                 {
                     "tc_id": 86,
-                    "comment": "Signer's identifier is absent from the signer set",
+                    "comment": "Signer's id is absent from the signer set",
                     "my_id": 3,
                     "ids": [0, 1, 2],
                     "pubshare_indices": null,
@@ -1400,7 +1400,7 @@
                     "msg": "F95466D086770E689964664219266FE5ED215C92AE20BAB5C9D79ADDDDF3C0CF",
                     "error": {
                         "type": "ValueError",
-                        "message": "The signer's pubshare does not match the pubshares list entry at the signer's position."
+                        "message": "The signer's pubshare does not match its entry in the pubshares list."
                     }
                 },
                 {
@@ -1415,7 +1415,7 @@
                     "msg": "F95466D086770E689964664219266FE5ED215C92AE20BAB5C9D79ADDDDF3C0CF",
                     "error": {
                         "type": "ValueError",
-                        "message": "Invalid pubshare at index 1."
+                        "message": "The pubshare at index 1 is not a valid point."
                     }
                 },
                 {
@@ -1445,7 +1445,7 @@
                     "msg": "F95466D086770E689964664219266FE5ED215C92AE20BAB5C9D79ADDDDF3C0CF",
                     "error": {
                         "type": "ValueError",
-                        "message": "Invalid id at index 0"
+                        "message": "The id at index 0 must satisfy 0 <= id <= n - 1."
                     }
                 },
                 {
@@ -1538,7 +1538,7 @@
                     "msg": "F95466D086770E689964664219266FE5ED215C92AE20BAB5C9D79ADDDDF3C0CF",
                     "error": {
                         "type": "ValueError",
-                        "message": "first secnonce value is out of range."
+                        "message": "The first half of secnonce is out of range."
                     }
                 },
                 {
@@ -1553,7 +1553,7 @@
                     "msg": "F95466D086770E689964664219266FE5ED215C92AE20BAB5C9D79ADDDDF3C0CF",
                     "error": {
                         "type": "ValueError",
-                        "message": "second secnonce value is out of range."
+                        "message": "The second half of secnonce is out of range."
                     }
                 },
                 {
@@ -1568,7 +1568,7 @@
                     "msg": "F95466D086770E689964664219266FE5ED215C92AE20BAB5C9D79ADDDDF3C0CF",
                     "error": {
                         "type": "ValueError",
-                        "message": "first secnonce value is out of range."
+                        "message": "The first half of secnonce is out of range."
                     }
                 },
                 {
@@ -1583,7 +1583,7 @@
                     "msg": "F95466D086770E689964664219266FE5ED215C92AE20BAB5C9D79ADDDDF3C0CF",
                     "error": {
                         "type": "ValueError",
-                        "message": "The number of signers must be between t and n."
+                        "message": "The number of signers must satisfy t <= u <= n."
                     }
                 },
                 {
@@ -1598,7 +1598,7 @@
                     "msg": "F95466D086770E689964664219266FE5ED215C92AE20BAB5C9D79ADDDDF3C0CF",
                     "error": {
                         "type": "ValueError",
-                        "message": "The signer's secret share value is out of range."
+                        "message": "The secshare is out of range."
                     }
                 }
             ],
@@ -1637,7 +1637,7 @@
             "verify_error_tests": [
                 {
                     "tc_id": 105,
-                    "comment": "Verification rejects an invalid public nonce, blaming the malicious signer",
+                    "comment": "Another signer's public nonce is invalid, so verification blames that signer, not the one being verified",
                     "psig": "603EC1EA86B284E28CEFD59C85F8DDC6DFE81C0744F59D8FB5BEB29F1C27F38B",
                     "ids": [0, 1, 2],
                     "pubshare_indices": [0, 1, 2],
@@ -1661,7 +1661,7 @@
                     "msg": "F95466D086770E689964664219266FE5ED215C92AE20BAB5C9D79ADDDDF3C0CF",
                     "error": {
                         "type": "ValueError",
-                        "message": "Invalid pubshare at index 1."
+                        "message": "The pubshare at index 1 is not a valid point."
                     }
                 }
             ]

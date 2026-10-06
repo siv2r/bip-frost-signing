@@ -114,7 +114,7 @@
             "error_tests": [
                 {
                     "tc_id": 6,
-                    "comment": "Tweak exceeds the group order",
+                    "comment": "Tweak equals the group order, which is out of range",
                     "my_id": 0,
                     "ids": [0, 1],
                     "pubshare_indices": [0, 1],
@@ -143,7 +143,7 @@
                     "is_xonly": [false],
                     "error": {
                         "type": "ValueError",
-                        "message": "The result of tweaking cannot be infinity."
+                        "message": "The tweaked threshold public key must not be the point at infinity."
                     }
                 },
                 {
@@ -160,7 +160,7 @@
                     "is_xonly": [],
                     "error": {
                         "type": "ValueError",
-                        "message": "The tweaks and is_xonly arrays must have the same length."
+                        "message": "The tweaks and is_xonly lists must have the same length."
                     }
                 },
                 {
@@ -296,7 +296,7 @@
             "error_tests": [
                 {
                     "tc_id": 15,
-                    "comment": "Tweak exceeds the group order",
+                    "comment": "Tweak equals the group order, which is out of range",
                     "my_id": 0,
                     "ids": [0],
                     "pubshare_indices": [0],
@@ -325,7 +325,7 @@
                     "is_xonly": [false],
                     "error": {
                         "type": "ValueError",
-                        "message": "The result of tweaking cannot be infinity."
+                        "message": "The tweaked threshold public key must not be the point at infinity."
                     }
                 },
                 {
@@ -342,7 +342,7 @@
                     "is_xonly": [],
                     "error": {
                         "type": "ValueError",
-                        "message": "The tweaks and is_xonly arrays must have the same length."
+                        "message": "The tweaks and is_xonly lists must have the same length."
                     }
                 },
                 {
@@ -478,7 +478,7 @@
             "error_tests": [
                 {
                     "tc_id": 24,
-                    "comment": "Tweak exceeds the group order",
+                    "comment": "Tweak equals the group order, which is out of range",
                     "my_id": 0,
                     "ids": [0, 1, 2],
                     "pubshare_indices": [0, 1, 2],
@@ -507,7 +507,7 @@
                     "is_xonly": [false],
                     "error": {
                         "type": "ValueError",
-                        "message": "The result of tweaking cannot be infinity."
+                        "message": "The tweaked threshold public key must not be the point at infinity."
                     }
                 },
                 {
@@ -524,7 +524,7 @@
                     "is_xonly": [],
                     "error": {
                         "type": "ValueError",
-                        "message": "The tweaks and is_xonly arrays must have the same length."
+                        "message": "The tweaks and is_xonly lists must have the same length."
                     }
                 },
                 {
@@ -668,7 +668,7 @@
             "error_tests": [
                 {
                     "tc_id": 33,
-                    "comment": "Tweak exceeds the group order",
+                    "comment": "Tweak equals the group order, which is out of range",
                     "my_id": 0,
                     "ids": [0, 1, 2],
                     "pubshare_indices": [0, 1, 2],
@@ -697,7 +697,7 @@
                     "is_xonly": [false],
                     "error": {
                         "type": "ValueError",
-                        "message": "The result of tweaking cannot be infinity."
+                        "message": "The tweaked threshold public key must not be the point at infinity."
                     }
                 },
                 {
@@ -714,7 +714,7 @@
                     "is_xonly": [],
                     "error": {
                         "type": "ValueError",
-                        "message": "The tweaks and is_xonly arrays must have the same length."
+                        "message": "The tweaks and is_xonly lists must have the same length."
                     }
                 },
                 {
