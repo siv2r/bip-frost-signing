@@ -206,6 +206,7 @@ def apply_tweak(tweak_ctx: TweakContext, tweak: bytes, is_xonly: bool) -> TweakC
 
 def nonce_hash(
     rand_: bytes,
+    signer_id_: bytes,
     pubshare: PlainPk,
     thresh_pk_xonly: XonlyPk,
     i: int,
@@ -214,6 +215,8 @@ def nonce_hash(
 ) -> bytes:
     buf = b""
     buf += rand_
+    buf += len(signer_id_).to_bytes(1, "big")
+    buf += signer_id_
     buf += len(pubshare).to_bytes(1, "big")
     buf += pubshare
     buf += len(thresh_pk_xonly).to_bytes(1, "big")
@@ -228,6 +231,7 @@ def nonce_hash(
 def nonce_gen_internal(
     rand: bytes,
     secshare: Optional[bytes],
+    signer_id: Optional[int],
     pubshare: Optional[PlainPk],
     thresh_pk_xonly: Optional[XonlyPk],
     msg: Optional[bytes],
@@ -237,6 +241,10 @@ def nonce_gen_internal(
         rand_ = xor_bytes(secshare, tagged_hash(FROST_TAG_AUX, rand))
     else:
         rand_ = rand
+    if signer_id is None:
+        signer_id_ = b""
+    else:
+        signer_id_ = signer_id.to_bytes(4, "big")
     if pubshare is None:
         pubshare = PlainPk(b"")
     if thresh_pk_xonly is None:
@@ -250,10 +258,14 @@ def nonce_gen_internal(
     if extra_in is None:
         extra_in = b""
     k_1 = Scalar.from_bytes_wrapping(
-        nonce_hash(rand_, pubshare, thresh_pk_xonly, 0, msg_prefixed, extra_in)
+        nonce_hash(
+            rand_, signer_id_, pubshare, thresh_pk_xonly, 0, msg_prefixed, extra_in
+        )
     )
     k_2 = Scalar.from_bytes_wrapping(
-        nonce_hash(rand_, pubshare, thresh_pk_xonly, 1, msg_prefixed, extra_in)
+        nonce_hash(
+            rand_, signer_id_, pubshare, thresh_pk_xonly, 1, msg_prefixed, extra_in
+        )
     )
     # k_1 == 0 or k_2 == 0 cannot occur except with negligible probability.
     assert k_1 != 0
@@ -270,6 +282,7 @@ def nonce_gen_internal(
 
 def nonce_gen(
     secshare: Optional[bytes],
+    signer_id: Optional[int],
     pubshare: Optional[PlainPk],
     thresh_pk_xonly: Optional[XonlyPk],
     msg: Optional[bytes],
@@ -277,12 +290,16 @@ def nonce_gen(
 ) -> Tuple[bytearray, bytes]:
     if secshare is not None and len(secshare) != 32:
         raise ValueError("The optional secshare must be a 32-byte array.")
+    if signer_id is not None and not 0 <= signer_id <= 2**32 - 1:
+        raise ValueError("The optional signer_id must be a 4-byte integer.")
     if pubshare is not None and len(pubshare) != 33:
         raise ValueError("The optional pubshare must be a 33-byte array.")
     if thresh_pk_xonly is not None and len(thresh_pk_xonly) != 32:
         raise ValueError("The optional thresh_pk_xonly must be a 32-byte array.")
     rand = secrets.token_bytes(32)
-    return nonce_gen_internal(rand, secshare, pubshare, thresh_pk_xonly, msg, extra_in)
+    return nonce_gen_internal(
+        rand, secshare, signer_id, pubshare, thresh_pk_xonly, msg, extra_in
+    )
 
 
 def nonce_agg(pubnonces: List[bytes]) -> bytes:

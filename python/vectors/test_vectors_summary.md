@@ -134,7 +134,7 @@ is an id value, while both `signer_index` fields are positions in a list.
 
 | Field | Where | What it is |
 |---|---|---|
-| `signer_id` | sign-side cases (`sign`, `deterministic_sign`, tweak) | The signer's id value. Pass it straight to the function. |
+| `signer_id` | sign-side cases (`sign`, `deterministic_sign`, tweak) and `nonce_gen` | The signer's id value, or `null` when `nonce_gen` omits it. Pass it straight to the function. |
 | `signer_index` | verify-side cases (`verify_fail`, `verify_error`) | The signer's position in the case's `ids` list, passed as the index argument to `partial_sig_verify`. |
 | `error.signer_index` | inside an `error` object | The position of the blamed contribution in the input list, or `null` for an aggregator-level fault. |
 

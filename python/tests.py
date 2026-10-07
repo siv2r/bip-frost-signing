@@ -110,6 +110,7 @@ def test_nonce_gen_vectors():
 
         rand = get_value("rand")
         secshare = get_value_maybe("secshare")
+        signer_id = test_case["signer_id"]
         pubshare = get_value_maybe("pubshare")
         if pubshare is not None:
             pubshare = PlainPk(pubshare)
@@ -121,7 +122,7 @@ def test_nonce_gen_vectors():
         expected = test_case["expected"]
 
         assert nonce_gen_internal(
-            rand, secshare, pubshare, thresh_pk_xonly, msg, extra_in
+            rand, secshare, signer_id, pubshare, thresh_pk_xonly, msg, extra_in
         ) == (bytes.fromhex(expected[0]), bytes.fromhex(expected[1]))
 
 
@@ -567,6 +568,7 @@ def test_sign_and_verify_random(iterations: int) -> None:
             timestamp = time.clock_gettime_ns(time.CLOCK_MONOTONIC)
             secnonce_i, pubnonce_i = nonce_gen(
                 signer_secshares[i],
+                signer_ids[i],
                 signer_pubshares[i],
                 tweaked_thresh_pk,
                 msg,
@@ -581,6 +583,7 @@ def test_sign_and_verify_random(iterations: int) -> None:
             timestamp = time.clock_gettime_ns(time.CLOCK_MONOTONIC)
             secnonce_final, pubnonce_final = nonce_gen(
                 signer_secshares[-1],
+                signer_ids[-1],
                 signer_pubshares[-1],
                 tweaked_thresh_pk,
                 msg,

@@ -19,7 +19,7 @@ def generate_nonce_gen_vectors():
     vectors["valid_tests"] = []
     tc_id = 1
 
-    _, _, thresh_pk, _, secshares, pubshares = frost_keygen(SECKEY_2OF3)
+    _, _, thresh_pk, ids, secshares, pubshares = frost_keygen(SECKEY_2OF3)
     xonly_thresh_pk = thresh_pk[1:]
     extra_in = bytes.fromhex(
         "0808080808080808080808080808080808080808080808080808080808080808"
@@ -29,7 +29,7 @@ def generate_nonce_gen_vectors():
         "0101010101010101010101010101010101010101010101010101010101010101"
     )
     secnonce, pubnonce = nonce_gen_internal(
-        COMMON_RAND, secshares[0], pubshares[0], xonly_thresh_pk, msg, extra_in
+        COMMON_RAND, secshares[0], ids[0], pubshares[0], xonly_thresh_pk, msg, extra_in
     )
     vectors["valid_tests"].append(
         {
@@ -37,6 +37,7 @@ def generate_nonce_gen_vectors():
             "comment": "All optional defense-in-depth arguments present",
             "rand": bytes_to_hex(COMMON_RAND),
             "secshare": bytes_to_hex(secshares[0]),
+            "signer_id": ids[0],
             "pubshare": bytes_to_hex(pubshares[0]),
             "thresh_pk_xonly": bytes_to_hex(xonly_thresh_pk),
             "msg": bytes_to_hex(msg),
@@ -48,6 +49,7 @@ def generate_nonce_gen_vectors():
     secnonce, pubnonce = nonce_gen_internal(
         COMMON_RAND,
         secshares[0],
+        ids[0],
         pubshares[0],
         xonly_thresh_pk,
         COMMON_MSGS[1],
@@ -59,6 +61,7 @@ def generate_nonce_gen_vectors():
             "comment": "Empty message",
             "rand": bytes_to_hex(COMMON_RAND),
             "secshare": bytes_to_hex(secshares[0]),
+            "signer_id": ids[0],
             "pubshare": bytes_to_hex(pubshares[0]),
             "thresh_pk_xonly": bytes_to_hex(xonly_thresh_pk),
             "msg": bytes_to_hex(COMMON_MSGS[1]),
@@ -70,6 +73,7 @@ def generate_nonce_gen_vectors():
     secnonce, pubnonce = nonce_gen_internal(
         COMMON_RAND,
         secshares[0],
+        ids[0],
         pubshares[0],
         xonly_thresh_pk,
         COMMON_MSGS[2],
@@ -81,6 +85,7 @@ def generate_nonce_gen_vectors():
             "comment": "Non-standard message length (38 bytes)",
             "rand": bytes_to_hex(COMMON_RAND),
             "secshare": bytes_to_hex(secshares[0]),
+            "signer_id": ids[0],
             "pubshare": bytes_to_hex(pubshares[0]),
             "thresh_pk_xonly": bytes_to_hex(xonly_thresh_pk),
             "msg": bytes_to_hex(COMMON_MSGS[2]),
@@ -89,13 +94,16 @@ def generate_nonce_gen_vectors():
         }
     )
     tc_id += 1
-    secnonce, pubnonce = nonce_gen_internal(COMMON_RAND, None, None, None, None, None)
+    secnonce, pubnonce = nonce_gen_internal(
+        COMMON_RAND, None, None, None, None, None, None
+    )
     vectors["valid_tests"].append(
         {
             "tc_id": tc_id,
             "comment": "All optional defense-in-depth arguments omitted",
             "rand": bytes_to_hex(COMMON_RAND),
             "secshare": None,
+            "signer_id": None,
             "pubshare": None,
             "thresh_pk_xonly": None,
             "msg": None,
@@ -105,7 +113,7 @@ def generate_nonce_gen_vectors():
     )
     tc_id += 1
     secnonce, pubnonce = nonce_gen_internal(
-        COMMON_RAND, secshares[0], pubshares[0], xonly_thresh_pk, None, extra_in
+        COMMON_RAND, secshares[0], ids[0], pubshares[0], xonly_thresh_pk, None, extra_in
     )
     vectors["valid_tests"].append(
         {
@@ -113,6 +121,7 @@ def generate_nonce_gen_vectors():
             "comment": "Message omitted, other optional arguments present",
             "rand": bytes_to_hex(COMMON_RAND),
             "secshare": bytes_to_hex(secshares[0]),
+            "signer_id": ids[0],
             "pubshare": bytes_to_hex(pubshares[0]),
             "thresh_pk_xonly": bytes_to_hex(xonly_thresh_pk),
             "msg": None,
@@ -123,15 +132,22 @@ def generate_nonce_gen_vectors():
     tc_id += 1
     extra_in_33 = bytes.fromhex("08" * 33)
     secnonce, pubnonce = nonce_gen_internal(
-        COMMON_RAND, secshares[0], pubshares[0], xonly_thresh_pk, msg, extra_in_33
+        COMMON_RAND,
+        secshares[2],
+        ids[2],
+        pubshares[2],
+        xonly_thresh_pk,
+        msg,
+        extra_in_33,
     )
     vectors["valid_tests"].append(
         {
             "tc_id": tc_id,
             "comment": "Extra input of non-standard length (33 bytes)",
             "rand": bytes_to_hex(COMMON_RAND),
-            "secshare": bytes_to_hex(secshares[0]),
-            "pubshare": bytes_to_hex(pubshares[0]),
+            "secshare": bytes_to_hex(secshares[2]),
+            "signer_id": ids[2],
+            "pubshare": bytes_to_hex(pubshares[2]),
             "thresh_pk_xonly": bytes_to_hex(xonly_thresh_pk),
             "msg": bytes_to_hex(msg),
             "extra_in": bytes_to_hex(extra_in_33),

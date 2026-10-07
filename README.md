@@ -7,7 +7,7 @@
   Assigned: 2026-01-30
   License: CC0-1.0
   Discussion: 2024-07-31: https://groups.google.com/g/bitcoindev/c/PeMp2HQl-H4/m/AcJtK0aKAwAJ
-  Version: 0.11.3
+  Version: 0.12.0
   Requires: 340
 ```
 
@@ -60,8 +60,10 @@ Similarly, the test vectors that exercise the unimplemented features should be r
 ### Key Material and Setup
 
 A FROST key generation protocol configures a group of *n* participants with a *threshold public key* (representing a *t-of-n* threshold policy).
-The corresponding *threshold secret key* is Shamir secret-shared among all *n* participants, where each participant holds a distinct long-term *secret share*.
+The corresponding *threshold secret key* is Shamir secret-shared among all *n* participants, where each participant holds a distinct long-term *secret share*.[^t-one-shares]
 This ensures that any subset of at least *t* participants can jointly run the FROST signing protocol to produce a signature under the *threshold secret key*.
+
+[^t-one-shares]: In a *1-of-n* setup, every participant's *secret share* equals the *threshold secret key*.
 
 Key generation for FROST signing is out of scope for this document. Implementations can use either a trusted dealer setup, as specified in [Appendix C of RFC 9591](https://www.rfc-editor.org/rfc/rfc9591.html#name-trusted-dealer-key-generati), or a distributed key generation (DKG) protocol such as [ChillDKG](https://github.com/BlockstreamResearch/bip-frost-dkg). The appropriate choice depends on the implementation's trust model and operational requirements.
 
@@ -168,7 +170,7 @@ As a result, the [Session Context](#session-context) may look very different in 
 
 The optional arguments to *NonceGen* enable a defense-in-depth mechanism that may prevent secret share exposure if *rand* is accidentally not drawn uniformly at random.
 If the value *rand* was identical in two *NonceGen* invocations, but any other argument was different, the *secnonce* would still be guaranteed to be different as well (with overwhelming probability), and thus accidentally using the same *secnonce* for *Sign* in both sessions would be avoided.
-Therefore, it is recommended to provide the optional arguments *secshare*, *pubshare*, *thresh_pk_xonly*, and *m* if these session parameters are already determined during nonce generation.
+Therefore, it is recommended to provide the optional arguments *secshare*, *signer_id*, *pubshare*, *thresh_pk_xonly*, and *m* if these session parameters are already determined during nonce generation.
 The auxiliary input *extra_in* can contain additional contextual data that has a chance of changing between *NonceGen* runs,
 e.g., a supposedly unique session id (taken from the application), a session counter wide enough not to repeat in practice, any nonces by other signers (if already known), or the serialization of a data structure containing multiple of the above.
 However, the protection provided by the optional arguments should only be viewed as a last resort.
@@ -445,10 +447,11 @@ Algorithm *ApplyTweak(tweak_ctx, tweak, is_xonly_t)*:
 
 ### Nonce Generation
 
-Algorithm *NonceGen(secshare, pubshare, thresh_pk_xonly, m, extra_in)*:
+Algorithm *NonceGen(secshare, signer_id, pubshare, thresh_pk_xonly, m, extra_in)*:
 
 - Inputs:
   - The participant secret share *secshare*: a 32-byte array, serialized scalar (optional argument)
+  - The participant identifier *signer_id*: an integer with *0 ≤ signer_id ≤ n-1* (optional argument)
   - The participant public share *pubshare*: a 33-byte array, compressed serialized point (optional argument)
   - The x-only threshold public key *thresh_pk_xonly*: a 32-byte array, x-only serialized point (optional argument). If tweaks are to be applied during signing, this is ideally the x-only public key that results from applying all of them, i.e., the output of *GetXonlyPubkey(tweak_ctx)*. If no tweaks are to be applied, or if it is not yet determined at nonce generation time whether or which tweaks will be applied, this may also be the last 32 bytes of the threshold public key *thresh_pk*.
   - The message *m*: a byte array (optional argument)[^max-msg-len]
@@ -458,6 +461,10 @@ Algorithm *NonceGen(secshare, pubshare, thresh_pk_xonly, m, extra_in)*:
   - Let *rand' = xor_bytes(secshare, hash<sub>BIP0445/aux</sub>(rand))*[^sk-xor-rand]
 - Else:
   - Let *rand' = rand*
+- If the optional argument *signer_id* is not present:
+  - Let *signer_id' = empty_bytestring*
+- Else:
+  - Let *signer_id' = bytes(4, signer_id)*
 - If the optional argument *pubshare* is not present:
   - Let *pubshare = empty_bytestring*
 - If the optional argument *thresh_pk_xonly* is not present:
@@ -468,7 +475,7 @@ Algorithm *NonceGen(secshare, pubshare, thresh_pk_xonly, m, extra_in)*:
   - Let *m_prefixed = bytes(1, 1) || bytes(8, len(m)) || m*
 - If the optional argument *extra_in* is not present:
   - Let *extra_in = empty_bytestring*
-- Let *k<sub>i</sub> = scalar_from_bytes_wrapping(hash<sub>BIP0445/nonce</sub>(rand' || bytes(1, len(pubshare)) || pubshare || bytes(1, len(thresh_pk_xonly)) || thresh_pk_xonly || m_prefixed || bytes(4, len(extra_in)) || extra_in || bytes(1, i - 1)))* for *i = 1,2*
+- Let *k<sub>i</sub> = scalar_from_bytes_wrapping(hash<sub>BIP0445/nonce</sub>(rand' || bytes(1, len(signer_id')) || signer_id' || bytes(1, len(pubshare)) || pubshare || bytes(1, len(thresh_pk_xonly)) || thresh_pk_xonly || m_prefixed || bytes(4, len(extra_in)) || extra_in || bytes(1, i - 1)))* for *i = 1,2*
 - Fail if *k<sub>1</sub> = Scalar(0)* or *k<sub>2</sub> = Scalar(0)*[^negligible-zero-scalar]
 - Let *R<sub>\*,1</sub> = k<sub>1</sub> &middot; G*, *R<sub>\*,2</sub> = k<sub>2</sub> &middot; G*
 - Let *pubnonce = cbytes(R<sub>\*,1</sub>) || cbytes(R<sub>\*,2</sub>)*
@@ -678,8 +685,10 @@ We provide two modifications to *NonceGen* that are secure when applied correctl
 
 First, on systems where obtaining uniformly random values is much harder than maintaining a global atomic counter, it can be beneficial to modify *NonceGen*.
 The resulting algorithm *CounterNonceGen* does not draw *rand* uniformly at random but instead sets *rand* to the value of an atomic counter that is incremented whenever it is read.
-With this modification, the secret share *secshare* of the signer generating the nonce is **not** an optional argument and must be provided to *NonceGen*.
-The security of the resulting scheme then depends on the requirement that reading the counter must never yield the same counter value in two *NonceGen* invocations with the same *secshare*.
+With this modification, the secret share *secshare* and the participant identifier *signer_id* of the signer generating the nonce are **not** optional arguments and must be provided to *NonceGen*.[^counter-signer-id]
+The security of the resulting scheme then depends on the requirement that reading the counter must never yield the same counter value in two *NonceGen* invocations with the same *secshare* and *signer_id*.
+
+[^counter-signer-id]: In a *1-of-n* setup, every participant holds the same *secret share*, so *signer_id* is the only mandatory input that tells their nonces apart. Without it, two participants that read the same counter value would generate the same nonce and could leak the *threshold secret key*.
 
 Second, if there is a unique signer who generates their nonce last (i.e., after receiving the aggregate nonce from all other signers), it is possible to modify nonce generation for this single signer to not require high-quality randomness.
 Such a nonce generation algorithm *DeterministicSign* is specified below.
@@ -740,7 +749,7 @@ Algorithm *DeterministicSign(secshare, signer_id, aggothernonce, n, t, id<sub>1.
 
 [^det-negated-share]: The nonce is derived from *d* (the possibly negated secret share) rather than from raw *secshare*, so that it commits to the factor *g &middot; gacc* in the partial signature equation. This is defense in depth. As long as the threshold public key comes from the signer's own [Threshold Info](#threshold-info), committing to *tweaked_thresh_pk_xonly* already commits to *g &middot; gacc*.
 
-[^det-threshold-one]: The threshold *t = 1* is a special case. In a *1-of-n* setup, every participant's *secret share* equals the *threshold secret key* itself, so any single participant can produce a signature alone (*u = 1*). The lone signer calls *DeterministicSign* without the *aggothernonce* argument, which makes the derived nonce fully deterministic, just as in ordinary single-signer [BIP340][bip340] signing. The signer may instead run *Sign*, but that path still draws fresh randomness through *NonceGen*. Simplest of all, because a *1-of-n* group is effectively one secret key held by everyone, the participant can skip the FROST algorithms and sign with the ordinary [BIP340][bip340] signing algorithm[^t-edge-cases].
+[^det-threshold-one]: A sole signer (*u = 1*) arises only in a *1-of-n* setup. It omits *aggothernonce*, which makes the nonce deterministic, as in [BIP340][bip340] signing. Since its *secret share* equals the *threshold secret key*, it can also skip the FROST algorithms and sign with the ordinary [BIP340][bip340] signing algorithm[^t-edge-cases].
 
 ### Tweaking Definition
 
@@ -880,6 +889,7 @@ This document proposes a standard for the FROST threshold signature scheme that 
 
 ## Changelog
 
+- *0.12.0* (2026-10-08): Add an optional *signer_id* argument to *NonceGen*, and make it mandatory in *CounterNonceGen*. The affected test vectors were regenerated.
 - *0.11.3* (2026-10-07): Cite the polynomial-time LDVR attack for large *n*[[GT26][ldvr-attack]], and fix minor inconsistencies in the BIP text.
 - *0.11.2* (2026-10-06): Rename the signer identifier argument *my_id* to *signer_id* in *Sign*, *DeterministicSign* and *PartialSigVerifyInternal*, and use subscripted names in *DeriveInterpolatingValue*. The test vector key *my_id* becomes *signer_id*.
 - *0.11.1* (2026-10-06): Improve test vector coverage.

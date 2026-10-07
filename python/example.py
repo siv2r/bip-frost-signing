@@ -122,7 +122,9 @@ async def participant(
     tweaked_thresh_pk = get_xonly_pk(tweak_ctx)
 
     # Round 1: Nonce generation
-    secnonce, pubnonce = nonce_gen(secshare, pubshare, tweaked_thresh_pk, msg, None)
+    secnonce, pubnonce = nonce_gen(
+        secshare, signer_id, pubshare, tweaked_thresh_pk, msg, None
+    )
     chan.send(pubnonce)
     aggnonce = await chan.receive()
 

@@ -126,12 +126,12 @@ def write_test_vectors(filename, vectors):
         f.write(text)
 
 
-def generate_all_nonces(rand, secshares, pubshares, xonly_thresh_pk, msg=None):
+def generate_all_nonces(rand, ids, secshares, pubshares, xonly_thresh_pk, msg=None):
     secnonces = []
     pubnonces = []
-    for i in range(len(secshares)):
+    for id_i, secshare, pubshare in zip(ids, secshares, pubshares):
         sec, pub = nonce_gen_internal(
-            rand, secshares[i], pubshares[i], xonly_thresh_pk, msg, None
+            rand, secshare, id_i, pubshare, xonly_thresh_pk, msg, None
         )
         secnonces.append(sec)
         pubnonces.append(pub)
@@ -192,17 +192,18 @@ class SharedGroupInputs:
     fault slots) and the named offsets that index those slots."""
 
     def __init__(self, cfg):
-        n, t, thresh_pk, _ids, secshares, pubshares = frost_keygen(
+        n, t, thresh_pk, ids, secshares, pubshares = frost_keygen(
             cfg.seckey, cfg.n, cfg.t
         )
         self.n = n
         self.t = t
         self.thresh_pk = thresh_pk
+        self.ids = ids
         self.xonly_thresh_pk = XonlyPk(thresh_pk[1:])
         self.secshares = secshares
         self.pubshares = pubshares
         self.secnonces, self.pubnonces = generate_all_nonces(
-            COMMON_RAND, secshares, pubshares, self.xonly_thresh_pk
+            COMMON_RAND, ids, secshares, pubshares, self.xonly_thresh_pk
         )
 
         # pubshares pool: off-curve point at slot n, then a valid point at slot n+1
