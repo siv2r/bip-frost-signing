@@ -7,7 +7,7 @@
   Assigned: 2026-01-30
   License: CC0-1.0
   Discussion: 2024-07-31: https://groups.google.com/g/bitcoindev/c/PeMp2HQl-H4/m/AcJtK0aKAwAJ
-  Version: 0.11.2
+  Version: 0.11.3
   Requires: 340
 ```
 
@@ -73,10 +73,10 @@ Key generation protocols produce *public shares* and *threshold public keys* in 
 
 #### Protocol Parties and Network Setup
 
-There are *u* (where *1 <= t <= u <= n <= 128*)[^n-bound] signers[^participant-vs-signer] and one coordinator initiating the FROST signing protocol.
+There are *u* (where *1 ≤ t ≤ u ≤ n ≤ 128*)[^n-bound] signers[^participant-vs-signer] and one coordinator initiating the FROST signing protocol.
 Each participant has a point-to-point communication link to the coordinator (but participants do not have direct communication links to each other).
 
-[^n-bound]: The upper bound on *n* is a security requirement. The unforgeability proof of FROST3 assumes that the set of compromised participants is fixed before key generation. An attacker that instead chooses whom to compromise after observing the public shares may, for large *n*, be able to forge with fewer compromised participants than the threshold, provided it can solve a search problem whose hardness has not been established[[CS25][adaptive-attack]]. This search problem is called the Low-Dimensional Vector Representation (LDVR) problem, and it is provably hard for any threshold whenever *n ≤ 131*, where solving it costs at least as much as computing a discrete logarithm on secp256k1[[CKKTZ25][ldvr]]. This document requires *n ≤ 128*, which stays inside that range with a margin.
+[^n-bound]: The bound on *n* protects against adaptive forgery attacks (the attacker chooses which participants to compromise after seeing the public shares). Such an attacker can forge with fewer than *t* compromised participants if it can solve the Low-Dimensional Vector Representation (LDVR) problem[[CS25][adaptive-attack]][[CKKTZ25][ldvr]], which becomes feasible for large enough *n*[[GT26][ldvr-attack]]. For *n ≤ 131*, LDVR is provably hard for any threshold at the 128-bit security level of secp256k1[[CKKTZ25][ldvr]]. This document requires *n ≤ 128* to leave a margin.
 
 [^participant-vs-signer]: This document says *participant* for anyone who took part in key generation, all *n* of them, and *signer* for a participant taking part in the current signing session, the *u* of them. Key material issued during key generation keeps the participant label, so *secshare*, *pubshare*, and the identifiers stay participant values even when a signer supplies them to an algorithm.
 
@@ -97,7 +97,7 @@ Once the coordinator has selected the signers, each signer forms the [Session Co
 This signing protocol is compatible with any key generation protocol that produces valid FROST keys.
 Valid keys satisfy: (1) each *secret share* is a Shamir share of the *threshold secret key*, and (2) each *public share* equals the scalar multiplication *secshare &middot; G*.[^chilldkg-keys]
 Before signing, the threshold info must pass *ValidateThresholdInfo*, which checks that every signer set selectable from its public shares reproduces the threshold public key.
-Running it on a threshold info containing all *n* public shares therefore validates the entire key material.
+Running it on a threshold info containing all *n* public shares therefore validates the entire key material, except the secret shares, which it never sees.
 *GetSessionValues* repeats this check for the one signer set the coordinator selected.
 
 [^chilldkg-keys]: ChillDKG satisfies both conditions, so its [DKG output](https://github.com/BlockstreamResearch/bip-frost-dkg#dkg-outputs) can be used directly as key material.
@@ -206,6 +206,7 @@ Aborts are identifiable for an honest party if the following conditions hold in 
 - The partial signatures received from all signers are verified using the algorithm *PartialSigVerify*.
 
 If these conditions hold and an honest party (signer or coordinator) runs an algorithm that fails due to invalid protocol contributions from malicious signers, then the algorithm run by the honest party will output the index (within the input list) of exactly one malicious signer.
+Lists in this document are indexed from 1, while the reference implementation and test vectors use 0-based list positions.
 Additionally, whenever more than one honest party runs an aborting algorithm on the same contributions, they all identify the same malicious signer.
 
 When the coordinator sends only the aggregate nonce, a signer never sees the individual *pubnonces* of the other signers, so it cannot recompute the aggregation to confirm it was done honestly and must trust the coordinator for the second condition. Because *PartialSigVerify* requires the full list of *pubnonces* and partial signatures, the coordinator (or a signer acting as the coordinator) is the natural party to run it and assign blame, as it is the only party that receives every signer's contribution.[^coordinator-less]
@@ -317,7 +318,7 @@ The following helper functions and notation are used for operations on standard 
 | *(a, b, ...)* | Refers to a tuple containing the listed elements |
 
 > [!NOTE]
-> In the following algorithms, all scalar arithmetic is understood to be modulo the group order. For example, *a &middot; b* implicitly means *a &middot; b mod order*
+> In the following algorithms, all scalar arithmetic is understood to be modulo the group order. For example, *a &middot; b* implicitly means *a &middot; b (mod ord)*
 
 ### Key Material and Setup
 
@@ -327,23 +328,23 @@ The Threshold Info is a data structure holding the public key material that a ke
 
 - The threshold number *t* of participants required to issue a signature: an integer with *1 ≤ t ≤ n*
 - The threshold public key *thresh_pk*: a 33-byte array, compressed serialized point
-- The list of participant public shares *pubshare<sub>0..n-1</sub>*: *n* entries, each either a 33-byte array (a compressed serialized point) or *empty_bytestring*, where *1 ≤ n ≤ 128*
+- The list of participant public shares *pubshare<sub>1..n</sub>*: *n* entries, each either a 33-byte array (a compressed serialized point) or *empty_bytestring*, where *1 ≤ n ≤ 128*
 
-We write "Let *(t, thresh_pk, pubshare<sub>0..n-1</sub>) = info*" to assign names to the elements of a Threshold Info.
+We write "Let *(t, thresh_pk, pubshare<sub>1..n</sub>) = info*" to assign names to the elements of a Threshold Info.
 
-Entry *i* of the *pubshare<sub>0..n-1</sub>* list belongs to the participant with identifier *i*. An entry is *empty_bytestring* if the party holding the threshold info does not know that participant's public share, and at least *t* entries must be non-empty, both for *ValidateThresholdInfo* to run and for the coordinator to select a signer set.
+Entry *i* of the *pubshare<sub>1..n</sub>* list belongs to the participant with identifier *i - 1*. An entry is *empty_bytestring* if the party holding the threshold info does not know that participant's public share, and at least *t* entries must be non-empty, both for *ValidateThresholdInfo* to run and for the coordinator to select a signer set.
 
 Algorithm *ValidateThresholdInfo(info)*:
 
 - Inputs:
   - The *info*: a [Threshold Info](#threshold-info) data structure
-- *(t, thresh_pk, pubshare<sub>0..n-1</sub>) = info*
+- *(t, thresh_pk, pubshare<sub>1..n</sub>) = info*
 - Fail if not *1 ≤ t ≤ n*
 - Fail if not *n ≤ 128*
 - Fail if *cpoint(thresh_pk)* fails
-- Let *id<sub>1..w</sub>* be the identifiers *i* with *pubshare<sub>i</sub> ≠ empty_bytestring*, in ascending order
+- Let *id<sub>1..w</sub>* be the identifiers of the participants whose public share is not *empty_bytestring*, in ascending order
 - For *j = 1 .. w*:
-  - Let *P<sub>j</sub> = cpoint(pubshare<sub>id<sub>j</sub></sub>)*; fail if that fails
+  - Let *P<sub>j</sub> = cpoint(pubshare<sub>id<sub>j</sub> + 1</sub>)*; fail if that fails
 - Fail if *w < t*
 - For *j = t+1 .. w*:
   - Fail if *DerivePubshareAt(id<sub>1..t</sub>, P<sub>1..t</sub>, id<sub>j</sub>) ≠ P<sub>j</sub>*
@@ -458,9 +459,9 @@ Algorithm *NonceGen(secshare, pubshare, thresh_pk_xonly, m, extra_in)*:
 - Else:
   - Let *rand' = rand*
 - If the optional argument *pubshare* is not present:
-  - Let *pubshare* = *empty_bytestring*
+  - Let *pubshare = empty_bytestring*
 - If the optional argument *thresh_pk_xonly* is not present:
-  - Let *thresh_pk_xonly* = *empty_bytestring*
+  - Let *thresh_pk_xonly = empty_bytestring*
 - If the optional argument *m* is not present:
   - Let *m_prefixed = bytes(1, 0)*
 - Else:
@@ -480,7 +481,7 @@ Algorithm *NonceGen(secshare, pubshare, thresh_pk_xonly, m, extra_in)*:
 
 [^secnonce-vs-bip327]: [BIP327][bip327] appends the serialized individual public key to the *secnonce* (resulting in a 96-byte *secnonce*) to avoid a vulnerability that may arise when MuSig2 signers tweak their individual key pair before key aggregation. In FROST, the threshold public key is fixed at key generation and tweaking a participant's public share is not supported (see [^no-pubshare-tweaking]). Thus, this vulnerability does not apply to FROST, and appending the public share to the *secnonce* is not necessary.
 
-[^max-msg-len]: In theory, the allowed message size is restricted because SHA256 accepts byte strings only up to size of 2^61-1 bytes (and because of the 8-byte length encoding).
+[^max-msg-len]: In theory, the allowed message size is restricted because SHA256 accepts byte strings only up to size of 2<sup>61</sup>-1 bytes (and because of the 8-byte length encoding).
 
 [^negligible-zero-scalar]: These are unreachable errors, included for completeness: such a value equals *Scalar(0)* only with negligible probability. The reference implementation checks the condition with an assertion.
 
@@ -489,8 +490,8 @@ Algorithm *NonceGen(secshare, pubshare, thresh_pk_xonly, m, extra_in)*:
 Algorithm *NonceAgg(pubnonce<sub>1..u</sub>)*:
 
 - Inputs:
-  - The number *u* of signers: an integer with *t ≤ u ≤ n*
-  - The list of signers' public nonces *pubnonce<sub>1..u</sub>*: *u* 66-byte arrays, each an output of *NonceGen*
+  - The number *u* of public nonces: an integer with *1 ≤ u ≤ n*
+  - The list of public nonces *pubnonce<sub>1..u</sub>*: *u* 66-byte arrays
 - For *j = 1 .. 2*:
   - For *i = 1 .. u*:
     - Let *R<sub>i,j</sub> = cpoint(pubnonce<sub>i</sub>[(j-1)\*33:j\*33])*; fail if that fails and blame the signer at index *i* for invalid *pubnonce*
@@ -508,7 +509,7 @@ The Session Context is a data structure consisting of the following elements:
 - The list of participant public shares *pubshare<sub>1..u</sub>*: either *u* 33-byte arrays, each a compressed serialized point, where *pubshare<sub>i</sub>* belongs to the participant with identifier *id<sub>i</sub>*, or the whole list is absent
 - The threshold public key *thresh_pk*: a 33-byte array, compressed serialized point
 - The aggregate public nonce *aggnonce*: a 66-byte array, output of *NonceAgg*
-- The number *v* of tweaks with *0 ≤ v < 2^32*
+- The number *v* of tweaks with *0 ≤ v < 2<sup>32</sup>*
 - The list of tweaks *tweak<sub>1..v</sub>*: *v* 32-byte arrays, each a serialized scalar
 - The list of tweak modes *is_xonly_t<sub>1..v</sub>* : *v* booleans
 - The message *m*: a byte array[^max-msg-len]
@@ -535,8 +536,8 @@ Algorithm *GetSessionValues(session_ctx)*:
 - For *i = 1 .. v*:
   - Let *tweak_ctx<sub>i</sub> = ApplyTweak(tweak_ctx<sub>i-1</sub>, tweak<sub>i</sub>, is_xonly_t<sub>i</sub>)*; fail if that fails
 - Let *(Q, gacc, tacc) = tweak_ctx<sub>v</sub>*
-- Let *ser_ids* = *SerializeIds(id<sub>1..u</sub>)*
-- Let *b* = *scalar_from_bytes_wrapping(hash<sub>BIP0445/noncecoef</sub>(bytes(4, u) || ser_ids || aggnonce || xbytes(Q) || m))*
+- Let *ser_ids = SerializeIds(id<sub>1..u</sub>)*
+- Let *b = scalar_from_bytes_wrapping(hash<sub>BIP0445/noncecoef</sub>(bytes(4, u) || ser_ids || aggnonce || xbytes(Q) || m))*
 - Fail if *b = Scalar(0)*[^negligible-zero-scalar]
 - Let *R<sub>1</sub> = cpoint_ext(aggnonce[0:33]), R<sub>2</sub> = cpoint_ext(aggnonce[33:66])*; fail if that fails and blame the coordinator for invalid *aggnonce*
 - Let *R' = R<sub>1</sub> + b &middot; R<sub>2</sub>*
@@ -607,17 +608,17 @@ Algorithm *PartialSigVerify(psig, pubnonce<sub>1..u</sub>, n, t, id<sub>1..u</su
 
 - Inputs:
   - The partial signature *psig*: a 32-byte array, serialized scalar
-  - The list of public nonces *pubnonce<sub>1..u</sub>*: *u* 66-byte arrays, each an output of *NonceGen*
+  - The list of public nonces *pubnonce<sub>1..u</sub>*: *u* 66-byte arrays
   - The total number *n* of participants involved in key generation: an integer with *1 ≤ n ≤ 128*
   - The threshold number *t* of participants required to issue a signature: an integer with *1 ≤ t ≤ n*
   - The list of participant identifiers *id<sub>1..u</sub>*: *u* distinct integers with *t ≤ u ≤ n*, each with *0 ≤ id<sub>i</sub> ≤ n - 1*
   - The list of participant public shares *pubshare<sub>1..u</sub>*: *u* 33-byte arrays, each a compressed serialized point
   - The threshold public key *thresh_pk*: a 33-byte array, compressed serialized point
-  - The number *v* of tweaks with *0 ≤ v < 2^32*
+  - The number *v* of tweaks with *0 ≤ v < 2<sup>32</sup>*
   - The list of tweaks *tweak<sub>1..v</sub>*: *v* 32-byte arrays, each a serialized scalar
   - The list of tweak modes *is_xonly_t<sub>1..v</sub>* : *v* booleans
   - The message *m*: a byte array[^max-msg-len]
-  - The index *i* of the signer in the list of public nonces where *0 ≤ i ≤ u - 1*
+  - The index *i* of the signer in the list of public nonces where *1 ≤ i ≤ u*
 - Run *ValidateSessionParams(n, t, u, id<sub>1..u</sub>, pubshare<sub>1..u</sub>, thresh_pk)*; fail if that fails
 - Let *aggnonce = NonceAgg(pubnonce<sub>1..u</sub>)*; fail if that fails
 - Let *session_ctx = (n, t, u, id<sub>1..u</sub>, pubshare<sub>1..u</sub>, thresh_pk, aggnonce, v, tweak<sub>1..v</sub>, is_xonly_t<sub>1..v</sub>, m)*
@@ -700,7 +701,7 @@ Algorithm *DeterministicSign(secshare, signer_id, aggothernonce, n, t, id<sub>1.
   - The list of participant identifiers *id<sub>1..u</sub>*: *u* distinct integers with *t ≤ u ≤ n*, each with *0 ≤ id<sub>i</sub> ≤ n - 1*
   - The list of participant public shares *pubshare<sub>1..u</sub>*: *u* 33-byte arrays, each a compressed serialized point, or the whole list is absent
   - The threshold public key *thresh_pk*: a 33-byte array, compressed serialized point
-  - The number *v* of tweaks with *0 ≤ v < 2^32*
+  - The number *v* of tweaks with *0 ≤ v < 2<sup>32</sup>*
   - The list of tweaks *tweak<sub>1..v</sub>*: *v* 32-byte arrays, each a serialized scalar
   - The list of tweak modes *is_xonly_t<sub>1..v</sub>*: *v* booleans
   - The message *m*: a byte array[^max-msg-len]
@@ -879,6 +880,7 @@ This document proposes a standard for the FROST threshold signature scheme that 
 
 ## Changelog
 
+- *0.11.3* (2026-10-07): Cite the polynomial-time LDVR attack for large *n*[[GT26][ldvr-attack]], and fix minor inconsistencies in the BIP text.
 - *0.11.2* (2026-10-06): Rename the signer identifier argument *my_id* to *signer_id* in *Sign*, *DeterministicSign* and *PartialSigVerifyInternal*, and use subscripted names in *DeriveInterpolatingValue*. The test vector key *my_id* becomes *signer_id*.
 - *0.11.1* (2026-10-06): Improve test vector coverage.
 - *0.11.0* (2026-10-01): In *DeterministicSign*, derive the nonce from the possibly negated secret share instead of the raw *secshare*, and prefix *aggothernonce* with its length in the nonce hash input. The affected test vectors were regenerated.
@@ -944,4 +946,5 @@ We thank Jonas Nick, Tim Ruffing, Jesse Posner, Sebastian Falbesoner, Chris Stew
 [rerandomized-frost]: https://eprint.iacr.org/2024/436
 [adaptive-attack]: https://eprint.iacr.org/2025/1001
 [ldvr]: https://eprint.iacr.org/2025/1061
+[ldvr-attack]: https://eprint.iacr.org/2026/2126
 [rfc9591]: https://www.rfc-editor.org/rfc/rfc9591.html
