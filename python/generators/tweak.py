@@ -20,10 +20,6 @@ from generators.common import (
     write_test_vectors,
 )
 
-INVALID_33_BYTE_TWEAK = bytes.fromhex(
-    "E8F791FF9225A2AF0102AFFF4A9A723D9612A682A25EBE79802B263CDFCD83BBFF"
-)
-
 
 class TweakGroupBuilder:
     """Builds one (t, n) test group for tweak_vectors.json.
@@ -40,8 +36,10 @@ class TweakGroupBuilder:
         self.min2 = get_subset(cfg, "min2")
         self.aggnonce_min = self._agg(self.min_s)
 
-        # Shared tweaks pool with the invalid 33-byte tweak appended as the last entry.
-        self.tweaks_pool = list(self.inputs.tweaks_pool) + [INVALID_33_BYTE_TWEAK]
+        # Shared tweaks pool with an invalid 33-byte tweak appended as the last entry. It is a
+        # zero byte followed by a valid tweak, so only the length check can reject it.
+        invalid_33_byte_tweak = b"\x00" + self.inputs.tweaks_pool[0]
+        self.tweaks_pool = list(self.inputs.tweaks_pool) + [invalid_33_byte_tweak]
 
         self.group = {}
         set_group_config(self.group, cfg, self.inputs)

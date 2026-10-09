@@ -16,10 +16,10 @@ from frost_ref import (
     partial_sig_verify,
     SessionContext,
     PlainPk,
+    get_xonly_pk,
 )
 from frost_ref.signing import (
     thresh_pubkey_and_tweak,
-    get_xonly_pk,
     partial_sig_verify_internal,
 )
 

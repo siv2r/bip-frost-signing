@@ -176,7 +176,10 @@ def get_plain_pk(tweak_ctx: TweakContext) -> PlainPk:
 
 
 def tweak_ctx_init(thresh_pk: PlainPk) -> TweakContext:
-    Q = GE.from_bytes_compressed(thresh_pk)
+    try:
+        Q = GE.from_bytes_compressed(thresh_pk)
+    except ValueError:
+        raise ValueError("The thresh_pk is not a valid point.")
     gacc = Scalar(1)
     tacc = Scalar(0)
     return TweakContext(Q, gacc, tacc)

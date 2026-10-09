@@ -21,6 +21,7 @@ from generators.common import (
     expect_exception,
     get_subset,
     set_group_config,
+    swap_last_two,
     write_test_vectors,
 )
 
@@ -37,6 +38,7 @@ class SigAggGroupBuilder:
         self.thresh_pk = self.inputs.thresh_pk
 
         self.min_s = get_subset(cfg, "min")
+        self.blame_s = swap_last_two(get_subset(cfg, "min2"))
         self.full = get_subset(cfg, "full")
         self.shifted = get_subset(cfg, "tplus1_shifted")
 
@@ -192,7 +194,7 @@ class SigAggGroupBuilder:
 
     def add_error_tests(self) -> None:
         self._append_error(
-            self.min_s,
+            self.blame_s,
             "psig_out_of_range",
             "invalid_contrib",
             "Partial signature equals the group order, which is out of range",

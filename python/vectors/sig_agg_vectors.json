@@ -99,13 +99,13 @@
                 {
                     "tc_id": 6,
                     "comment": "Partial signature equals the group order, which is out of range",
-                    "ids": [0, 1],
-                    "pubshare_indices": [0, 1],
+                    "ids": [1, 0],
+                    "pubshare_indices": [1, 0],
                     "aggnonce": "0258D346E23685E092E143BD203EEC8597131390B1300E9466C9B741EC65FCCFC6029C9B5D46EF571F128C657306C86AC24E2E58CAC742788645A29E1CC0CEFFB316",
                     "tweak_indices": [],
                     "is_xonly": [],
                     "psigs": [
-                        "BD7C4B381E7A7CE76891C064CE565246643D47A8D8E5035C1536C8402B290108",
+                        "F6FC1814C8BDF89041FE10F91AD306CEF0E90CBD5003BE216D6C40B891469016",
                         "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141"
                     ],
                     "msg": "F95466D086770E689964664219266FE5ED215C92AE20BAB5C9D79ADDDDF3C0CF",
@@ -229,18 +229,19 @@
                 {
                     "tc_id": 13,
                     "comment": "Partial signature equals the group order, which is out of range",
-                    "ids": [0],
-                    "pubshare_indices": [0],
-                    "aggnonce": "02F9F1C397F1988D58B69B22730FA6A2876344A64FDBA08CF39010C64406A3EB1A03D3322CA714F1FB0249AEE0078289E916B71ECB0C96CC5787B2E72CDDA8B4025D",
+                    "ids": [1, 0],
+                    "pubshare_indices": [1, 0],
+                    "aggnonce": "0252222E2D26F551B185684994B363E528FF8FF918A09220532345D1D5E0EE276A03EFB12CE87FC0C332EEA54F43BE2357E7C3DEE0D08F85698E7B05DC09A4DE4BED",
                     "tweak_indices": [],
                     "is_xonly": [],
                     "psigs": [
+                        "C53A440052F86220E91F5EE756336D9EEEE21F814CB928FC88C9A19BC0D2B55E",
                         "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141"
                     ],
                     "msg": "F95466D086770E689964664219266FE5ED215C92AE20BAB5C9D79ADDDDF3C0CF",
                     "error": {
                         "type": "InvalidContributionError",
-                        "signer_index": 0,
+                        "signer_index": 1,
                         "contrib": "psig"
                     }
                 },
@@ -347,14 +348,14 @@
                 {
                     "tc_id": 19,
                     "comment": "Partial signature equals the group order, which is out of range",
-                    "ids": [0, 1, 2],
-                    "pubshare_indices": [0, 1, 2],
+                    "ids": [0, 2, 1],
+                    "pubshare_indices": [0, 2, 1],
                     "aggnonce": "02787415950E47F60DCA052AED9A5BB771190705D7820FC7FA74DF9B4C0BD0E95503306E8CEF5BEBD2105DAD2F030F25E7BD68F4397ED4185C7F73705A692645D628",
                     "tweak_indices": [],
                     "is_xonly": [],
                     "psigs": [
                         "91E4A40A3DA4CE2E9F570C132E6C99ECD303E521569B048C0A3463440F0E2E70",
-                        "AE7FBC6A7A12EE5FC935FBC786EE16374D5359EF43DA03F14103F68CE4B693DC",
+                        "62396BDE7438AE0E5CFCE2A4CC555B52973E8F4E742757C1439C0EE078A44463",
                         "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141"
                     ],
                     "msg": "F95466D086770E689964664219266FE5ED215C92AE20BAB5C9D79ADDDDF3C0CF",
@@ -491,14 +492,14 @@
                 {
                     "tc_id": 26,
                     "comment": "Partial signature equals the group order, which is out of range",
-                    "ids": [0, 1, 2],
-                    "pubshare_indices": [0, 1, 2],
+                    "ids": [0, 2, 1],
+                    "pubshare_indices": [0, 2, 1],
                     "aggnonce": "024D32CA622435BF09154C6B748F16F4A9AE613D0C7F370B92F40D4AD50730BF300272529A2EF22D75501CFD1B63151BD788ED93506A2F025CCD140AA73F59911F35",
                     "tweak_indices": [],
                     "is_xonly": [],
                     "psigs": [
                         "60FB61FAD5E39D825681DB8F52A7317E9E30EE034B761A1D0A66F4D88A9F2830",
-                        "325A9FCBDF71B3D63C1C1E49466D149BA86C572265321971C7F6EBC81F9AB944",
+                        "BBBFC112F83BB0A1F111FB178CEA381659C1FF4E5B4E3B392B75AA8933687A7E",
                         "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141"
                     ],
                     "msg": "F95466D086770E689964664219266FE5ED215C92AE20BAB5C9D79ADDDDF3C0CF",
