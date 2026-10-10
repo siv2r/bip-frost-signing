@@ -1610,6 +1610,40 @@
                     }
                 }
             ]
+        },
+        {
+            "tg_id": "2of129",
+            "t": 2,
+            "n": 129,
+            "thresh_pk": "02B047B9A9391D8BD712C5F9A6136394A7C19FD004438110AA48198223EDBFD164",
+            "pubshares": [
+                "02DAEC34C9F1D575F40DE646F50EE8270A418554D40D6ABF1D5DA238EAEBACA59B",
+                "02CE8760F4AA720D080C7E773AE6A0A0C0798DD0230034D7A30C88A6449E934CB8"
+            ],
+            "secshares": [
+                "B39889FBD0437FB33AA0903A165AA56AE0DBDDD8F9D8C89315D46A01BA240488",
+                "556DF3815E7AB0FD18BB6250310680C5097673062A71EB91A59DF671ED4D340A"
+            ],
+            "valid_tests": [],
+            "error_tests": [
+                {
+                    "tc_id": 88,
+                    "comment": "Number of participants n exceeds the maximum of 128",
+                    "signer_id": 0,
+                    "ids": [0, 1],
+                    "pubshare_indices": [0, 1],
+                    "secshare_index": 0,
+                    "aggothernonce": "02EC55DFF35CD8B4FAF7775EB1D6B0BF0CC7CCBDC36F96449661CC3146488C848203918FA87F227A1092C5D681F2EFD3342E78B06AA2D7CA8A454FAA897C1A8890C5",
+                    "aux_rand": "0000000000000000000000000000000000000000000000000000000000000000",
+                    "msg": "F95466D086770E689964664219266FE5ED215C92AE20BAB5C9D79ADDDDF3C0CF",
+                    "tweaks": [],
+                    "is_xonly": [],
+                    "error": {
+                        "type": "ValueError",
+                        "message": "The number of participants must be n <= 128."
+                    }
+                }
+            ]
         }
     ]
 }

@@ -12,6 +12,7 @@ from frost_ref import (
 from generators.common import (
     COMMON_MSGS,
     COMMON_TWEAKS,
+    INVALID_CONFIG_2OF129,
     CONFIGS,
     GROUP_ORDER,
     SharedGroupInputs,
@@ -211,8 +212,44 @@ class SigAggGroupBuilder:
         self.add_error_tests()
         return self.group
 
+    def build_n_bound(self) -> dict:
+        # n = 129 is over the limit, so only the n-bound error case is built.
+        ids = [0, 1]
+        pubshares = [self.inputs.pubshares[i] for i in ids]
+        aggnonce = nonce_agg([self.inputs.pubnonces[i] for i in ids])
+        msg = COMMON_MSGS[0]
+        # Arbitrary psigs
+        psigs = [
+            bytes.fromhex(
+                "DB7FA01593B00696E76E443A3EE6CDB11D4DC5E323A22589EFE23E01CAAB3673"
+            ),
+            bytes.fromhex(
+                "2087409A1338F4821D24DAE225BD24D71BF0B8E6F6802379FAE72B78A1F9D73B"
+            ),
+        ]
+        session = SessionContext(
+            self.n, self.t, ids, pubshares, self.thresh_pk, aggnonce, [], [], msg
+        )
+        err = expect_exception(lambda: partial_sig_agg(psigs, session), ValueError)
+        self.group["pubshares"] = bytes_list_to_hex(pubshares)
+        self.group["error_tests"].append(
+            {
+                "comment": "Number of participants n exceeds the maximum of 128",
+                "ids": ids,
+                "pubshare_indices": ids,
+                "aggnonce": bytes_to_hex(aggnonce),
+                "tweak_indices": [],
+                "is_xonly": [],
+                "psigs": bytes_list_to_hex(psigs),
+                "msg": bytes_to_hex(msg),
+                "error": err,
+            }
+        )
+        return self.group
+
 
 def generate_sig_agg_vectors() -> None:
     groups = [SigAggGroupBuilder(cfg).build() for cfg in CONFIGS]
+    groups.append(SigAggGroupBuilder(INVALID_CONFIG_2OF129).build_n_bound())
     assign_tc_ids(groups)
     write_test_vectors("sig_agg_vectors.json", {"test_groups": groups})

@@ -7,7 +7,7 @@
   Assigned: 2026-01-30
   License: CC0-1.0
   Discussion: 2024-07-31: https://groups.google.com/g/bitcoindev/c/PeMp2HQl-H4/m/AcJtK0aKAwAJ
-  Version: 0.12.0
+  Version: 0.12.1
   Requires: 340
 ```
 
@@ -889,6 +889,7 @@ This document proposes a standard for the FROST threshold signature scheme that 
 
 ## Changelog
 
+- *0.12.1* (2026-10-10): Add test vectors for *ValidateThresholdInfo* and for the upper bound *n <= 128* on the number of participants.
 - *0.12.0* (2026-10-08): Add an optional *signer_id* argument to *NonceGen*, and make it mandatory in *CounterNonceGen*. The affected test vectors were regenerated.
 - *0.11.3* (2026-10-07): Cite the polynomial-time LDVR attack for large *n*[[GT26][ldvr-attack]], and fix minor inconsistencies in the BIP text.
 - *0.11.2* (2026-10-06): Rename the signer identifier argument *my_id* to *signer_id* in *Sign*, *DeterministicSign* and *PartialSigVerifyInternal*, and use subscripted names in *DeriveInterpolatingValue*. The test vector key *my_id* becomes *signer_id*.
