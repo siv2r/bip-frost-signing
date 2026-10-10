@@ -14,11 +14,7 @@ rerun `gen_vectors.py`, don't hand-edit the files.
 | `tweak_vectors.json` | `sign` with tweaks | `valid_tests`, `error_tests` |
 | `det_sign_vectors.json` | `deterministic_sign` | `valid_tests`, `error_tests` |
 | `sig_agg_vectors.json` | `partial_sig_agg` | `valid_tests`, `error_tests` |
-
-`ValidateThresholdInfo` ships no vectors. It checks key material that a key
-generation protocol produced, so vectors for it belong with that protocol rather
-than here. RFC 9591 makes the same call, requiring `vss_verify` while shipping no
-vectors for it.
+| `threshold_info_vectors.json` | `validate_threshold_info` | `valid_tests`, `error_tests` |
 
 ## How test cases are laid out
 
@@ -45,6 +41,10 @@ A few things stay out of that scheme:
 
 - `tg_id`, `n`, `t`, and `thresh_pk` are group-level scalars you read directly
   (the `(t, n)` label and the shared key setup), not part of the index scheme.
+- `threshold_info` groups carry no `t`, `n` or `thresh_pk`. Each case has its
+  own `t` and `thresh_pk`, and its `pubshare_indices` is the public share list
+  itself, of length `n`: entry `i` indexes participant `i`'s share in
+  `pubshares`, or is `null` if absent.
 - Per-session values stay inline in the case, with no shared input: the
   message (`msg`), the aggregate nonce (`aggnonce`, or `aggothernonce` in
   `det_sign`), and the signer's own id (`signer_id`). In `det_sign`,
@@ -73,11 +73,16 @@ single-signer and uses no shared key, so every case inlines its own inputs.
 
 ## The key setups
 
-Every file except `nonce_gen` and `nonce_agg` carries four test groups, one
+Every file except `nonce_gen` and `nonce_agg` starts with four test groups, one
 per `(t, n)` configuration: `2-of-3`, `1-of-3`, `3-of-3`, and `3-of-5`. A
 group's `tg_id` names its configuration (for example `"3of5"`), and each group
-is generated independently, so it has its own `t`, `n`, `thresh_pk`, and `n`
-real participants with identifiers `0 .. n - 1`.
+is generated independently from its own key, with `n` real participants whose
+identifiers are `0 .. n - 1`.
+
+`sign_verify`, `det_sign`, `sig_agg` and `threshold_info` carry a fifth group,
+`2of129`, after those four. Its `n = 129` exceeds the bound `n <= 128`, so it
+holds only error cases, each failing on that bound alone. Its pools store only
+the few entries those cases use, with no bogus entries.
 
 In the `sign_verify` and `det_sign` groups, a few bogus public shares and an
 out-of-range identifier (the value `n`) are appended after the real participants,
@@ -105,6 +110,7 @@ Each case array has its own contract:
 - `valid_tests` must succeed and produce exactly the bytes in `expected`.
   (`nonce_gen`'s `expected` is the pair `[secnonce, pubnonce]`, `nonce_agg`'s
   is the aggregate nonce, and `det_sign`'s is the pair `[pubnonce, psig]`.)
+  `threshold_info` has no `expected`: its valid cases must simply not raise.
 - `error_tests` and `sign_error_tests` must raise the exception described in
   the case's `error` object.
 - `verify_fail_tests` must make `partial_sig_verify` return `False` without

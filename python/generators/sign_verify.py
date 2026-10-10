@@ -7,10 +7,12 @@ from frost_ref import (
     partial_sig_verify,
     sign,
 )
+from frost_ref.signing import MAX_PARTICIPANTS
 from secp256k1lab.secp256k1 import Scalar
 
 from generators.common import (
     COMMON_MSGS,
+    INVALID_CONFIG_2OF129,
     CONFIGS,
     GROUP_ORDER,
     AGGNONCE_WRONG_TAG,
@@ -592,8 +594,54 @@ class SignVerifyGroupBuilder:
         self.add_verify_error_tests()
         return self.group
 
+    def build_n_bound(self) -> dict:
+        # n = 129 is over the limit, so only the n-bound error case is built.
+        s = [0, 1]
+        self._append_sign_error(
+            0,
+            s,
+            s,
+            0,
+            0,
+            self._agg(s),
+            COMMON_MSGS[0],
+            "value",
+            "Number of participants n exceeds the maximum of 128",
+        )
+        # A genuine partial signature at n = 128.
+        pubshares = [self.inputs.pubshares[i] for i in s]
+        session = SessionContext(
+            MAX_PARTICIPANTS,
+            self.t,
+            s,
+            pubshares,
+            self.thresh_pk,
+            self._agg(s),
+            [],
+            [],
+            COMMON_MSGS[0],
+        )
+        psig = sign(
+            bytearray(self.inputs.secnonces[0]), self.inputs.secshares[0], 0, session
+        )
+        self._append_verify_error(
+            s,
+            s,
+            s,
+            0,
+            psig,
+            "value",
+            "Number of participants n exceeds the maximum of 128",
+        )
+        self.group["pubshares"] = bytes_list_to_hex(self.inputs.pubshares[:2])
+        self.group["pubnonces"] = bytes_list_to_hex(self.inputs.pubnonces[:2])
+        self.group["secshares"] = bytes_list_to_hex(self.inputs.secshares[:2])
+        self.group["secnonces"] = bytes_list_to_hex(self.inputs.secnonces[:2])
+        return self.group
+
 
 def generate_sign_verify_vectors() -> None:
     groups = [SignVerifyGroupBuilder(cfg).build() for cfg in CONFIGS]
+    groups.append(SignVerifyGroupBuilder(INVALID_CONFIG_2OF129).build_n_bound())
     assign_tc_ids(groups)
     write_test_vectors("sign_verify_vectors.json", {"test_groups": groups})

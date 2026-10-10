@@ -11,6 +11,7 @@ from frost_ref import (
     InvalidContributionError,
     PlainPk,
     SessionContext,
+    ThresholdInfo,
     XonlyPk,
     deterministic_sign,
     get_xonly_pk,
@@ -19,6 +20,7 @@ from frost_ref import (
     partial_sig_agg,
     partial_sig_verify,
     sign,
+    validate_threshold_info,
 )
 from frost_ref.signing import (
     thresh_pubkey_and_tweak,
@@ -159,7 +161,8 @@ def test_sign_verify_vectors():
         pubnonces = fromhex_all(group["pubnonces"])
         secshares = fromhex_all(group["secshares"])
         secnonces = fromhex_all(group["secnonces"])
-        for i in range(n):
+        # n = 129 groups has pubshares of length 2, hence the min.
+        for i in range(min(n, len(pubshares))):
             assert pubshares[i] == PlainPk(pubkey_gen_plain(secshares[i]))
         k_1 = int_from_bytes(secnonces[0][0:32])
         k_2 = int_from_bytes(secnonces[0][32:64])
@@ -348,7 +351,8 @@ def test_det_sign_vectors():
         thresh_pk = bytes.fromhex(group["thresh_pk"])
         pubshares = fromhex_all(group["pubshares"])
         secshares = fromhex_all(group["secshares"])
-        for i in range(n):
+        # n = 129 groups has pubshares of length 2, hence the min.
+        for i in range(min(n, len(pubshares))):
             assert pubshares[i] == PlainPk(pubkey_gen_plain(secshares[i]))
 
         for test_case in group["valid_tests"]:
@@ -508,6 +512,44 @@ def test_sig_agg_vectors():
             assert_raises(
                 exception,
                 lambda: partial_sig_agg(psigs_tmp, session_ctx),
+                except_fn,
+            )
+
+
+def test_threshold_info_vectors():
+    with open(os.path.join(sys.path[0], "vectors", "threshold_info_vectors.json")) as f:
+        test_data = json.load(f)
+
+    for group in test_data["test_groups"]:
+        pubshares = fromhex_all(group["pubshares"])
+
+        for test_case in group["valid_tests"]:
+            t = test_case["t"]
+            thresh_pk = bytes.fromhex(test_case["thresh_pk"])
+            pubshares_tmp = []
+            for i in test_case["pubshare_indices"]:
+                if i is None:
+                    pubshares_tmp.append(None)
+                else:
+                    pubshares_tmp.append(PlainPk(pubshares[i]))
+
+            validate_threshold_info(ThresholdInfo(t, PlainPk(thresh_pk), pubshares_tmp))
+
+        for test_case in group["error_tests"]:
+            exception, except_fn = get_error_details(test_case)
+            t = test_case["t"]
+            thresh_pk = bytes.fromhex(test_case["thresh_pk"])
+            pubshares_tmp = []
+            for i in test_case["pubshare_indices"]:
+                if i is None:
+                    pubshares_tmp.append(None)
+                else:
+                    pubshares_tmp.append(PlainPk(pubshares[i]))
+
+            threshold_info = ThresholdInfo(t, PlainPk(thresh_pk), pubshares_tmp)
+            assert_raises(
+                exception,
+                lambda: validate_threshold_info(threshold_info),
                 except_fn,
             )
 
@@ -699,6 +741,7 @@ if __name__ == "__main__":
         run_test("test_tweak_vectors", test_tweak_vectors),
         run_test("test_det_sign_vectors", test_det_sign_vectors),
         run_test("test_sig_agg_vectors", test_sig_agg_vectors),
+        run_test("test_threshold_info_vectors", test_threshold_info_vectors),
         run_test("test_sign_and_verify_random", lambda: test_sign_and_verify_random(6)),
     ]
     sys.exit(0 if all(results) else 1)

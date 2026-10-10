@@ -187,6 +187,12 @@ CONFIGS = [
 ]
 
 
+SECKEY_2OF129 = bytes.fromhex(
+    "11C32076420C4E695C85BE23FBAECA11FD926BC519F70558C6387F04B6C493C5"
+)
+INVALID_CONFIG_2OF129 = Config("2of129", 2, 129, SECKEY_2OF129)
+
+
 class SharedGroupInputs:
     """Per-test-group key/nonce material plus pools (real entries followed by appended
     fault slots) and the named offsets that index those slots."""
