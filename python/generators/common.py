@@ -191,6 +191,13 @@ SECKEY_2OF129 = bytes.fromhex(
     "11C32076420C4E695C85BE23FBAECA11FD926BC519F70558C6387F04B6C493C5"
 )
 INVALID_CONFIG_2OF129 = Config("2of129", 2, 129, SECKEY_2OF129)
+# The 2of129 key, so n alone separates acceptance from refusal.
+CONFIG_2OF128 = Config("2of128", 2, 128, SECKEY_2OF129)
+
+SECKEY_1OF1 = bytes.fromhex(
+    "A4AD0B08BF427A00029BDCCD4D2C6F66C03FB3A9561C822677B51FE8B87E3009"
+)
+CONFIG_1OF1 = Config("1of1", 1, 1, SECKEY_1OF1)
 
 
 class SharedGroupInputs:
@@ -211,6 +218,14 @@ class SharedGroupInputs:
         self.secnonces, self.pubnonces = generate_all_nonces(
             COMMON_RAND, ids, secshares, pubshares, self.xonly_thresh_pk
         )
+
+        # With n = 1 there is no second signer to build the bad entries from.
+        if n == 1:
+            self.pool_pubshares = list(pubshares)
+            self.pool_secshares = list(secshares)
+            self.pool_pubnonces = list(self.pubnonces)
+            self.pool_secnonces = list(self.secnonces)
+            return
 
         # pubshares pool: off-curve point at slot n, then a valid point at slot n+1
         # (the last secshare shifted so the lambda-weighted sum over min2_ids is

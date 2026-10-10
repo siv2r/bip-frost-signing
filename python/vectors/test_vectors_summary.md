@@ -84,6 +84,12 @@ identifiers are `0 .. n - 1`.
 holds only error cases, each failing on that bound alone. Its pools store only
 the few entries those cases use, with no bogus entries.
 
+`sign_verify` and `threshold_info` then carry `2of128`: the same key with
+`n = 128`, the largest `n` allowed, holding one valid case and stored the same
+way. `sign_verify` and `sig_agg` end with `1of1`, a single participant whose
+public share is the threshold public key, holding one valid case and no bogus
+entries.
+
 In the `sign_verify` and `det_sign` groups, a few bogus public shares and an
 out-of-range identifier (the value `n`) are appended after the real participants,
 but only error cases use them to trigger public share and out-of-range-id

@@ -36,10 +36,16 @@ class TweakGroupBuilder:
         self.min2 = get_subset(cfg, "min2")
         self.aggnonce_min = self._agg(self.min_s)
 
-        # Shared tweaks pool with an invalid 33-byte tweak appended as the last entry. It is a
-        # zero byte followed by a valid tweak, so only the length check can reject it.
+        # Shared tweaks pool with an invalid 33-byte tweak appended, then a zero tweak. The
+        # first is a zero byte followed by a valid tweak, so only the length check can
+        # reject it.
         invalid_33_byte_tweak = b"\x00" + self.inputs.tweaks_pool[0]
-        self.tweaks_pool = list(self.inputs.tweaks_pool) + [invalid_33_byte_tweak]
+        self.INVALID_33_BYTE_TWEAK_IDX = len(self.inputs.tweaks_pool)
+        self.ZERO_TWEAK_IDX = self.INVALID_33_BYTE_TWEAK_IDX + 1
+        self.tweaks_pool = list(self.inputs.tweaks_pool) + [
+            invalid_33_byte_tweak,
+            bytes(32),
+        ]
 
         self.group = {}
         set_group_config(self.group, cfg, self.inputs)
@@ -196,6 +202,17 @@ class TweakGroupBuilder:
             [False, False, True, True],
             "Four tweaks: two plain followed by two x-only",
         )
+        self._append_valid(
+            0,
+            self.min_s,
+            self.min_s,
+            self.min_s,
+            self.aggnonce_min,
+            msg,
+            [self.ZERO_TWEAK_IDX],
+            [False],
+            "Plain tweak of zero, which is in range",
+        )
 
     def add_error_tests(self) -> None:
         msg = COMMON_MSGS[0]
@@ -245,8 +262,7 @@ class TweakGroupBuilder:
             0,
             self.aggnonce_min,
             msg,
-            # last pool entry, the appended invalid tweak
-            [len(self.inputs.tweaks_pool)],
+            [self.INVALID_33_BYTE_TWEAK_IDX],
             [False],
             "Tweak is not a 32-byte array",
         )

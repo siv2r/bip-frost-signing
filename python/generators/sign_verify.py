@@ -12,6 +12,8 @@ from secp256k1lab.secp256k1 import Scalar
 
 from generators.common import (
     COMMON_MSGS,
+    CONFIG_1OF1,
+    CONFIG_2OF128,
     INVALID_CONFIG_2OF129,
     CONFIGS,
     GROUP_ORDER,
@@ -639,9 +641,43 @@ class SignVerifyGroupBuilder:
         self.group["secnonces"] = bytes_list_to_hex(self.inputs.secnonces[:2])
         return self.group
 
+    def build_n_max(self) -> dict:
+        # n = 128 is the largest n allowed, so one valid case is enough.
+        s = [0, 1]
+        self._append_valid(
+            0,
+            s,
+            s,
+            s,
+            self._agg(s),
+            COMMON_MSGS[0],
+            "Number of participants n equals the maximum of 128",
+        )
+        self.group["pubshares"] = bytes_list_to_hex(self.inputs.pubshares[:2])
+        self.group["pubnonces"] = bytes_list_to_hex(self.inputs.pubnonces[:2])
+        self.group["secshares"] = bytes_list_to_hex(self.inputs.secshares[:2])
+        self.group["secnonces"] = bytes_list_to_hex(self.inputs.secnonces[:2])
+        return self.group
+
+    def build_1of1(self) -> dict:
+        # The polynomial is a constant, so the one share is the threshold key.
+        assert self.inputs.pubshares[0] == self.thresh_pk
+        self._append_valid(
+            0,
+            [0],
+            [0],
+            [0],
+            self._agg([0]),
+            COMMON_MSGS[0],
+            "A single participant, t = n = 1",
+        )
+        return self.group
+
 
 def generate_sign_verify_vectors() -> None:
     groups = [SignVerifyGroupBuilder(cfg).build() for cfg in CONFIGS]
     groups.append(SignVerifyGroupBuilder(INVALID_CONFIG_2OF129).build_n_bound())
+    groups.append(SignVerifyGroupBuilder(CONFIG_2OF128).build_n_max())
+    groups.append(SignVerifyGroupBuilder(CONFIG_1OF1).build_1of1())
     assign_tc_ids(groups)
     write_test_vectors("sign_verify_vectors.json", {"test_groups": groups})
