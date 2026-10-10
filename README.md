@@ -451,7 +451,7 @@ Algorithm *NonceGen(secshare, signer_id, pubshare, thresh_pk_xonly, m, extra_in)
 
 - Inputs:
   - The participant secret share *secshare*: a 32-byte array, serialized scalar (optional argument)
-  - The participant identifier *signer_id*: an integer with *0 ≤ signer_id ≤ n-1* (optional argument)
+  - The participant identifier *signer_id*: an integer with *0 ≤ signer_id ≤ 2<sup>32</sup>-1* (optional argument)
   - The participant public share *pubshare*: a 33-byte array, compressed serialized point (optional argument)
   - The x-only threshold public key *thresh_pk_xonly*: a 32-byte array, x-only serialized point (optional argument). If tweaks are to be applied during signing, this is ideally the x-only public key that results from applying all of them, i.e., the output of *GetXonlyPubkey(tweak_ctx)*. If no tweaks are to be applied, or if it is not yet determined at nonce generation time whether or which tweaks will be applied, this may also be the last 32 bytes of the threshold public key *thresh_pk*.
   - The message *m*: a byte array (optional argument)[^max-msg-len]
