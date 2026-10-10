@@ -608,7 +608,7 @@ class SignVerifyGroupBuilder:
             "value",
             "Number of participants n exceeds the maximum of 128",
         )
-        # A genuine partial signature, made at n = 128 since n does not enter signing.
+        # A genuine partial signature at n = 128.
         pubshares = [self.inputs.pubshares[i] for i in s]
         session = SessionContext(
             MAX_PARTICIPANTS,

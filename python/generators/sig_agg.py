@@ -232,6 +232,7 @@ class SigAggGroupBuilder:
         )
         err = expect_exception(lambda: partial_sig_agg(psigs, session), ValueError)
         self.group["pubshares"] = bytes_list_to_hex(pubshares)
+        self.group["tweaks"] = []
         self.group["error_tests"].append(
             {
                 "comment": "Number of participants n exceeds the maximum of 128",
