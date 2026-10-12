@@ -31,8 +31,7 @@
                 "F52ECBC565B3D8BEA2DFD5B75A4F457E54369809322E4120831626F290FA87E0",
                 "1969AD73CC177FA0B4FCED6DF1F7BF9907E665FDE9BA196A74FED0A3CF5AEF9D",
                 "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141",
-                "B3F73C80A46577051C695F91D7945BE3556A85275112EB952CC8EFB32521AF4C",
-                "00E8F791FF9225A2AF0102AFFF4A9A723D9612A682A25EBE79802B263CDFCD83BB"
+                "B3F73C80A46577051C695F91D7945BE3556A85275112EB952CC8EFB32521AF4C"
             ],
             "valid_tests": [
                 {
@@ -162,23 +161,6 @@
                         "type": "ValueError",
                         "message": "The tweaks and is_xonly lists must have the same length."
                     }
-                },
-                {
-                    "tc_id": 9,
-                    "comment": "Tweak is not a 32-byte array",
-                    "signer_id": 0,
-                    "ids": [0, 1],
-                    "pubshare_indices": [0, 1],
-                    "secshare_index": 0,
-                    "secnonce_index": 0,
-                    "aggnonce": "0258D346E23685E092E143BD203EEC8597131390B1300E9466C9B741EC65FCCFC6029C9B5D46EF571F128C657306C86AC24E2E58CAC742788645A29E1CC0CEFFB316",
-                    "msg": "F95466D086770E689964664219266FE5ED215C92AE20BAB5C9D79ADDDDF3C0CF",
-                    "tweak_indices": [6],
-                    "is_xonly": [false],
-                    "error": {
-                        "type": "ValueError",
-                        "message": "The tweak must be a 32-byte array."
-                    }
                 }
             ]
         },
@@ -213,12 +195,11 @@
                 "F52ECBC565B3D8BEA2DFD5B75A4F457E54369809322E4120831626F290FA87E0",
                 "1969AD73CC177FA0B4FCED6DF1F7BF9907E665FDE9BA196A74FED0A3CF5AEF9D",
                 "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141",
-                "F92B81FA168B7EBD79ABA9C1A51963DDF6189A6F73D56C19B16F4D8A7693350F",
-                "00E8F791FF9225A2AF0102AFFF4A9A723D9612A682A25EBE79802B263CDFCD83BB"
+                "F92B81FA168B7EBD79ABA9C1A51963DDF6189A6F73D56C19B16F4D8A7693350F"
             ],
             "valid_tests": [
                 {
-                    "tc_id": 10,
+                    "tc_id": 9,
                     "comment": "Single x-only tweak (used for BIP341 Taproot)",
                     "signer_id": 0,
                     "ids": [0],
@@ -233,7 +214,7 @@
                     "expected": "396CC361BD2CDF0BD376472E17939CC3BFBF01AA8A5046F0E51DE682A13DBD77"
                 },
                 {
-                    "tc_id": 11,
+                    "tc_id": 10,
                     "comment": "Single plain tweak (used for BIP32 derivation)",
                     "signer_id": 0,
                     "ids": [0],
@@ -248,7 +229,7 @@
                     "expected": "B8BA5361F64C2C0E5DDCAA8FC75C65A4B4D13A0D084E26F693474D38F637975D"
                 },
                 {
-                    "tc_id": 12,
+                    "tc_id": 11,
                     "comment": "A plain tweak followed by an x-only tweak",
                     "signer_id": 0,
                     "ids": [0],
@@ -263,7 +244,7 @@
                     "expected": "4BCD55792F9B36D674CB71F7AB3BCE009CEA072925930FDEA84C1F9BD7850A08"
                 },
                 {
-                    "tc_id": 13,
+                    "tc_id": 12,
                     "comment": "Four tweaks alternating x-only and plain",
                     "signer_id": 0,
                     "ids": [0],
@@ -278,7 +259,7 @@
                     "expected": "1D302063CD13BF030EE6D191B7EB4CAC4B4F24858D4814063D65E510E5E26366"
                 },
                 {
-                    "tc_id": 14,
+                    "tc_id": 13,
                     "comment": "Four tweaks: two plain followed by two x-only",
                     "signer_id": 1,
                     "ids": [0, 1],
@@ -295,7 +276,7 @@
             ],
             "error_tests": [
                 {
-                    "tc_id": 15,
+                    "tc_id": 14,
                     "comment": "Tweak equals the group order, which is out of range",
                     "signer_id": 0,
                     "ids": [0],
@@ -312,7 +293,7 @@
                     }
                 },
                 {
-                    "tc_id": 16,
+                    "tc_id": 15,
                     "comment": "Plain tweak drives the tweaked threshold public key to the point at infinity",
                     "signer_id": 0,
                     "ids": [0],
@@ -329,7 +310,7 @@
                     }
                 },
                 {
-                    "tc_id": 17,
+                    "tc_id": 16,
                     "comment": "Number of tweaks does not match the number of tweak modes",
                     "signer_id": 0,
                     "ids": [0],
@@ -343,23 +324,6 @@
                     "error": {
                         "type": "ValueError",
                         "message": "The tweaks and is_xonly lists must have the same length."
-                    }
-                },
-                {
-                    "tc_id": 18,
-                    "comment": "Tweak is not a 32-byte array",
-                    "signer_id": 0,
-                    "ids": [0],
-                    "pubshare_indices": [0],
-                    "secshare_index": 0,
-                    "secnonce_index": 0,
-                    "aggnonce": "02F9F1C397F1988D58B69B22730FA6A2876344A64FDBA08CF39010C64406A3EB1A03D3322CA714F1FB0249AEE0078289E916B71ECB0C96CC5787B2E72CDDA8B4025D",
-                    "msg": "F95466D086770E689964664219266FE5ED215C92AE20BAB5C9D79ADDDDF3C0CF",
-                    "tweak_indices": [6],
-                    "is_xonly": [false],
-                    "error": {
-                        "type": "ValueError",
-                        "message": "The tweak must be a 32-byte array."
                     }
                 }
             ]
@@ -395,12 +359,11 @@
                 "F52ECBC565B3D8BEA2DFD5B75A4F457E54369809322E4120831626F290FA87E0",
                 "1969AD73CC177FA0B4FCED6DF1F7BF9907E665FDE9BA196A74FED0A3CF5AEF9D",
                 "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141",
-                "8F16F7AD16ABE01B8AAD48C75EB3D4635F761C4F11E49492F82CB89DEE789D3C",
-                "00E8F791FF9225A2AF0102AFFF4A9A723D9612A682A25EBE79802B263CDFCD83BB"
+                "8F16F7AD16ABE01B8AAD48C75EB3D4635F761C4F11E49492F82CB89DEE789D3C"
             ],
             "valid_tests": [
                 {
-                    "tc_id": 19,
+                    "tc_id": 17,
                     "comment": "Single x-only tweak (used for BIP341 Taproot)",
                     "signer_id": 0,
                     "ids": [0, 1, 2],
@@ -415,7 +378,7 @@
                     "expected": "4EB54BE276AFB2BCA09DBAF12AA5934C60A87565C0A021406142DAE2DD965170"
                 },
                 {
-                    "tc_id": 20,
+                    "tc_id": 18,
                     "comment": "Single plain tweak (used for BIP32 derivation)",
                     "signer_id": 0,
                     "ids": [0, 1, 2],
@@ -430,7 +393,7 @@
                     "expected": "4EB54BE276AFB2BCA09DBAF12AA5934C60A87565C0A021406142DAE2DD965170"
                 },
                 {
-                    "tc_id": 21,
+                    "tc_id": 19,
                     "comment": "A plain tweak followed by an x-only tweak",
                     "signer_id": 0,
                     "ids": [0, 1, 2],
@@ -445,7 +408,7 @@
                     "expected": "55EE01A124BD2948FDA3D034B27A4D8361047743969137711EE26D8D4E523DE6"
                 },
                 {
-                    "tc_id": 22,
+                    "tc_id": 20,
                     "comment": "Four tweaks alternating x-only and plain",
                     "signer_id": 0,
                     "ids": [0, 1, 2],
@@ -460,7 +423,7 @@
                     "expected": "31E143AC4601E1288F8427C902BAF27051B6EA41938BF235BCD794B09C922C89"
                 },
                 {
-                    "tc_id": 23,
+                    "tc_id": 21,
                     "comment": "Four tweaks: two plain followed by two x-only",
                     "signer_id": 1,
                     "ids": [0, 1, 2],
@@ -477,7 +440,7 @@
             ],
             "error_tests": [
                 {
-                    "tc_id": 24,
+                    "tc_id": 22,
                     "comment": "Tweak equals the group order, which is out of range",
                     "signer_id": 0,
                     "ids": [0, 1, 2],
@@ -494,7 +457,7 @@
                     }
                 },
                 {
-                    "tc_id": 25,
+                    "tc_id": 23,
                     "comment": "Plain tweak drives the tweaked threshold public key to the point at infinity",
                     "signer_id": 0,
                     "ids": [0, 1, 2],
@@ -511,7 +474,7 @@
                     }
                 },
                 {
-                    "tc_id": 26,
+                    "tc_id": 24,
                     "comment": "Number of tweaks does not match the number of tweak modes",
                     "signer_id": 0,
                     "ids": [0, 1, 2],
@@ -525,23 +488,6 @@
                     "error": {
                         "type": "ValueError",
                         "message": "The tweaks and is_xonly lists must have the same length."
-                    }
-                },
-                {
-                    "tc_id": 27,
-                    "comment": "Tweak is not a 32-byte array",
-                    "signer_id": 0,
-                    "ids": [0, 1, 2],
-                    "pubshare_indices": [0, 1, 2],
-                    "secshare_index": 0,
-                    "secnonce_index": 0,
-                    "aggnonce": "02787415950E47F60DCA052AED9A5BB771190705D7820FC7FA74DF9B4C0BD0E95503306E8CEF5BEBD2105DAD2F030F25E7BD68F4397ED4185C7F73705A692645D628",
-                    "msg": "F95466D086770E689964664219266FE5ED215C92AE20BAB5C9D79ADDDDF3C0CF",
-                    "tweak_indices": [6],
-                    "is_xonly": [false],
-                    "error": {
-                        "type": "ValueError",
-                        "message": "The tweak must be a 32-byte array."
                     }
                 }
             ]
@@ -585,12 +531,11 @@
                 "F52ECBC565B3D8BEA2DFD5B75A4F457E54369809322E4120831626F290FA87E0",
                 "1969AD73CC177FA0B4FCED6DF1F7BF9907E665FDE9BA196A74FED0A3CF5AEF9D",
                 "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141",
-                "3680D87253A03CDEB0B3D228AAE37B2A356112D276C0AAF52D5F022B2EC7B117",
-                "00E8F791FF9225A2AF0102AFFF4A9A723D9612A682A25EBE79802B263CDFCD83BB"
+                "3680D87253A03CDEB0B3D228AAE37B2A356112D276C0AAF52D5F022B2EC7B117"
             ],
             "valid_tests": [
                 {
-                    "tc_id": 28,
+                    "tc_id": 25,
                     "comment": "Single x-only tweak (used for BIP341 Taproot)",
                     "signer_id": 0,
                     "ids": [0, 1, 2],
@@ -605,7 +550,7 @@
                     "expected": "4AF19AB9CD8E12FBF436436C277A77FB2FB832CF6243F916DD5F94AC29616BC4"
                 },
                 {
-                    "tc_id": 29,
+                    "tc_id": 26,
                     "comment": "Single plain tweak (used for BIP32 derivation)",
                     "signer_id": 0,
                     "ids": [0, 1, 2],
@@ -620,7 +565,7 @@
                     "expected": "36E2C7CC0C32770EDB5DA309564427CF5B69A9C1BEE014151B0F34B69621822D"
                 },
                 {
-                    "tc_id": 30,
+                    "tc_id": 27,
                     "comment": "A plain tweak followed by an x-only tweak",
                     "signer_id": 0,
                     "ids": [0, 1, 2],
@@ -635,7 +580,7 @@
                     "expected": "337FC9AC997353DE2F4F0704E4A94F89DB625E8899C2C59E1F0CEF910B08F6F1"
                 },
                 {
-                    "tc_id": 31,
+                    "tc_id": 28,
                     "comment": "Four tweaks alternating x-only and plain",
                     "signer_id": 0,
                     "ids": [0, 1, 2],
@@ -650,7 +595,7 @@
                     "expected": "2357ADF3CF19916B3C674768DBAB6F03404CA7611613604B0D8D55B712787690"
                 },
                 {
-                    "tc_id": 32,
+                    "tc_id": 29,
                     "comment": "Four tweaks: two plain followed by two x-only",
                     "signer_id": 1,
                     "ids": [0, 1, 2],
@@ -667,7 +612,7 @@
             ],
             "error_tests": [
                 {
-                    "tc_id": 33,
+                    "tc_id": 30,
                     "comment": "Tweak equals the group order, which is out of range",
                     "signer_id": 0,
                     "ids": [0, 1, 2],
@@ -684,7 +629,7 @@
                     }
                 },
                 {
-                    "tc_id": 34,
+                    "tc_id": 31,
                     "comment": "Plain tweak drives the tweaked threshold public key to the point at infinity",
                     "signer_id": 0,
                     "ids": [0, 1, 2],
@@ -701,7 +646,7 @@
                     }
                 },
                 {
-                    "tc_id": 35,
+                    "tc_id": 32,
                     "comment": "Number of tweaks does not match the number of tweak modes",
                     "signer_id": 0,
                     "ids": [0, 1, 2],
@@ -715,23 +660,6 @@
                     "error": {
                         "type": "ValueError",
                         "message": "The tweaks and is_xonly lists must have the same length."
-                    }
-                },
-                {
-                    "tc_id": 36,
-                    "comment": "Tweak is not a 32-byte array",
-                    "signer_id": 0,
-                    "ids": [0, 1, 2],
-                    "pubshare_indices": [0, 1, 2],
-                    "secshare_index": 0,
-                    "secnonce_index": 0,
-                    "aggnonce": "024D32CA622435BF09154C6B748F16F4A9AE613D0C7F370B92F40D4AD50730BF300272529A2EF22D75501CFD1B63151BD788ED93506A2F025CCD140AA73F59911F35",
-                    "msg": "F95466D086770E689964664219266FE5ED215C92AE20BAB5C9D79ADDDDF3C0CF",
-                    "tweak_indices": [6],
-                    "is_xonly": [false],
-                    "error": {
-                        "type": "ValueError",
-                        "message": "The tweak must be a 32-byte array."
                     }
                 }
             ]

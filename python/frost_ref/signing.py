@@ -37,9 +37,11 @@ MAX_PARTICIPANTS = 128
 #   - InvalidContributionError for indicating that a signer (or the
 #     coordinator) is misbehaving in the protocol.
 #
-# Byte arrays received from other parties (pubnonces, aggnonce, aggothernonce,
-# psigs) are always length-checked. The signer's own inputs are assumed to have
-# the lengths the BIP specifies (only nonce_gen and apply_tweak check them).
+# Length-check failures raise ValueError, not InvalidContributionError, even for
+# byte arrays received from another party (pubnonces, aggnonce, aggothernonce,
+# psigs). partial_sig_verify returns False for a wrong-length psig, since its
+# failure already means "invalid". Wrong-length pubshares and thresh_pk are left
+# to the secp256k1lab parsers.
 #
 # Assertions are used to (1) satisfy the type-checking system, and (2) check for
 # inconvenient events that can't happen except with negligible probability (e.g.
@@ -425,6 +427,10 @@ def serialize_ids(ids: List[int]) -> bytes:
 def sign(
     secnonce: bytearray, secshare: bytes, signer_id: int, session_ctx: SessionContext
 ) -> bytes:
+    if len(secnonce) != 64:
+        raise ValueError("The secnonce must be a 64-byte array.")
+    if len(secshare) != 32:
+        raise ValueError("The secshare must be a 32-byte array.")
     (Q, gacc, _, ids, pubshares, b, R, e) = get_session_values(session_ctx)
     try:
         k_1_ = Scalar.from_bytes_nonzero_checked(bytes(secnonce[0:32]))
@@ -515,6 +521,10 @@ def deterministic_sign(
         raise ValueError(
             "The aggothernonce must be present and a 66-byte array when u > 1."
         )
+    if len(secshare) != 32:
+        raise ValueError("The secshare must be a 32-byte array.")
+    if aux_rand is not None and len(aux_rand) != 32:
+        raise ValueError("The optional aux_rand must be a 32-byte array.")
     tweak_ctx = thresh_pubkey_and_tweak(thresh_pk, tweaks, is_xonly)
     Q, gacc, _ = tweak_ctx
     tweaked_thresh_pk_xonly = get_xonly_pk(tweak_ctx)

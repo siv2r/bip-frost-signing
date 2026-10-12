@@ -260,6 +260,8 @@ The bit can be obtained with *GetPlainPubkey(tweak_ctx)[0] & 1*.
 
 The following specification of the algorithms has been written with a focus on clarity. As a result, the specified algorithms are not always optimal in terms of computation and space. In particular, some values are recomputed but can be cached in actual implementations (see [General Signing Flow](#general-signing-flow)).
 
+Each algorithm states the byte length of its inputs where one is required. If an input has any other length, the algorithm fails.
+
 ### Notation
 
 The algorithms are defined over the **[secp256k1](https://www.secg.org/sec2-v2.pdf) group and its associated scalar field**. We note that adapting this proposal to other elliptic curves is not straightforward and can result in an insecure scheme.

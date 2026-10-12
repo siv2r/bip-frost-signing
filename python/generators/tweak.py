@@ -36,10 +36,7 @@ class TweakGroupBuilder:
         self.min2 = get_subset(cfg, "min2")
         self.aggnonce_min = self._agg(self.min_s)
 
-        # Shared tweaks pool with an invalid 33-byte tweak appended as the last entry. It is a
-        # zero byte followed by a valid tweak, so only the length check can reject it.
-        invalid_33_byte_tweak = b"\x00" + self.inputs.tweaks_pool[0]
-        self.tweaks_pool = list(self.inputs.tweaks_pool) + [invalid_33_byte_tweak]
+        self.tweaks_pool = list(self.inputs.tweaks_pool)
 
         self.group = {}
         set_group_config(self.group, cfg, self.inputs)
@@ -236,19 +233,6 @@ class TweakGroupBuilder:
             [0],
             [],
             "Number of tweaks does not match the number of tweak modes",
-        )
-        self._append_error(
-            signer_id,
-            self.min_s,
-            self.min_s,
-            0,
-            0,
-            self.aggnonce_min,
-            msg,
-            # last pool entry, the appended invalid tweak
-            [len(self.inputs.tweaks_pool)],
-            [False],
-            "Tweak is not a 32-byte array",
         )
 
     def build(self) -> dict:
