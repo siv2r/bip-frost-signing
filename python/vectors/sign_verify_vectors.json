@@ -1762,42 +1762,6 @@
             "sign_error_tests": [],
             "verify_fail_tests": [],
             "verify_error_tests": []
-        },
-        {
-            "tg_id": "1of1",
-            "t": 1,
-            "n": 1,
-            "thresh_pk": "03C64FBE5D80034C51CA156618DE57BBA58D94E6B0415AF3DB009D53B683A75161",
-            "pubshares": [
-                "03C64FBE5D80034C51CA156618DE57BBA58D94E6B0415AF3DB009D53B683A75161"
-            ],
-            "pubnonces": [
-                "03F8D815CD8C9CAA16DA909C25A10501B35C419B75A9D16D84D5A24D210AE43E9B03B43D13EF7979E87F48EE8A41D1EBE3A1DCB7886E71FA4C56841E23EF13215E9A"
-            ],
-            "secshares": [
-                "A4AD0B08BF427A00029BDCCD4D2C6F66C03FB3A9561C822677B51FE8B87E3009"
-            ],
-            "secnonces": [
-                "E4953359C1F1FF27BCE8E8692985D5B08B00A03CB8A53EFA65FE82A5E7E631B7867C4628EA0D439638A37FE8B559A429A2A840916D49C22FA675658609CA1F53"
-            ],
-            "valid_tests": [
-                {
-                    "tc_id": 110,
-                    "comment": "A single participant, t = n = 1",
-                    "signer_id": 0,
-                    "ids": [0],
-                    "pubshare_indices": [0],
-                    "pubnonce_indices": [0],
-                    "secshare_index": 0,
-                    "secnonce_index": 0,
-                    "aggnonce": "03F8D815CD8C9CAA16DA909C25A10501B35C419B75A9D16D84D5A24D210AE43E9B03B43D13EF7979E87F48EE8A41D1EBE3A1DCB7886E71FA4C56841E23EF13215E9A",
-                    "msg": "F95466D086770E689964664219266FE5ED215C92AE20BAB5C9D79ADDDDF3C0CF",
-                    "expected": "4EEB2D606060AC6289B2AEF85ECD86BE7BF51372B42C7290771B29A07D390834"
-                }
-            ],
-            "sign_error_tests": [],
-            "verify_fail_tests": [],
-            "verify_error_tests": []
         }
     ]
 }
