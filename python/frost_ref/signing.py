@@ -295,8 +295,10 @@ def nonce_gen(
 ) -> Tuple[bytearray, bytes]:
     if secshare is not None and len(secshare) != 32:
         raise ValueError("The optional secshare must be a 32-byte array.")
-    if signer_id is not None and not 0 <= signer_id <= 2**32 - 1:
-        raise ValueError("The optional signer_id must be a 4-byte integer.")
+    if signer_id is not None and not 0 <= signer_id < MAX_PARTICIPANTS:
+        raise ValueError(
+            f"The optional signer_id must satisfy 0 <= signer_id <= {MAX_PARTICIPANTS - 1}."
+        )
     if pubshare is not None and len(pubshare) != 33:
         raise ValueError("The optional pubshare must be a 33-byte array.")
     if thresh_pk_xonly is not None and len(thresh_pk_xonly) != 32:
