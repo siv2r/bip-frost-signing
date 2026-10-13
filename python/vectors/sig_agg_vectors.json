@@ -560,6 +560,38 @@
                     }
                 }
             ]
+        },
+        {
+            "tg_id": "1of1",
+            "t": 1,
+            "n": 1,
+            "thresh_pk": "03C64FBE5D80034C51CA156618DE57BBA58D94E6B0415AF3DB009D53B683A75161",
+            "pubshares": [
+                "03C64FBE5D80034C51CA156618DE57BBA58D94E6B0415AF3DB009D53B683A75161"
+            ],
+            "tweaks": [
+                "E8F791FF9225A2AF0102AFFF4A9A723D9612A682A25EBE79802B263CDFCD83BB",
+                "AE2EA797CC0FE72AC5B97B97F3C6957D7E4199A167A58EB08BCAFFDA70AC0455",
+                "F52ECBC565B3D8BEA2DFD5B75A4F457E54369809322E4120831626F290FA87E0",
+                "1969AD73CC177FA0B4FCED6DF1F7BF9907E665FDE9BA196A74FED0A3CF5AEF9D"
+            ],
+            "valid_tests": [
+                {
+                    "tc_id": 29,
+                    "comment": "A single participant, t = n = 1",
+                    "ids": [0],
+                    "pubshare_indices": [0],
+                    "aggnonce": "03F8D815CD8C9CAA16DA909C25A10501B35C419B75A9D16D84D5A24D210AE43E9B03B43D13EF7979E87F48EE8A41D1EBE3A1DCB7886E71FA4C56841E23EF13215E9A",
+                    "tweak_indices": [],
+                    "is_xonly": [],
+                    "psigs": [
+                        "4EEB2D606060AC6289B2AEF85ECD86BE7BF51372B42C7290771B29A07D390834"
+                    ],
+                    "msg": "F95466D086770E689964664219266FE5ED215C92AE20BAB5C9D79ADDDDF3C0CF",
+                    "expected": "5B529C82E2C95791A4DBB873D374C66D907ED94F5084A4CF47CC350BB7EC5DFD4EEB2D606060AC6289B2AEF85ECD86BE7BF51372B42C7290771B29A07D390834"
+                }
+            ],
+            "error_tests": []
         }
     ]
 }

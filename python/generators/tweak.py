@@ -36,7 +36,8 @@ class TweakGroupBuilder:
         self.min2 = get_subset(cfg, "min2")
         self.aggnonce_min = self._agg(self.min_s)
 
-        self.tweaks_pool = list(self.inputs.tweaks_pool)
+        self.ZERO_TWEAK_IDX = len(self.inputs.tweaks_pool)
+        self.tweaks_pool = list(self.inputs.tweaks_pool) + [bytes(32)]
 
         self.group = {}
         set_group_config(self.group, cfg, self.inputs)
@@ -192,6 +193,17 @@ class TweakGroupBuilder:
             [0, 1, 2, 3],
             [False, False, True, True],
             "Four tweaks: two plain followed by two x-only",
+        )
+        self._append_valid(
+            0,
+            self.min_s,
+            self.min_s,
+            self.min_s,
+            self.aggnonce_min,
+            msg,
+            [self.ZERO_TWEAK_IDX],
+            [False],
+            "Plain tweak of zero, which is in range",
         )
 
     def add_error_tests(self) -> None:

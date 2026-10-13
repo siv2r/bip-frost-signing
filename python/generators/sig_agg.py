@@ -12,6 +12,7 @@ from frost_ref import (
 from generators.common import (
     COMMON_MSGS,
     COMMON_TWEAKS,
+    CONFIG_1OF1,
     INVALID_CONFIG_2OF129,
     CONFIGS,
     GROUP_ORDER,
@@ -248,9 +249,16 @@ class SigAggGroupBuilder:
         )
         return self.group
 
+    def build_1of1(self) -> dict:
+        self._append_valid(
+            [0], [], [], COMMON_MSGS[0], "A single participant, t = n = 1"
+        )
+        return self.group
+
 
 def generate_sig_agg_vectors() -> None:
     groups = [SigAggGroupBuilder(cfg).build() for cfg in CONFIGS]
     groups.append(SigAggGroupBuilder(INVALID_CONFIG_2OF129).build_n_bound())
+    groups.append(SigAggGroupBuilder(CONFIG_1OF1).build_1of1())
     assign_tc_ids(groups)
     write_test_vectors("sig_agg_vectors.json", {"test_groups": groups})
