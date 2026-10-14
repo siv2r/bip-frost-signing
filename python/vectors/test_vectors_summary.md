@@ -80,9 +80,7 @@ is generated independently from its own key, with `n` real participants whose
 identifiers are `0 .. n - 1`.
 
 `sign_verify`, `det_sign`, `sig_agg` and `threshold_info` carry a fifth group,
-`2of129`, after those four. Its `n = 129` exceeds the bound `n <= 128`, so it
-holds only error cases, each failing on that bound alone. Its pools store only
-the few entries those cases use, with no bogus entries.
+`2of129`, which exceeds the bound `n <= 128` and holds only error cases. `sign_verify` and `threshold_info` also carry a `2of128` group, which tests the largest allowed `n` with one valid case. Neither group has bogus entries in its pools.
 
 In the `sign_verify` and `det_sign` groups, a few bogus public shares and an
 out-of-range identifier (the value `n`) are appended after the real participants,

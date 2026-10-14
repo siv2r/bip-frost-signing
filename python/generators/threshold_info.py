@@ -8,6 +8,7 @@ from frost_ref.signing import (
 from secp256k1lab.secp256k1 import G, GE
 
 from generators.common import (
+    CONFIG_2OF128,
     INVALID_CONFIG_2OF129,
     CONFIGS,
     SharedGroupInputs,
@@ -229,9 +230,19 @@ class ThresholdInfoGroupBuilder:
         self.group["pubshares"] = bytes_list_to_hex(self.inputs.pubshares[:3])
         return self.group
 
+    def build_n_max(self) -> dict:
+        # Only participants 0..2 are stored, the list length still gives n = 128.
+        self._append_valid(
+            [0, 1, 2] + [None] * (self.n - 3),
+            "Number of participants n equals the maximum of 128",
+        )
+        self.group["pubshares"] = bytes_list_to_hex(self.inputs.pubshares[:3])
+        return self.group
+
 
 def generate_threshold_info_vectors() -> None:
     groups = [ThresholdInfoGroupBuilder(cfg).build() for cfg in CONFIGS]
     groups.append(ThresholdInfoGroupBuilder(INVALID_CONFIG_2OF129).build_n_bound())
+    groups.append(ThresholdInfoGroupBuilder(CONFIG_2OF128).build_n_max())
     assign_tc_ids(groups)
     write_test_vectors("threshold_info_vectors.json", {"test_groups": groups})
