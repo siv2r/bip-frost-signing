@@ -76,15 +76,15 @@ Key generation protocols produce *public shares* and *threshold public keys* in 
 #### Protocol Parties and Network Setup
 
 There are *u* (where *1 ≤ t ≤ u ≤ n ≤ 128*)[^n-bound] signers[^participant-vs-signer] and one coordinator initiating the FROST signing protocol.
-Each participant has a point-to-point communication link to the coordinator (but participants do not have direct communication links to each other).
+Each participant has a point-to-point communication link to the coordinator. Participants need no direct links to each other.
 
 [^n-bound]: The bound on *n* protects against adaptive forgery attacks (the attacker chooses which participants to compromise after seeing the public shares). Such an attacker can forge with fewer than *t* compromised participants if it can solve the Low-Dimensional Vector Representation (LDVR) problem[[CS25][adaptive-attack]][[CKKTZ25][ldvr]], which becomes feasible for large enough *n*[[GT26][ldvr-attack]]. For *n ≤ 131*, LDVR is provably hard for any threshold at the 128-bit security level of secp256k1[[CKKTZ25][ldvr]]. This document requires *n ≤ 128* to leave a margin.
 
 [^participant-vs-signer]: This document says *participant* for anyone who took part in key generation, all *n* of them, and *signer* for a participant taking part in the current signing session, the *u* of them. Key material issued during key generation keeps the participant label, so *secshare*, *pubshare*, and the identifiers stay participant values even when a signer supplies them to an algorithm.
 
-If there is no dedicated coordinator, one of the signers can act as the coordinator. Alternatively, the protocol can be run without any coordinator, with each signer sending its contributions to every other signer, as described in [BIP327][bip327].
+If there is no dedicated coordinator, one of the signers can act as the coordinator. Alternatively, the protocol can run without any coordinator, with each signer sending its contributions to every other signer (as in [BIP327][bip327]) and performing the coordinator's aggregation, verification, and publishing steps itself. In that case, the signers must agree on the signer set, the message, and the tweaks, and must receive the same contributions from one another. This document does not specify how they reach this agreement or deliver their messages.
 
-This document is written from the coordinator's perspective because the key generation methods this document names, a trusted dealer setup and ChillDKG, also involve a central third party. Implementations are therefore likely to reuse the same setup for signing.
+This document is written from the coordinator's perspective because implementations are likely to reuse the coordinator from their key generation method, such as ChillDKG or a trusted dealer setup.
 
 #### Signing Inputs and Outputs
 
@@ -144,7 +144,7 @@ Every signer computes a partial signature by running *Sign* with their long-term
 Then, each signer sends their partial signature to the coordinator, who runs *PartialSigAgg* to produce the final signature.
 If all parties behaved honestly, the result passes [BIP340][bip340] verification.
 
-The coordinator may relay the signers' individual *pubnonces* and partial signatures instead of their aggregates. Each signer can then run *NonceAgg*, *PartialSigVerify*, and *PartialSigAgg* itself.
+The coordinator may relay the signers' individual *pubnonces* and partial signatures instead of their aggregates. Each signer can then run *NonceAgg*, *PartialSigVerify*, and *PartialSigAgg* itself, but still relies on the coordinator to relay the same lists to every signer.
 
 > [!TIP]
 > A coordinator can add anti-exfiltration protection without any change to this protocol, as long as every signer sends its *pubnonce* in the first communication round. Specifying this is left to a separate document.
@@ -196,10 +196,9 @@ but this method is not compatible with the defense-in-depth mechanism described 
 [^preprocess-round1]: When preprocessing *NonceGen* round, the coordinator can store the *pubnonces* alongside the participants' identifiers and public shares, as these are generated and stored before the signing session begins.
 
 FROST signers are typically stateful: they generate *secnonce*, store it, and later use it to produce a partial signature after receiving the aggregated nonce.
-However, stateless signing is possible when one signer receives the aggregate nonce of all OTHER signers before generating their own nonce.
-In coordinator-based setups, the coordinator facilitates this by collecting pubnonces from the other signers, computing their aggregate (*aggothernonce*), and providing it to the stateless signer.
-The stateless signer then runs *NonceGen*, *NonceAgg*, and *Sign* in sequence, sending its *pubnonce* and partial signature simultaneously to the coordinator, who computes the final aggregate nonce for all OTHER signers.
-In coordinator-less setups, any one signer can achieve stateless operation by generating their nonce after seeing all other signers' *pubnonces*.
+However, stateless signing is possible when one signer obtains the aggregate nonce of all OTHER signers before generating their own nonce.
+The coordinator collects the other signers' *pubnonces*, computes their aggregate (*aggothernonce*), and provides it to the stateless signer.
+The stateless signer then runs *NonceGen*, *NonceAgg*, and *Sign* in sequence and sends its *pubnonce* and partial signature together to the coordinator, which computes the aggregate nonce of all signers and sends it to the other signers.
 Stateless signers may want to consider signing deterministically (see [Modifications to Nonce Generation](#modifications-to-nonce-generation)) to remove the reliance on the random number generator in the *NonceGen* algorithm.
 
 ### Identifying Malicious Signers
@@ -217,9 +216,7 @@ If these conditions hold and an honest party (signer or coordinator) runs an alg
 Lists in this document are indexed from 1, while the reference implementation and test vectors use 0-based list positions.
 Additionally, whenever more than one honest party runs an aborting algorithm on the same contributions, they all identify the same malicious signer.
 
-When the coordinator sends only the aggregate nonce, a signer never sees the individual *pubnonces* of the other signers, so it cannot recompute the aggregation to confirm it was done honestly and must trust the coordinator for the second condition. Because *PartialSigVerify* requires the full list of *pubnonces* and partial signatures, the coordinator (or a signer acting as the coordinator) is the natural party to run it and assign blame, as it is the only party that receives every signer's contribution.[^coordinator-less]
-
-[^coordinator-less]: In coordinator-less setups (see the [Protocol Parties and Network Setup](#protocol-parties-and-network-setup) section), each signer broadcasts its contributions to every other signer, so every honest signer holds the full set of *pubnonces* and partial signatures and can run *PartialSigVerify* to assign blame on its own. The same holds when the coordinator relays the individual *pubnonces* and partial signatures instead of their aggregates, except that a signer still relies on the coordinator to relay the same lists to every signer.
+When the coordinator relays only aggregates, signers cannot check nonce aggregation themselves and must assume that the coordinator aggregates honestly (the second condition above). Only the coordinator receives every signer's contribution and can verify all partial signatures using *PartialSigVerify*.
 
 #### Further Remarks
 
