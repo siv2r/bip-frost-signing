@@ -146,6 +146,9 @@ If all parties behaved honestly, the result passes [BIP340][bip340] verification
 
 The coordinator may relay the signers' individual *pubnonces* and partial signatures instead of their aggregates. Each signer can then run *NonceAgg*, *PartialSigVerify*, and *PartialSigAgg* itself.
 
+> [!TIP]
+> A coordinator can add anti-exfiltration protection without any change to this protocol, as long as every signer sends its *pubnonce* in the first communication round. Specifying this is left to a separate document.
+
 ![Frost signing flow](./docs/frost-signing-flow.svg)
 
 A malicious coordinator can cause the signing session to fail but cannot compromise the unforgeability of the scheme. Even when colluding with up to *t-1* signers, a malicious coordinator cannot forge a signature.
