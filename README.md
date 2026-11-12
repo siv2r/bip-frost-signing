@@ -880,10 +880,9 @@ if *PartialSigVerify* succeeds for all partial signatures, then *PartialSigAgg* 
 Since this is a valuable feature, we modify [FROST3 signing][roast] to avoid producing an invalid Schnorr signature while still allowing detection of the dishonest signer: In *GetSessionValues*, if the final nonce *R* would be the point at infinity, set it to the generator instead (an arbitrary choice).
 
 This modification to *GetSessionValues* does not affect the unforgeability of the scheme.
-Given a successful adversary against the unforgeability game (EUF-CMA) for the modified scheme, a reduction can win the unforgeability game for the original scheme by simulating the modification towards the adversary:
-When the adversary provides *aggnonce' = bytes(33, 0) || bytes(33, 0)*, the reduction sets *aggnonce = cbytes_ext(G) || bytes(33, 0)*.
-For any other *aggnonce'*, the reduction sets *aggnonce = aggnonce'*.
-(The case that the adversary provides an *aggnonce' ≠ bytes(33, 0) || bytes(33, 0)* but nevertheless *R'* in *GetSessionValues* is the point at infinity happens only with negligible probability.)
+This follows by inspecting the unforgeability proof of FROST3[[CGRS23][olaf]] rather than by a generic reduction to the unmodified scheme.
+In that proof, the final nonce *R* of a signing session is used only as input to the challenge hash, which the simulator queries itself after computing *R* from *aggnonce* and *b* when answering a query to the nonce coefficient hash.
+The simulator can therefore apply the same modification, setting *R = G* if *R'* is the point at infinity, and the rest of the proof is unaffected.
 
 ## Backwards Compatibility
 
